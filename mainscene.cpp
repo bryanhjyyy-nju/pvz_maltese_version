@@ -26,9 +26,16 @@ void MainScene::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     QPixmap pix;
+
+    //背景图片
     pix.load(":/Image/StartPage.jpg");
 
     painter.drawPixmap(0,0,this->width(),this->height(),pix);
+
+    //游戏标题
+    pix.load(":/Image/Title.png");
+    pix = pix.scaled(pix.width() * 1.5,pix.height() * 1.5);
+    painter.drawPixmap(217,100,pix);
 }
 
 MainScene::~MainScene()

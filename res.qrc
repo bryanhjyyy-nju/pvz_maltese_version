@@ -3,5 +3,6 @@
         <file>Image/dogIcon.jpg</file>
         <file>Image/grass.jpg</file>
         <file>Image/StartPage.jpg</file>
+        <file>Image/Title.png</file>
     </qresource>
 </RCC>

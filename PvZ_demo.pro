@@ -10,10 +10,12 @@ CONFIG += c++17
 
 SOURCES += \
     main.cpp \
-    mainscene.cpp
+    mainscene.cpp \
+    mypushbutton.cpp
 
 HEADERS += \
-    mainscene.h
+    mainscene.h \
+    mypushbutton.h
 
 FORMS += \
     mainscene.ui
