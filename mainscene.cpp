@@ -26,9 +26,9 @@ void MainScene::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     QPixmap pix;
-    pix.load(":/Image/grass.jpg");
+    pix.load(":/Image/StartPage.jpg");
 
-    painter.drawPixmap(0,0,pix);
+    painter.drawPixmap(0,0,this->width(),this->height(),pix);
 }
 
 MainScene::~MainScene()
