@@ -4,5 +4,7 @@
         <file>Image/grass.jpg</file>
         <file>Image/StartPage.jpg</file>
         <file>Image/Title.png</file>
+        <file>Image/StartBtn.png</file>
+        <file>Image/QuitBtn.png</file>
     </qresource>
 </RCC>
