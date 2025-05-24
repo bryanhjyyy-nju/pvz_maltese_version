@@ -38,6 +38,11 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent)
         levelBtn->setParent(this);
         levelBtn->move(300 * (i % 5) + 120, 200 + i / 5 * 300);
 
+        //监听每个按钮的点击事件
+        connect(levelBtn,&MyPushButton::clicked,this,[=](){
+            qDebug() << i + 1;
+        });
+
         //显示文字：第 i 关
         QLabel *label = new QLabel;
         label->setParent(this);
@@ -54,6 +59,9 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent)
 
         label->move(300 * (i % 5) + 120, 200 + i / 5 * 300);
         label->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+
+        //使得鼠标能够穿透label
+        label->setAttribute(Qt::WA_TransparentForMouseEvents);
     }
 }
 
