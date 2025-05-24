@@ -6,5 +6,9 @@
         <file>Image/Title.png</file>
         <file>Image/StartBtn.png</file>
         <file>Image/QuitBtn.png</file>
+        <file>Image/Gold0001.gif</file>
+        <file>Image/Gold0002.gif</file>
+        <file>Image/Gold0003.gif</file>
+        <file>Image/startDogs.gif</file>
     </qresource>
 </RCC>

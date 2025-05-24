@@ -3,6 +3,9 @@
 #include <QPainter>
 #include "mypushbutton.h"
 #include <QDebug>
+#include <QMovie>
+#include <QLabel>
+#include <QTimer>
 
 MainScene::MainScene(QWidget *parent)
     : QMainWindow(parent)
@@ -27,9 +30,18 @@ MainScene::MainScene(QWidget *parent)
     startBtn->move(this->width() * 0.5 - startBtn->width() * 0.5,this->height() * 0.55);
 
     //开始按钮弹跳特效
-    connect(startBtn,&MyPushButton::clicked,[=](){
+    connect(startBtn,&MyPushButton::clicked,this,[=](){
         startBtn->zoom1();
         startBtn->zoom2();
+
+        //延时进入关卡场景
+        QTimer::singleShot(300,this,[=]{
+            //自身隐藏
+            this->hide();
+            //显示选择关卡场景
+            chooseScene = new ChooseLevelScene;
+            chooseScene->show();
+        });
     });
 
     //添加退出游戏按钮
@@ -38,13 +50,28 @@ MainScene::MainScene(QWidget *parent)
     quitBtn->move(this->width() * 0.5 - quitBtn->width() * 0.5,this->height() * 0.55 + startBtn->height() * 1.05);
 
     //退出按钮按下时弹跳特效
-    connect(quitBtn,&MyPushButton::pressed,[=](){
+    connect(quitBtn,&MyPushButton::clicked,this,[=](){
         quitBtn->zoom1();
         quitBtn->zoom2();
+        QTimer::singleShot(300,this,[=]{this->close();});
     });
 
-    //实现退出功能
-    connect(quitBtn,&MyPushButton::clicked,this,&MainScene::close);
+    //插入两个动画
+    QMovie *movie1 = new QMovie(":/Image/startDogs.gif");
+    QLabel *label1 = new QLabel(this);
+    label1->setMovie(movie1);
+    label1->setFixedSize(QSize(400,400));
+    label1->setScaledContents(true);
+    label1->move(this->width()*0.05,this->height()*0.45);
+    movie1->start();
+
+    QMovie *movie2 = new QMovie(":/Image/startDogs.gif");
+    QLabel *label2 = new QLabel(this);
+    label2->setMovie(movie2);
+    label2->setFixedSize(QSize(400,400));
+    label2->setScaledContents(true);
+    label2->move(this->width()*0.7,this->height()*0.45);
+    movie2->start();
 }
 
 void MainScene::paintEvent(QPaintEvent *)
@@ -61,7 +88,6 @@ void MainScene::paintEvent(QPaintEvent *)
     pix.load(":/Image/Title.png");
     pix = pix.scaled(pix.width() * 2,pix.height() * 2);
     painter.drawPixmap(this->width() * 0.5 - pix.width() * 0.5,this->height() * 0.2,pix);
-
 }
 
 MainScene::~MainScene()
