@@ -29,6 +29,15 @@ MainScene::MainScene(QWidget *parent)
     startBtn->setParent(this);
     startBtn->move(this->width() * 0.5 - startBtn->width() * 0.5,this->height() * 0.55);
 
+    //实例化选择关卡的场景
+    chooseScene = new ChooseLevelScene;
+
+    //监听选择界面返回按钮信号
+    connect(chooseScene,&ChooseLevelScene::chooseSceneBack,this,[=](){
+        chooseScene->hide();
+        this->show();
+    });
+
     //开始按钮弹跳特效
     connect(startBtn,&MyPushButton::clicked,this,[=](){
         startBtn->zoom1();
@@ -39,7 +48,6 @@ MainScene::MainScene(QWidget *parent)
             //自身隐藏
             this->hide();
             //显示选择关卡场景
-            chooseScene = new ChooseLevelScene;
             chooseScene->show();
         });
     });
@@ -62,7 +70,7 @@ MainScene::MainScene(QWidget *parent)
     label1->setMovie(movie1);
     label1->setFixedSize(QSize(400,400));
     label1->setScaledContents(true);
-    label1->move(this->width()*0.05,this->height()*0.45);
+    label1->move(this->width() * 0.05,this->height() * 0.45);
     movie1->start();
 
     QMovie *movie2 = new QMovie(":/Image/startDogs.gif");
@@ -70,7 +78,7 @@ MainScene::MainScene(QWidget *parent)
     label2->setMovie(movie2);
     label2->setFixedSize(QSize(400,400));
     label2->setScaledContents(true);
-    label2->move(this->width()*0.7,this->height()*0.45);
+    label2->move(this->width() * 0.7,this->height() * 0.45);
     movie2->start();
 }
 
