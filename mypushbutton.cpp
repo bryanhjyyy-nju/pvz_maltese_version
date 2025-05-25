@@ -2,11 +2,7 @@
 #include <QDebug>
 #include <QPropertyAnimation>
 
-MyPushButton::MyPushButton(QWidget *parent)
-    : QPushButton(parent)
-{}
-
-MyPushButton::MyPushButton(QString normalImg, QString pressImg){
+MyPushButton::MyPushButton(QString normalImg, QString pressImg, float times){
     this->normalImgPath = normalImg;
     this->pressImgPath = pressImg;
 
@@ -18,7 +14,7 @@ MyPushButton::MyPushButton(QString normalImg, QString pressImg){
         return;
     }
 
-    pix = pix.scaled(pix.width() * 1.5,pix.height() * 1.5);
+    pix = pix.scaled(pix.width() * times,pix.height() * times);
 
     //设置图片固定大小
     this->setFixedSize(pix.width(),pix.height());

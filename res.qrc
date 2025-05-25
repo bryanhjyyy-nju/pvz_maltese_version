@@ -6,10 +6,22 @@
         <file>Image/Title.png</file>
         <file>Image/StartBtn.png</file>
         <file>Image/QuitBtn.png</file>
-        <file>Image/Gold0001.gif</file>
         <file>Image/startDogs.gif</file>
         <file>Image/backBtn.png</file>
         <file>Image/chooseTitle.png</file>
         <file>Image/levelIcon.png</file>
+        <file>Image/card.png</file>
+        <file>Image/cardBar.png</file>
+        <file>Image/forkYellow.gif</file>
+        <file>Image/guitarYellow.gif</file>
+        <file>Image/heartWhite.gif</file>
+        <file>Image/heartYellow.gif</file>
+        <file>Image/singingWhite.gif</file>
+        <file>Image/allHeartWhite.gif</file>
+        <file>Image/dblSingWhite.gif</file>
+        <file>Image/doubleWhite.gif</file>
+        <file>Image/lineWhite.gif</file>
+        <file>Image/wallWhite.gif</file>
+        <file>Image/moneyWhite.gif</file>
     </qresource>
 </RCC>

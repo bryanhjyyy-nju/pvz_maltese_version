@@ -3,6 +3,7 @@
 #include "mypushbutton.h"
 #include <QTimer>
 #include <QLabel>
+#include "card.h"
 
 PlayScene::PlayScene(QWidget *parent)
     : QMainWindow{parent}
@@ -54,6 +55,39 @@ PlayScene::PlayScene(int levelNum){
     levNumLbl->setText(levStr);
     levNumLbl->setGeometry(50,this->height() - 80,180,100);
 
+    //设置卡槽
+    QLabel * cardBarLbl = new QLabel;
+    cardBarLbl->setParent(this);
+
+    QPixmap pix;
+    pix.load(":/Image/cardBar.png");
+    pix = pix.scaled(pix.width() * 1.5,pix.height() * 1.5);
+    cardBarLbl->setFixedSize(pix.width(),pix.height());
+    cardBarLbl->setPixmap(pix);
+    cardBarLbl->move(350,0);
+
+    //设置卡牌
+    for(int i = 0; i < (levelIndex < 8 ? levelIndex : 8); i++){
+        //设置卡牌
+        Card *card = new Card(i);
+        card->setParent(this);
+        card->move(470 + i * (card->width() + 5.5), 10);
+        card->whiteType = this->whiteTypes[i];
+        card->coolTime = this->coolTimes[i];
+        card->heartCost = this->heartCosts[i];
+
+        //设置卡牌图标
+        QLabel *whiteIcon = new QLabel;
+        whiteIcon->setParent(this);
+        pix.load(whiteImages[i]);
+        pix = pix.scaled(sizes[i], sizes[i]);
+        whiteIcon->setFixedSize(card->width(),card->height());
+        whiteIcon->setPixmap(pix);
+        whiteIcon->move(470 + i * (card->width() + 5.5) + Xs[i], Ys[i]);
+        //鼠标能够穿透
+        whiteIcon->setAttribute(Qt::WA_TransparentForMouseEvents);
+
+    }
 
 }
 

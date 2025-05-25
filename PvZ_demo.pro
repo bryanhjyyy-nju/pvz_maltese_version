@@ -9,15 +9,19 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    card.cpp \
     chooselevelscene.cpp \
     main.cpp \
     mainscene.cpp \
+    map.cpp \
     mypushbutton.cpp \
     playscene.cpp
 
 HEADERS += \
+    card.h \
     chooselevelscene.h \
     mainscene.h \
+    map.h \
     mypushbutton.h \
     playscene.h
 
