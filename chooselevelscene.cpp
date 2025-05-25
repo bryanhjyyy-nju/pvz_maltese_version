@@ -4,6 +4,7 @@
 #include <QDebug>
 #include <QTimer>
 #include <QLabel>
+#include "playscene.h"
 
 ChooseLevelScene::ChooseLevelScene(QWidget *parent)
     : QMainWindow{parent}
@@ -39,6 +40,7 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent)
         levelBtn->setParent(this);
         levelBtn->move(300 * (i % 5) + 120, 200 + i / 5 * 300);
 
+
         //监听每个按钮的点击事件
         connect(levelBtn,&MyPushButton::clicked,this,[=](){
             // qDebug() << i + 1;
@@ -47,6 +49,14 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent)
             this->hide();
             play = new PlayScene(i + 1);
             play->show();
+
+            //监听游戏界面的返回信号
+            connect(play,&PlayScene::playSceneBack,this,[=](){
+                //todo 实现存档功能
+                delete play;
+                play = NULL;
+                this->show();
+            });
         });
 
         //显示文字：第 i 关

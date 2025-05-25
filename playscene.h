@@ -15,7 +15,11 @@ public:
     //内部成员记录关卡好
     int levelIndex;
 
+    //重写画背景图事件
+    void paintEvent(QPaintEvent *);
+
 signals:
+    void playSceneBack();
 };
 
 #endif // PLAYSCENE_H
