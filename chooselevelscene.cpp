@@ -22,11 +22,12 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent)
     backBtn->setParent(this);
     backBtn->move(this->width() - backBtn->width() * 1.2,backBtn->width() * 0.2);
 
-    //点击动画
     connect(backBtn,&MyPushButton::clicked,this,[=](){
+        //点击动画
         backBtn->zoom1();
         backBtn->zoom2();
 
+        //延时返回
         QTimer::singleShot(300,this,[=](){
             emit this->chooseSceneBack();
         });
@@ -40,7 +41,12 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent)
 
         //监听每个按钮的点击事件
         connect(levelBtn,&MyPushButton::clicked,this,[=](){
-            qDebug() << i + 1;
+            // qDebug() << i + 1;
+
+            //进入游戏场景
+            this->hide();
+            play = new PlayScene(i + 1);
+            play->show();
         });
 
         //显示文字：第 i 关

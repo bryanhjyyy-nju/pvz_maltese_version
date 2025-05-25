@@ -2,6 +2,7 @@
 #define CHOOSELEVELSCENE_H
 
 #include <QMainWindow>
+#include "playscene.h"
 
 class ChooseLevelScene : public QMainWindow
 {
@@ -11,6 +12,8 @@ public:
 
     //重写绘图事件
     void paintEvent(QPaintEvent *);
+
+    PlayScene *play = NULL;
 
 signals:
     //自定义信号告诉主场景点击了返回
