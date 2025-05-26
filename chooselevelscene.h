@@ -11,7 +11,7 @@ public:
     explicit ChooseLevelScene(QWidget *parent = nullptr);
 
     //重写绘图事件
-    void paintEvent(QPaintEvent *);
+    void paintEvent(QPaintEvent *) override;
 
     PlayScene *play = NULL;
 

@@ -19,7 +19,7 @@ public:
     ~MainScene();
 
     //重写paintEvent事件 画背景图
-    void paintEvent(QPaintEvent *);
+    void paintEvent(QPaintEvent *) override;
 
     //
     ChooseLevelScene *chooseScene = nullptr;

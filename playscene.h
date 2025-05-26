@@ -17,7 +17,7 @@ public:
 
 
     //重写画背景图事件
-    void paintEvent(QPaintEvent *);
+    void paintEvent(QPaintEvent *) override;
 
 private:
     //注：此处卡牌的小狗是直接画上去的

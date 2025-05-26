@@ -14,16 +14,20 @@ SOURCES += \
     main.cpp \
     mainscene.cpp \
     map.cpp \
+    myitem.cpp \
     mypushbutton.cpp \
-    playscene.cpp
+    playscene.cpp \
+    whitedogs.cpp
 
 HEADERS += \
     card.h \
     chooselevelscene.h \
     mainscene.h \
     map.h \
+    myitem.h \
     mypushbutton.h \
-    playscene.h
+    playscene.h \
+    whitedogs.h
 
 FORMS += \
     mainscene.ui
