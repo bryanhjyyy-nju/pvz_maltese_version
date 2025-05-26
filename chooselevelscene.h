@@ -15,6 +15,10 @@ public:
 
     PlayScene *play = NULL;
 
+private:
+    void buildBackBtn();
+    void buildLevelBtn();
+
 signals:
     //自定义信号告诉主场景点击了返回
     void chooseSceneBack();

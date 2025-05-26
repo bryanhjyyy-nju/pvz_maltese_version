@@ -24,6 +24,11 @@ public:
     //
     ChooseLevelScene *chooseScene = nullptr;
 private:
+    //ui界面（未使用）
     Ui::MainScene *ui;
+
+    void buildStartBtn(); //创建开始按钮
+    void buildQuitBtn(); //创建退出按钮
+    void setGif(int w,int h,int x,int y); //显示我的动图
 };
 #endif // MAINSCENE_H

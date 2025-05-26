@@ -13,13 +13,45 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent)
     setFixedSize(1650,900);
 
     //设置窗口图标
-    setWindowIcon(QIcon(":/Image/dogIcon.jpg"));
+    setWindowIcon(QIcon(":/others/Image/dogIcon.jpg"));
 
     //设置窗口标题
     setWindowTitle("PvZ_Demo");
 
     //返回按钮
-    MyPushButton *backBtn = new MyPushButton(":/Image/backBtn.png");
+    buildBackBtn();
+
+    //每一关对应的按钮
+    buildLevelBtn();
+}
+
+void ChooseLevelScene::paintEvent(QPaintEvent *){
+    QPainter painter(this);
+    QPixmap pix;
+
+    //背景图片
+    bool ret = pix.load(":/others/Image/StartPage.jpg");
+    if(!ret){
+        qDebug() << "图片加载失败" ;
+        return;
+    }
+
+    painter.drawPixmap(0,0,this->width(),this->height(),pix);
+
+    //绘制关卡选择四个字
+    ret = pix.load(":others/Image/chooseTitle.png");
+    if(!ret){
+        qDebug() << "图片加载失败" ;
+        return;
+    }
+    pix = pix.scaled(pix.width() * 2,pix.height() * 2);
+    painter.drawPixmap(this->width() * 0.2 - pix.width() * 0.5,this->height() * 0.1,pix);
+
+}
+
+void ChooseLevelScene::buildBackBtn(){
+    //返回按钮
+    MyPushButton *backBtn = new MyPushButton(":others/Image/backBtn.png");
     backBtn->setParent(this);
     backBtn->move(this->width() - backBtn->width() * 1.2,backBtn->width() * 0.2);
 
@@ -33,10 +65,12 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent)
             emit this->chooseSceneBack();
         });
     });
+}
 
+void ChooseLevelScene::buildLevelBtn(){
     //创建关卡按钮十个
     for(int i = 0; i < 10; i++){
-        MyPushButton *levelBtn = new MyPushButton(":/Image/levelIcon.png");
+        MyPushButton *levelBtn = new MyPushButton(":others/Image/levelIcon.png");
         levelBtn->setParent(this);
         levelBtn->move(300 * (i % 5) + 120, 200 + i / 5 * 300);
 
@@ -79,20 +113,4 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent)
         //使得鼠标能够穿透label
         label->setAttribute(Qt::WA_TransparentForMouseEvents);
     }
-}
-
-void ChooseLevelScene::paintEvent(QPaintEvent *){
-    QPainter painter(this);
-    QPixmap pix;
-
-    //背景图片
-    pix.load(":/Image/StartPage.jpg");
-
-    painter.drawPixmap(0,0,this->width(),this->height(),pix);
-
-    //绘制关卡选择四个字
-    pix.load(":Image/chooseTitle.png");
-    pix = pix.scaled(pix.width() * 2,pix.height() * 2);
-    painter.drawPixmap(this->width() * 0.2 - pix.width() * 0.5,this->height() * 0.1,pix);
-
 }

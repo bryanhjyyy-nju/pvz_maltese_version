@@ -1,3 +1,4 @@
+//todo: 改成GraphicsItem类型
 #include "card.h"
 #include <QDebug>
 #include <QPainter>
@@ -5,12 +6,12 @@
 Card::Card(int cardNum):whiteType("") ,coolTime(0) ,heartCost(0),cardIndex(cardNum){
     //图片加载
     QPixmap pix;
-    bool ret = pix.load(":/Image/card.png");
+    bool ret = pix.load(":/others/Image/card.png");
     if(!ret){
         qDebug() << "图片加载失败" ;
         return;
     }
-
+    //图片缩放
     pix = pix.scaled(pix.width() * 1.21,pix.height() * 1.21);
 
     //设置图片固定大小

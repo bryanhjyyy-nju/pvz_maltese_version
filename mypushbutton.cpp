@@ -2,13 +2,13 @@
 #include <QDebug>
 #include <QPropertyAnimation>
 
-MyPushButton::MyPushButton(QString normalImg, QString pressImg, float times){
-    this->normalImgPath = normalImg;
-    this->pressImgPath = pressImg;
+MyPushButton::MyPushButton(QString firstImg, QString secondImg, float times){
+    this->firstImgPath = firstImg;
+    this->secondImgPath = secondImg;
 
     //图片加载
     QPixmap pix;
-    bool ret = pix.load(normalImg);
+    bool ret = pix.load(firstImg);
     if(!ret){
         qDebug() << "图片加载失败" ;
         return;
