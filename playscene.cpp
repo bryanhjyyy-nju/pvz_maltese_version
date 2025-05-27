@@ -44,9 +44,9 @@ PlayScene::PlayScene(int levelNum) :
     setCentralWidget(myGraphicsView);  // 将视图设置为中心部件
 
     // 配置场景
-    myGraphicsScene->setSceneRect(0, 0, 100, 100);  // 设置场景逻辑坐标范围
+    myGraphicsScene->setSceneRect(0, 0, this->width(), this->height());  // 设置场景逻辑坐标范围
     QPixmap backgroundPixmap(":/others/Image/grass.jpg");
-    //采用backGroundItem
+    //采用backGroundItem管理场景界面
     QGraphicsPixmapItem *backGroundItem = myGraphicsScene->addPixmap(backgroundPixmap);
 
     backGroundItem->setPos(0, 0);

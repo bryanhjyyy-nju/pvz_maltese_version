@@ -16,12 +16,13 @@ public:
     explicit MyItem();
     ~MyItem();
 
+    //重写纯虚函数
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
 
-    int row; //所在行
-    int col; //所在列
-    int Hp() const { return hp; } //返回血量的函数
+    int itRow; //所在行
+    int itCol; //所在列
+    int getHp() const { return hp; } //返回血量的函数
 
 protected:
     QMovie *movie = NULL; //动画效果

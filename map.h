@@ -1,10 +1,37 @@
 #ifndef MAP_H
 #define MAP_H
 
-class Map
+#include <QObject>
+#include <QGraphicsItem>
+#include <QPainter>
+
+
+class Map : public QObject, public QGraphicsItem
 {
+    Q_OBJECT
+    // Q_INTERFACES(QGraphicsItem)
 public:
-    Map();
+    explicit Map(QGraphicsItem *parent = nullptr);
+
+    //网格初始化
+    Map(int rows, int cols, QSize cellSize, QPointF originLoc = QPointF(0, 0));
+
+    //重写两个纯虚函数
+    QRectF boundingRect() const override;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
+
+    //将坐标为位置转化成网格索引
+    void turnPosToMap(const QPointF& mousePos,int& col,int& row) const;
+
+    //获取网格中心坐标
+    QPointF cellCenter(int col, int row) const;
+
+private:
+    int mapRows; //地图上总行数
+    int mapCols; //地图上总列数
+    QSize mapCellSize; //地图上每一格的大小
+    QPointF mapOriginLoc; //网格左上角的坐标
+signals:
 };
 
 #endif // MAP_H
