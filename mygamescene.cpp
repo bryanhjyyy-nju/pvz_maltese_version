@@ -2,6 +2,7 @@
 #include <QDebug>
 #include <QGraphicsSceneMouseEvent>
 #include "singingwhite.h"
+#include "heartwhite.h"
 
 MyGameScene::MyGameScene(QMainWindow *parent)
     : QGraphicsScene(parent)
@@ -51,8 +52,8 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
             //计算中心的坐标
             QPointF centerLoc = mapGrid->cellCenter(col,row);
             //创建植物并定位
-            SingingWhite * myDog = new SingingWhite;
-            myDog->setPos(centerLoc);
+            HeartWhite * myDog = new HeartWhite;
+            myDog->setPos(centerLoc - QPointF(myDog->pixmap().width() / 2.0 * myDog->getMyScale(), myDog->pixmap().height() / 2.0 * myDog->getMyScale()));
             addItem(myDog);
 
             //标记已经占用

@@ -26,11 +26,11 @@ public:
     int itRow; //所在行
     int itCol; //所在列
     int getHp() const { return hp; } //返回血量的函数
-
+    qreal getMyScale() const{ return myScale; } //返回缩放比例
 protected:
     QMovie *movie = NULL; //动画效果
     int hp = 100; // 血量
-
+    qreal myScale = 1.0;
     void setupGifAnimation(const QString& gifPath); //加载动画
 
 signals:

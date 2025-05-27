@@ -5,7 +5,6 @@
 #include <QGraphicsItem>
 #include <QPainter>
 
-
 class Map : public QObject, public QGraphicsItem
 {
     Q_OBJECT
