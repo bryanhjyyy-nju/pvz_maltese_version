@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <QGraphicsView>
+#include <QVector>
+#include "mygamescene.h"
 
 
 class PlayScene : public QMainWindow
@@ -17,10 +19,6 @@ public:
 
     //构造函数：第几关
     PlayScene(int levelNum);
-
-
-    //重写画背景图事件
-    // void paintEvent(QPaintEvent *) override;
 
 private:
     //注：此处卡牌的小狗是直接画上去的
@@ -59,8 +57,10 @@ private:
     void setCardBar();
     void setCardsInBar();
 
-    QGraphicsScene* myGraphicsScene;  // 图形场景
+    MyGameScene* myGameScene;  // 图形场景
     QGraphicsView* myGraphicsView;    // 可视化视图
+
+
 signals:
     void playSceneBack();
 };

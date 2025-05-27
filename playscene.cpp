@@ -6,11 +6,13 @@
 #include "card.h"
 #include "whitedogs.h"
 #include "singingwhite.h"
+#include <QVector>
+#include "mygamescene.h"
 
 PlayScene::PlayScene(int levelNum) :
     levelIndex(levelNum), //维护传进来的关卡号, 加载地图
-    myGraphicsScene(new QGraphicsScene(this)),
-    myGraphicsView(new QGraphicsView(myGraphicsScene, this))
+    myGameScene(new MyGameScene(this)),
+    myGraphicsView(new QGraphicsView(myGameScene, this))
 {
 
     //设置标题
@@ -43,26 +45,16 @@ PlayScene::PlayScene(int levelNum) :
     // 设置主窗口
     setCentralWidget(myGraphicsView);  // 将视图设置为中心部件
 
-    // 配置场景
-    myGraphicsScene->setSceneRect(0, 0, this->width(), this->height());  // 设置场景逻辑坐标范围
-    QPixmap backgroundPixmap(":/others/Image/grass.jpg");
-    //采用backGroundItem管理场景界面
-    QGraphicsPixmapItem *backGroundItem = myGraphicsScene->addPixmap(backgroundPixmap);
-
-    backGroundItem->setPos(0, 0);
-    backGroundItem->setScale(1.5);
-
-
     // 配置视图
     myGraphicsView->setRenderHint(QPainter::Antialiasing);  // 抗锯齿
     myGraphicsView->setAlignment(Qt::AlignLeft | Qt::AlignTop);  // 对齐方式
     myGraphicsView->setViewportUpdateMode(QGraphicsView::FullViewportUpdate); // 设置更新模式
+    myGraphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    myGraphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     // 添加测试植物
     WhiteDogs* singingWhite = new SingingWhite;
     singingWhite->setPos(0 , 0);  // 设置位置
-    myGraphicsScene->addItem(singingWhite);  // 将singingWhite添加到场景
-
 
 }
 
@@ -153,3 +145,4 @@ void PlayScene::setCardsInBar(){
 
     }
 }
+

@@ -14,6 +14,7 @@ SOURCES += \
     main.cpp \
     mainscene.cpp \
     map.cpp \
+    mygamescene.cpp \
     myitem.cpp \
     mypushbutton.cpp \
     playscene.cpp \
@@ -25,6 +26,7 @@ HEADERS += \
     chooselevelscene.h \
     mainscene.h \
     map.h \
+    mygamescene.h \
     myitem.h \
     mypushbutton.h \
     playscene.h \

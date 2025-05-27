@@ -6,9 +6,9 @@ Map::Map(QGraphicsItem *parent)
 {}
 
 //网格初始化
-Map::Map(int rows, int cols, QSize cellSize, QPointF originLoc):
-    mapRows(rows),
+Map::Map(int cols, int rows, QSize cellSize, QPointF originLoc):
     mapCols(cols),
+    mapRows(rows),
     mapCellSize(cellSize),
     mapOriginLoc(originLoc){}
 
@@ -29,7 +29,7 @@ void Map::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidg
     }
 
     //绘制水平线
-    for(int y = 0; y < mapRows; y++){
+    for(int y = 0; y <= mapRows; y++){
         qreal lineY = mapOriginLoc.y() + y * mapCellSize.height();
         painter->drawLine(mapOriginLoc.x(), lineY, mapOriginLoc.x() +mapCols * mapCellSize.width(), lineY);
     }
@@ -38,10 +38,11 @@ void Map::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidg
 
 
 //将坐标为位置转化成网格索引
-void Map::turnPosToMap(const QPointF& mousePos,int& col,int& row) const{
+bool Map::turnPosToMap(const QPointF& mousePos,int& col,int& row) const{
     QPointF relativePos = mousePos - mapOriginLoc;
     col = relativePos.x() / mapCellSize.width();
     row = relativePos.y() / mapCellSize.height();
+    return (col >= 0 && col < mapCols && row >= 0 && row < mapRows);
 }
 
 //获取网格中心坐标

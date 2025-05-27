@@ -12,7 +12,7 @@ MyItem::~MyItem(){
 
 QRectF MyItem::boundingRect() const
 {
-    return QRectF(0,0,100,100);
+    return movie ? pixmap().rect() : QRectF(0,0,100,100);
 }
 
 void MyItem::setupGifAnimation(const QString& gifPath){
@@ -37,3 +37,8 @@ QPainterPath MyItem::shape() const {
     return path;
 }
 
+// void MyItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+// {
+//     painter->setPen(Qt::red);
+//     painter->drawPath(shape());
+// }

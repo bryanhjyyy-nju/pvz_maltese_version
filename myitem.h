@@ -20,6 +20,9 @@ public:
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
 
+    //重写绘图用于调试
+    // void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
+
     int itRow; //所在行
     int itCol; //所在列
     int getHp() const { return hp; } //返回血量的函数
