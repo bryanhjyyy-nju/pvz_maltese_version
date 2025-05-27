@@ -4,8 +4,14 @@
 #include <QTimer>
 #include <QLabel>
 #include "card.h"
+#include "whitedogs.h"
+#include "singingwhite.h"
 
-PlayScene::PlayScene(int levelNum) : levelIndex(levelNum){ //维护传进来的关卡号
+PlayScene::PlayScene(int levelNum) :
+    levelIndex(levelNum), //维护传进来的关卡号, 加载地图
+    myGraphicsScene(new QGraphicsScene(this)),
+    myGraphicsView(new QGraphicsView(myGraphicsScene, this))
+{
 
     //设置标题
     QString titleStr = QString(" 第 %1 关").arg(levelNum);
@@ -33,19 +39,44 @@ PlayScene::PlayScene(int levelNum) : levelIndex(levelNum){ //维护传进来的�
     //设置卡牌
     setCardsInBar();
 
+    //加载植物
+    // 设置主窗口
+    setCentralWidget(myGraphicsView);  // 将视图设置为中心部件
+
+    // 配置场景
+    myGraphicsScene->setSceneRect(0, 0, 100, 100);  // 设置场景逻辑坐标范围
+    QPixmap backgroundPixmap(":/others/Image/grass.jpg");
+    //采用backGroundItem
+    QGraphicsPixmapItem *backGroundItem = myGraphicsScene->addPixmap(backgroundPixmap);
+
+    backGroundItem->setPos(0, 0);
+    backGroundItem->setScale(1.5);
+
+
+    // 配置视图
+    myGraphicsView->setRenderHint(QPainter::Antialiasing);  // 抗锯齿
+    myGraphicsView->setAlignment(Qt::AlignLeft | Qt::AlignTop);  // 对齐方式
+    myGraphicsView->setViewportUpdateMode(QGraphicsView::FullViewportUpdate); // 设置更新模式
+
+    // 添加测试植物
+    WhiteDogs* singingWhite = new SingingWhite;
+    singingWhite->setPos(0 , 0);  // 设置位置
+    myGraphicsScene->addItem(singingWhite);  // 将singingWhite添加到场景
+
+
 }
 
-void PlayScene::paintEvent(QPaintEvent *)
-{
-    QPainter painter(this);
-    QPixmap pix;
+// void PlayScene::paintEvent(QPaintEvent *)
+// {
+//     QPainter painter(this);
+//     QPixmap pix;
 
-    //背景图片
-    pix.load(":/others/Image/grass.jpg");
+//     //背景图片
+//     pix.load(":/others/Image/grass.jpg");
 
-    painter.drawPixmap(0,0,pix.width() * this->height() / pix.height(),this->height(),pix);
+//     painter.drawPixmap(0,0,pix.width() * this->height() / pix.height(),this->height(),pix);
 
-}
+// }
 
 void PlayScene::buildBackBtn(){
     //返回按钮

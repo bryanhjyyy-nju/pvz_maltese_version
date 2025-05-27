@@ -17,6 +17,7 @@ SOURCES += \
     myitem.cpp \
     mypushbutton.cpp \
     playscene.cpp \
+    singingwhite.cpp \
     whitedogs.cpp
 
 HEADERS += \
@@ -27,6 +28,7 @@ HEADERS += \
     myitem.h \
     mypushbutton.h \
     playscene.h \
+    singingwhite.h \
     whitedogs.h
 
 FORMS += \

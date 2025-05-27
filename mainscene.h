@@ -15,7 +15,7 @@ class MainScene : public QMainWindow
     Q_OBJECT
 
 public:
-    MainScene(QWidget *parent = nullptr);
+    explicit MainScene(QWidget *parent = nullptr);
     ~MainScene();
 
     //重写paintEvent事件 画背景图

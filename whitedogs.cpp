@@ -1,5 +1,7 @@
 #include "whitedogs.h"
 
-WhiteDogs::WhiteDogs(QObject *parent)
-    : QObject{parent}
-{}
+WhiteDogs::WhiteDogs(const QString& gifPath)
+    : MyItem()
+{
+    setupGifAnimation(gifPath);
+}

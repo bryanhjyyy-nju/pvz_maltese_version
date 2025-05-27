@@ -2,6 +2,9 @@
 #define PLAYSCENE_H
 
 #include <QMainWindow>
+#include <QGraphicsScene>
+#include <QGraphicsView>
+
 
 class PlayScene : public QMainWindow
 {
@@ -17,7 +20,7 @@ public:
 
 
     //重写画背景图事件
-    void paintEvent(QPaintEvent *) override;
+    // void paintEvent(QPaintEvent *) override;
 
 private:
     //注：此处卡牌的小狗是直接画上去的
@@ -55,6 +58,9 @@ private:
     void setLevelText();
     void setCardBar();
     void setCardsInBar();
+
+    QGraphicsScene* myGraphicsScene;  // 图形场景
+    QGraphicsView* myGraphicsView;    // 可视化视图
 signals:
     void playSceneBack();
 };

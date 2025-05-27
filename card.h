@@ -17,6 +17,7 @@ private:
     const int cardIndex;    // 记录第几章卡牌
 
 signals:
+
 };
 
 #endif // CARD_H
