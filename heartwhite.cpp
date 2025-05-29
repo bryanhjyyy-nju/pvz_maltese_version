@@ -1,9 +1,7 @@
 #include "heartwhite.h"
 
-HeartWhite::HeartWhite():WhiteDogs(":/white/Image/heartWhite.gif")
+HeartWhite::HeartWhite():WhiteDogs(":/white/Image/heartWhite.gif", 1.2)
 {
     hp = 300;
     heartCost = 100;
-    myScale = 1.3;
-    setScale(myScale);
 }

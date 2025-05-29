@@ -144,6 +144,26 @@ void PlayScene::setCardsInBar(){
         //鼠标能够穿透
         whiteIcon->setAttribute(Qt::WA_TransparentForMouseEvents);
 
+        //设置阳光消耗数字显示
+        QLabel *label = new QLabel;
+        label->setParent(this);
+        label->setFixedSize(card->width(),card->height());
+        label->setText(QString::number(this->heartCosts[i]));
+
+        //设置字体颜色和大小
+        QFont font;
+        font.setFamily("Arial");
+        font.setPointSize(10);
+        label->setFont(font);
+
+        //移动
+        label->move(470 + i * (card->width() + 5.5) - 10, 91);
+        label->setAlignment(Qt::AlignHCenter);
+
+        //使得鼠标能够穿透label
+        label->setAttribute(Qt::WA_TransparentForMouseEvents);
+
+        //链接卡牌被选择事件和处理卡牌选择事件
         connect(card, &Card::cardSelected, this, &PlayScene::handleCardSelected);
         connect(card,&Card::cardSelected, myGameScene, [=](){
             myGameScene->setChosenNum(i);

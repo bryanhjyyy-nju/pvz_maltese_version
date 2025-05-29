@@ -29,20 +29,6 @@ Card::Card(int cardNum):whiteType("") ,coolTime(0) ,heartCost(0),cardIndex(cardN
     //设置图标大小
     this->setIconSize(QSize(pix.width(),pix.height()));
 
-    switch(cardNum) {
-    case 0:
-        whiteType = "singingWhite";
-        coolTime = 7500;
-        heartCost = 100;
-        break;
-    case 1:
-        whiteType = "heartWhite";
-        coolTime = 7500;
-        heartCost = 50;
-        break;
-        //todo : 添加更多卡牌
-    }
-
     connect(this, &Card::clicked, [this]() {
         if (cardGameState == GameState::Normal) {
             emit cardSelected(this);

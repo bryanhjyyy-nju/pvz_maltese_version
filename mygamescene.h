@@ -19,11 +19,16 @@ public:
     //设置选择的卡牌序号
     void setChosenNum(int cardNum);
 
+    int getRestHeart(){ return restHeart; } // 得到剩余阳光的数值
+
+    void cutHeart(int thisHeartCost){ restHeart -= thisHeartCost; }
+
 private:
     Map *mapGrid = NULL;  //添加地图网咯
     bool *mapOccupied = NULL; //添加占用状态表
     void mousePressEvent(QGraphicsSceneMouseEvent * event) override;
     int chosenNum = 0;
+    int restHeart = 50; // 剩余阳光初始化为50
 
 signals:
 

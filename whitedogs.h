@@ -8,7 +8,7 @@ class WhiteDogs : public MyItem
 {
     Q_OBJECT
 public:
-    explicit WhiteDogs(const QString& gifPath);
+    explicit WhiteDogs(const QString& gifPath, qreal scale = 1.0);
 
     //放置的位置
 
@@ -16,7 +16,7 @@ public:
 
 protected:
     int heartCost = 0;
-
+    qreal myScale = 1.0;
 
 signals:
 };

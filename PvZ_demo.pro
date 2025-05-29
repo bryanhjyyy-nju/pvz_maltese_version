@@ -20,6 +20,7 @@ SOURCES += \
     mypushbutton.cpp \
     playscene.cpp \
     singingwhite.cpp \
+    wallwhite.cpp \
     whitedogs.cpp
 
 HEADERS += \
@@ -34,6 +35,7 @@ HEADERS += \
     mypushbutton.h \
     playscene.h \
     singingwhite.h \
+    wallwhite.h \
     whitedogs.h
 
 FORMS += \
