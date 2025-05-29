@@ -3,6 +3,7 @@
 #include <QGraphicsSceneMouseEvent>
 #include "singingwhite.h"
 #include "heartwhite.h"
+#include "card.h"
 
 MyGameScene::MyGameScene(QMainWindow *parent)
     : QGraphicsScene(parent)
@@ -22,6 +23,7 @@ MyGameScene::MyGameScene(QMainWindow *parent)
     mapGrid = new Map(9, 5, QSize(121,145), QPointF(380,130));
     addItem(mapGrid);
     initMapOccupied(9, 5);
+
 }
 
 bool MyGameScene::initMapOccupied(int cols, int rows){
@@ -42,30 +44,53 @@ MyGameScene::~MyGameScene(){
     }
 }
 
+void MyGameScene::setChosenNum(int cardNum){
+    chosenNum = cardNum;
+}
+
 void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
-    //转换到坐标网格系统
-    int col, row;
-    //转换成坐标网格系统
-    if(mapGrid->turnPosToMap(event->scenePos(),col,row)){
-        //检查是否被占用
-        if(!mapOccupied[row * 9 + col]){
-            //计算中心的坐标
-            QPointF centerLoc = mapGrid->cellCenter(col,row);
-            //创建植物并定位
-            HeartWhite * myDog = new HeartWhite;
-            myDog->setPos(centerLoc - QPointF(myDog->pixmap().width() / 2.0 * myDog->getMyScale(), myDog->pixmap().height() / 2.0 * myDog->getMyScale()));
-            addItem(myDog);
+    if (Card::currentState() == GameState::PrePlace){
 
-            //标记已经占用
-            mapOccupied[row * 9 + col] = true;
+        //转换到坐标网格系统
+        int col, row;
+        //转换成坐标网格系统
+        if(mapGrid->turnPosToMap(event->scenePos(),col,row)){
+            //检查是否被占用
+            if(!mapOccupied[row * 9 + col]){
+                //计算中心的坐标
+                QPointF centerLoc = mapGrid->cellCenter(col,row);
+                //创建植物并定位
+                WhiteDogs * myDog;
+                switch (chosenNum){
+                        case 0:
+                            myDog = new SingingWhite;
+                            break;
 
-            //用于调试
-            qDebug() << col << " " << row;
+                        case 1:
+                            myDog = new HeartWhite;
+                            break;
+
+                        default:
+                            myDog = new SingingWhite;
+                            break;
+                        }
+                myDog->setPos(centerLoc - QPointF(myDog->pixmap().width() / 2.0 * myDog->getMyScale(), myDog->pixmap().height() / 2.0 * myDog->getMyScale()));
+                addItem(myDog);
+
+                //标记已经占用
+                mapOccupied[row * 9 + col] = true;
+
+                //恢复正常状态
+                Card::setGameState(GameState::Normal);
+
+                //用于调试
+                // qDebug() << col << " " << row;
+            }
+            else{
+                // qDebug() << "已被占用";
+            }
+
+            QGraphicsScene::mousePressEvent(event);
         }
-        else{
-            qDebug() << "已被占用";
-        }
-
-        QGraphicsScene::mousePressEvent(event);
     }
 }

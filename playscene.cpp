@@ -41,6 +41,7 @@ PlayScene::PlayScene(int levelNum) :
     //设置卡牌
     setCardsInBar();
 
+
     //加载植物
     // 设置主窗口
     setCentralWidget(myGraphicsView);  // 将视图设置为中心部件
@@ -143,6 +144,16 @@ void PlayScene::setCardsInBar(){
         //鼠标能够穿透
         whiteIcon->setAttribute(Qt::WA_TransparentForMouseEvents);
 
+        connect(card, &Card::cardSelected, this, &PlayScene::handleCardSelected);
+        connect(card,&Card::cardSelected, myGameScene, [=](){
+            myGameScene->setChosenNum(i);
+        });
     }
+
 }
 
+void PlayScene::handleCardSelected(Card *card){
+    // 进入预放置状态
+    Card::setGameState(GameState::PrePlace);
+    Card::setSelectedWhite(card->whiteType);
+}

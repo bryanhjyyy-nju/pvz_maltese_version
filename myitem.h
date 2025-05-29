@@ -21,7 +21,7 @@ public:
     QPainterPath shape() const override;
 
     //重写绘图用于调试
-    // void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
 
     int itRow; //所在行
     int itCol; //所在列

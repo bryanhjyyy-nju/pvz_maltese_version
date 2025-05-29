@@ -20,7 +20,7 @@ QRectF Map::boundingRect() const
 
 void Map::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
 
-    painter->setPen(QPen(Qt::red, 1, Qt::SolidLine));
+    painter->setPen(Qt::NoPen);
 
     //绘制垂直线
     for(int x = 0; x <= mapCols; x++){

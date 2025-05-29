@@ -33,12 +33,12 @@ void MyItem::setupGifAnimation(const QString& gifPath){
 
 QPainterPath MyItem::shape() const {
     QPainterPath path;
-    path.addEllipse(boundingRect().center(), 20, 30);
+    path.addEllipse(boundingRect().center(), 40, 70);
     return path;
 }
 
-// void MyItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
-// {
-//     painter->setPen(Qt::red);
-//     painter->drawPath(shape());
-// }
+void MyItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+    painter->setPen(Qt::red);
+    painter->drawPath(shape());
+}

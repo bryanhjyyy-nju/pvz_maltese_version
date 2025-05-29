@@ -6,6 +6,7 @@
 #include <QGraphicsView>
 #include <QVector>
 #include "mygamescene.h"
+#include "card.h"
 
 
 class PlayScene : public QMainWindow
@@ -63,6 +64,10 @@ private:
 
 signals:
     void playSceneBack();
+
+private slots:
+    void handleCardSelected(Card* card);
+
 };
 
 #endif // PLAYSCENE_H

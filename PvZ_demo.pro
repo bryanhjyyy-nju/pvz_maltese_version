@@ -25,6 +25,7 @@ SOURCES += \
 HEADERS += \
     card.h \
     chooselevelscene.h \
+    gamestate.h \
     heartwhite.h \
     mainscene.h \
     map.h \
