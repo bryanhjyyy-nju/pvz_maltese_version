@@ -22,9 +22,11 @@ MyGameScene::MyGameScene(QMainWindow *parent)
     backGroundItem->setPos(0, 0);
     backGroundItem->setScale(1);
 
+    //添加网格
     mapGrid = new Map(9, 5, QSize(121,145), QPointF(380,130));
     addItem(mapGrid);
     initMapOccupied(9, 5);
+
 
 }
 
@@ -98,6 +100,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
 
                 //用于调试
                 // qDebug() << col << " " << row;
+                emit plantFinished();
             }
             else{
                 // qDebug() << "已被占用";

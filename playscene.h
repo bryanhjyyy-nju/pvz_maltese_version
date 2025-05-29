@@ -7,6 +7,7 @@
 #include <QVector>
 #include "mygamescene.h"
 #include "card.h"
+#include <QLabel>
 
 
 class PlayScene : public QMainWindow
@@ -59,7 +60,7 @@ private:
 
     MyGameScene* myGameScene;  // 图形场景
     QGraphicsView* myGraphicsView;    // 可视化视图
-
+    QLabel *restHeartLabel = NULL; //显示剩余阳光
 
 signals:
     void playSceneBack();

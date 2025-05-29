@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include "map.h"
+#include <QGraphicsTextItem>
 
 class MyGameScene : public QGraphicsScene
 {
@@ -19,9 +20,9 @@ public:
     //设置选择的卡牌序号
     void setChosenNum(int cardNum);
 
-    int getRestHeart(){ return restHeart; } // 得到剩余阳光的数值
+    int getRestHeart(){ return restHeart; } // 得到剩余爱心的数值
 
-    void cutHeart(int thisHeartCost){ restHeart -= thisHeartCost; }
+    void cutHeart(int thisHeartCost){ restHeart -= thisHeartCost; } //剩余爱心的数值减去消耗爱心数值
 
 private:
     Map *mapGrid = NULL;  //添加地图网咯
@@ -31,6 +32,7 @@ private:
     int restHeart = 50; // 剩余阳光初始化为50
 
 signals:
+    void plantFinished();
 
 public slots:
     // void cancelPlanting();

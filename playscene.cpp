@@ -4,8 +4,6 @@
 #include <QTimer>
 #include <QLabel>
 #include "card.h"
-#include "whitedogs.h"
-#include "singingwhite.h"
 #include <QVector>
 #include "mygamescene.h"
 
@@ -53,10 +51,28 @@ PlayScene::PlayScene(int levelNum) :
     myGraphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     myGraphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    // 添加测试植物
-    WhiteDogs* singingWhite = new SingingWhite;
-    singingWhite->setPos(0 , 0);  // 设置位置
+    //设置能够显示剩余爱心的图标
+    restHeartLabel = new QLabel(this);
+    restHeartLabel->setFixedSize(100,100);
+    restHeartLabel->setText(QString::number(myGameScene->getRestHeart()));
 
+    //设置字体颜色和大小
+    QFont font;
+    font.setFamily("华文新魏");
+    font.setPointSize(18);
+    restHeartLabel->setFont(font);
+
+    //移动
+    restHeartLabel->move(360, 91);
+    restHeartLabel->setAlignment(Qt::AlignHCenter);
+
+    //使得鼠标能够穿透restHeartLabel
+    restHeartLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
+
+    //种植以后剩余阳光显示减少
+    connect(myGameScene,&MyGameScene::plantFinished, this,[=](){
+        restHeartLabel->setText(QString::number(myGameScene->getRestHeart()));
+    });
 }
 
 // void PlayScene::paintEvent(QPaintEvent *)
