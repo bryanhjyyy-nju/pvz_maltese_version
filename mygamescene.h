@@ -29,7 +29,7 @@ private:
     bool *mapOccupied = NULL; //添加占用状态表
     void mousePressEvent(QGraphicsSceneMouseEvent * event) override;
     int chosenNum = 0;
-    int restHeart = 50; // 剩余阳光初始化为50
+    int restHeart = 500; // 剩余阳光初始化为500
 
 signals:
     void plantFinished();

@@ -14,6 +14,9 @@ public:
     //实现构造函数
     Card(int cardNum);
 
+    //返回冷却状态
+    bool isCooling(){ return coolingState; }
+
     // 设置/获取预放置状态
     static void setGameState(GameState state);
     static GameState currentState();
@@ -22,10 +25,16 @@ public:
     static void setSelectedWhite(const QString& sWhite);
     static QString selectedWhite();
 
+    // 设置当前剩余阳光
+    static void setCurRestHeart(int r){ curRestHeart = r; }
+
 private:
     const int cardIndex;    // 记录第几章卡牌
     static GameState cardGameState; // 共享的游戏状态
     static QString cardSelectedWhite; // 当前选择小白类型
+    static int curRestHeart; //统计现在剩余的阳光
+    bool coolingState = false;
+
 
     void mousePressEvent(QMouseEvent *e) override;
 signals:

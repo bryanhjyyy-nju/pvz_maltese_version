@@ -5,6 +5,7 @@
 
 GameState Card::cardGameState = GameState::Normal;
 QString Card::cardSelectedWhite = "";
+int Card::curRestHeart = 50;
 
 Card::Card(int cardNum):whiteType("") ,coolTime(0) ,heartCost(0),cardIndex(cardNum) {
     //图片加载
@@ -30,7 +31,7 @@ Card::Card(int cardNum):whiteType("") ,coolTime(0) ,heartCost(0),cardIndex(cardN
     this->setIconSize(QSize(pix.width(),pix.height()));
 
     connect(this, &Card::clicked, [this]() {
-        if (cardGameState == GameState::Normal) {
+        if (cardGameState == GameState::Normal && !isCooling() && curRestHeart >= heartCost) {
             emit cardSelected(this);
         }
     });

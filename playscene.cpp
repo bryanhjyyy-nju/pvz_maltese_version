@@ -69,9 +69,13 @@ PlayScene::PlayScene(int levelNum) :
     //使得鼠标能够穿透restHeartLabel
     restHeartLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
 
+    //Card类爱心初始化为50
+    Card::setCurRestHeart(myGameScene->getRestHeart());
+
     //种植以后剩余阳光显示减少
     connect(myGameScene,&MyGameScene::plantFinished, this,[=](){
         restHeartLabel->setText(QString::number(myGameScene->getRestHeart()));
+        Card::setCurRestHeart(myGameScene->getRestHeart());
     });
 }
 

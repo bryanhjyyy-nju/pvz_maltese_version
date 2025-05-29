@@ -11,6 +11,7 @@ CONFIG += c++17
 SOURCES += \
     card.cpp \
     chooselevelscene.cpp \
+    heart.cpp \
     heartwhite.cpp \
     main.cpp \
     mainscene.cpp \
@@ -27,6 +28,7 @@ HEADERS += \
     card.h \
     chooselevelscene.h \
     gamestate.h \
+    heart.h \
     heartwhite.h \
     mainscene.h \
     map.h \

@@ -90,7 +90,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
                 cutHeart(myDog->HeartCost());
 
                 //调试
-                qDebug() << restHeart << "\n";
+                // qDebug() << restHeart;
 
                 //标记已经占用
                 mapOccupied[row * 9 + col] = true;
