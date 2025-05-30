@@ -5,6 +5,8 @@
 #include "heartwhite.h"
 #include "wallwhite.h"
 #include "card.h"
+#include <QRandomGenerator>
+#include "heart.h""
 
 
 MyGameScene::MyGameScene(QMainWindow *parent)
@@ -27,6 +29,10 @@ MyGameScene::MyGameScene(QMainWindow *parent)
     addItem(mapGrid);
     initMapOccupied(9, 5);
 
+    //添加天空中随即爱心生成计时器
+    memSkyHeartTimer = new QTimer(this);
+    connect(memSkyHeartTimer, &QTimer::timeout, this, &MyGameScene::generateSkyHeart);
+    memSkyHeartTimer->start(10000 + QRandomGenerator::global()->bounded(3000));
 
 }
 
@@ -49,6 +55,20 @@ MyGameScene::~MyGameScene(){
     }
 }
 
+//天空随机生成爱心
+void MyGameScene::generateSkyHeart(){
+    //随机生成起始位置
+    int startX = QRandomGenerator::global()->bounded(800) + 200;
+    QPointF startPos(startX, -100);
+
+    //随机生成结束位置
+    QPointF endPos(startX, 300 + QRandomGenerator::global()->bounded(400));
+
+    //创建爱心添加到场景
+    Heart *heart = new Heart(startPos, endPos);
+    this->addItem(heart);
+}
+
 void MyGameScene::setChosenNum(int cardNum){
     chosenNum = cardNum;
 }
@@ -56,6 +76,8 @@ void MyGameScene::setChosenNum(int cardNum){
 // void MyGameScene::generatedHeartFromWhite(QPointF dogPos){
 
 // }
+
+
 
 void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
     if (Card::currentState() == GameState::PrePlace){
