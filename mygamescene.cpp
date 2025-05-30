@@ -53,6 +53,10 @@ void MyGameScene::setChosenNum(int cardNum){
     chosenNum = cardNum;
 }
 
+// void MyGameScene::generatedHeartFromWhite(QPointF dogPos){
+
+// }
+
 void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
     if (Card::currentState() == GameState::PrePlace){
 
@@ -73,6 +77,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
 
                         case 1:
                             myDog = new HeartWhite;
+                            // connect(myDog, &HeartWhite::heartGenerated,this, &MyGameScene::generatedHeartFromWhite);
                             break;
 
                         case 2:

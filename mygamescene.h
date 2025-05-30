@@ -35,7 +35,7 @@ signals:
     void plantFinished();
 
 public slots:
-    // void cancelPlanting();
+    // void generatedHeartFromWhite(QPointF dogPos);
 };
 
 #endif // MYGAMESCENE_H

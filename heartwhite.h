@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include "whitedogs.h"
+#include <QTimer>
 
 class HeartWhite : public WhiteDogs
 {
@@ -10,9 +11,13 @@ class HeartWhite : public WhiteDogs
 public:
     explicit HeartWhite();
 
+
+
 protected:
+    QTimer* memHeartProductionTimer;
 
 signals:
+    void heartGenerated(QPointF pos);
 };
 
 #endif // HEARTWHITE_H

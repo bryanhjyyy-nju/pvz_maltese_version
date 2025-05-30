@@ -25,7 +25,7 @@ public:
     static void setSelectedWhite(const QString& sWhite);
     static QString selectedWhite();
 
-    // 设置当前剩余阳光
+    // 设置当前剩余爱心
     static void setCurRestHeart(int r){ curRestHeart = r; }
 
 private:
