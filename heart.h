@@ -5,22 +5,31 @@
 #include <QGraphicsPixmapItem>
 #include <QPropertyAnimation>
 #include <QTimer>
+#include "mygamescene.h"
+
+
 class Heart : public QObject,public QGraphicsPixmapItem
 {
     Q_OBJECT
-public:
-    explicit Heart(QPointF startPos, QPointF endPos, QObject *parent = nullptr);
+    Q_PROPERTY(QPointF pos READ pos WRITE setPos)
+    Q_PROPERTY(qreal opacity READ opacity WRITE setOpacity)
 
+
+public:
+    explicit Heart(QPointF startPos, QPointF endPos,MyGameScene *gameScene, QObject *parent = nullptr);
+
+    QRectF boundingRect() const override;
     int value() const { return 25; } //返回爱心数值
 
     //开始下落
     void startFall();
+    // void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    static QPointF curMousePos;
 
 signals:
     void collected();
 
 protected:
-    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
 private slots:
     void hasReachedGround(); //到达地面完成
@@ -31,7 +40,6 @@ private:
     QPropertyAnimation *memCollectAnim; //爱心收集动画
     QPropertyAnimation *memFallAnim; //爱心下落动画
     QTimer* memDisappearTimer; //爱心消失计时器
-    bool memIsCollectable = false; //是否可以收集
 
 };
 

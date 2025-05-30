@@ -72,8 +72,14 @@ PlayScene::PlayScene(int levelNum) :
     //Card类爱心初始化为50
     Card::setCurRestHeart(myGameScene->getRestHeart());
 
-    //种植以后剩余阳光显示减少
+    //种植以后剩余爱心显示减少
     connect(myGameScene,&MyGameScene::plantFinished, this,[=](){
+        restHeartLabel->setText(QString::number(myGameScene->getRestHeart()));
+        Card::setCurRestHeart(myGameScene->getRestHeart());
+    });
+
+    //收集爱心以后剩余爱心增多
+    connect(myGameScene, &MyGameScene::heartCollected, this,[=](){
         restHeartLabel->setText(QString::number(myGameScene->getRestHeart()));
         Card::setCurRestHeart(myGameScene->getRestHeart());
     });

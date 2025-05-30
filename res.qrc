@@ -26,5 +26,6 @@
         <file>Image/startDogs.gif</file>
         <file>Image/StartPage.jpg</file>
         <file>Image/Title.png</file>
+        <file>Image/heart.png</file>
     </qresource>
 </RCC>

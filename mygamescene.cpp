@@ -1,3 +1,4 @@
+//mygamescene.cpp
 #include "mygamescene.h"
 #include <QDebug>
 #include <QGraphicsSceneMouseEvent>
@@ -6,7 +7,8 @@
 #include "wallwhite.h"
 #include "card.h"
 #include <QRandomGenerator>
-#include "heart.h""
+#include "heart.h"
+#include <QApplication>
 
 
 MyGameScene::MyGameScene(QMainWindow *parent)
@@ -58,15 +60,21 @@ MyGameScene::~MyGameScene(){
 //天空随机生成爱心
 void MyGameScene::generateSkyHeart(){
     //随机生成起始位置
-    int startX = QRandomGenerator::global()->bounded(800) + 200;
+    int startX = QRandomGenerator::global()->bounded(800) + 300;
     QPointF startPos(startX, -100);
 
     //随机生成结束位置
-    QPointF endPos(startX, 300 + QRandomGenerator::global()->bounded(400));
+    QPointF endPos(startX, 400 + QRandomGenerator::global()->bounded(300));
 
     //创建爱心添加到场景
-    Heart *heart = new Heart(startPos, endPos);
+    Heart *heart = new Heart(startPos, endPos, this);
     this->addItem(heart);
+
+    //链接信号和槽
+    connect(heart, &Heart::collected,this,[=](){
+        addHeart(heart->value());
+        emit heartCollected();
+    });
 }
 
 void MyGameScene::setChosenNum(int cardNum){
@@ -80,6 +88,8 @@ void MyGameScene::setChosenNum(int cardNum){
 
 
 void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
+
+
     if (Card::currentState() == GameState::PrePlace){
 
         //转换到坐标网格系统
@@ -131,9 +141,15 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
             }
             else{
                 // qDebug() << "已被占用";
+
             }
 
             QGraphicsScene::mousePressEvent(event);
         }
+    }
+    else{
+        // qDebug() << "scene clicked";
+        Heart::curMousePos = event->scenePos();
+        emit sceneClicked();
     }
 }

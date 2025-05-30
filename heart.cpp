@@ -1,15 +1,19 @@
+//heart.cpp
 #include "heart.h"
 #include <QPainter>
 #include <QGraphicsScene>
 #include <QEasingCurve>
 #include <QGraphicsSceneMouseEvent>
+#include <QDebug>
+#include "mygamescene.h"
 
+QPointF Heart::curMousePos = QPointF(0, 0);
 
-Heart::Heart(QPointF startPos, QPointF endPos, QObject *parent):QObject(parent), memEndPos(endPos)
+Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QObject *parent):QObject(parent), memEndPos(endPos)
 {
     //设置阳光图片
     QPixmap pix;
-    pix.load(":/others/Image/levelIcon.png");
+    pix.load(":/others/Image/heart.png");
     setPixmap(pix);
     setPos(startPos); //设置起始位置
     setZValue(10); //确保在最上层
@@ -18,14 +22,14 @@ Heart::Heart(QPointF startPos, QPointF endPos, QObject *parent):QObject(parent),
     setAcceptedMouseButtons(Qt::LeftButton);
 
     //创建下落动画
-    memFallAnim = new QPropertyAnimation(this, "pos");
+    memFallAnim = new QPropertyAnimation(this, "pos", this);
     memFallAnim->setDuration(3000);
     memFallAnim->setStartValue(startPos);
     memFallAnim->setEndValue(endPos);
-    memFallAnim->setEasingCurve(QEasingCurve::OutBounce);
+    memFallAnim->setEasingCurve(QEasingCurve::Linear);
 
     //创建收集动画
-    memCollectAnim = new QPropertyAnimation(this, "pos");
+    memCollectAnim = new QPropertyAnimation(this, "pos", this);
     memCollectAnim->setDuration(800);
     memCollectAnim->setEasingCurve(QEasingCurve::InQuad);
 
@@ -36,11 +40,14 @@ Heart::Heart(QPointF startPos, QPointF endPos, QObject *parent):QObject(parent),
 
     //链接信号和曹
     //下落结束链接已经到达地面
+
+    // qDebug() << "1";
     connect(memFallAnim, &QPropertyAnimation::finished, this, &Heart::hasReachedGround);
 
     //倒计时结束链接已经消失
     connect(memDisappearTimer, &QTimer::timeout, this, &Heart::hasDisappear);
 
+    // qDebug() << "2";
     //收集动作结束链接删去阳光
     connect(memCollectAnim, &QPropertyAnimation::finished, this,[=](){
         emit collected();
@@ -50,14 +57,31 @@ Heart::Heart(QPointF startPos, QPointF endPos, QObject *parent):QObject(parent),
 
     startFall();
 
+    connect(gameScene,&MyGameScene::sceneClicked, this,[=](){
+        if (this->x() < curMousePos.x()
+            && this->y() < curMousePos.y()
+            && this->x() + this->boundingRect().width() > curMousePos.x()
+            && this->y() + this->boundingRect().height() > curMousePos.y()){
+            memDisappearTimer->stop();
+
+            //收集动画
+            memCollectAnim->setStartValue(pos());
+            memCollectAnim->setEndValue(QPointF(380,100));
+
+            memCollectAnim->start();
+        }
+    });
 }
 
 void Heart::startFall(){
     memFallAnim->start();
 }
 
+QRectF Heart::boundingRect() const {
+    return pixmap().rect();
+}
+
 void Heart::hasReachedGround(){
-    memIsCollectable = true;
     memDisappearTimer->start();
 }
 
@@ -73,25 +97,6 @@ void Heart::hasDisappear(){
         scene()->removeItem(this);
         deleteLater();
     });
-}
-
-void Heart::mousePressEvent(QGraphicsSceneMouseEvent *event){
-    if(event->button() == Qt::LeftButton && memIsCollectable){
-        event->accept();
-        memDisappearTimer->stop();
-
-        //收集动画
-        memCollectAnim->setStartValue(pos());
-        memCollectAnim->setEndValue(QPointF(100,100));
-
-        memCollectAnim->start();
-
-
-    }
-    else{
-        QGraphicsPixmapItem::mousePressEvent(event);
-    }
-
 }
 
 
