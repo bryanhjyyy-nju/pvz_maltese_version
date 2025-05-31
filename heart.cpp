@@ -61,9 +61,10 @@ Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QObject *
         if (this->x() < curMousePos.x()
             && this->y() < curMousePos.y()
             && this->x() + this->boundingRect().width() > curMousePos.x()
-            && this->y() + this->boundingRect().height() > curMousePos.y()){
+            && this->y() + this->boundingRect().height() > curMousePos.y()
+            && isCollectable){
             memDisappearTimer->stop();
-
+            isCollectable = false;
             //收集动画
             memCollectAnim->setStartValue(pos());
             memCollectAnim->setEndValue(QPointF(380,100));

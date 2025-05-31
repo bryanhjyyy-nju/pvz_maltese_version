@@ -40,7 +40,7 @@ private:
     QPropertyAnimation *memCollectAnim; //爱心收集动画
     QPropertyAnimation *memFallAnim; //爱心下落动画
     QTimer* memDisappearTimer; //爱心消失计时器
-
+    bool isCollectable = true;
 };
 
 #endif // HEART_H
