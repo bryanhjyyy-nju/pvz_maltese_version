@@ -92,8 +92,6 @@ void MyGameScene::generateWhiteHeart(QPointF whitePos){
     });
 }
 
-
-
 void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
 
 
@@ -143,7 +141,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
 
                 //用于调试
                 // qDebug() << col << " " << row;
-                emit plantFinished();
+                emit plantFinished(); //发送种植完成信号
             }
             else{
                 // qDebug() << "已被占用";

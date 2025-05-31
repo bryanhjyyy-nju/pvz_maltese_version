@@ -11,7 +11,7 @@ HeartWhite::HeartWhite(MyGameScene *scene):WhiteDogs(":/white/Image/heartWhite.g
         emit heartGenerated(this->pos());
     });
 
-    memHeartProductionTimer->start(20000); //每20s 产一个阳光
+    memHeartProductionTimer->start(24000); //每20s 产一个阳光
 
     connect(this, &HeartWhite::heartGenerated, scene, [=](){
         scene->generateWhiteHeart(this->pos());

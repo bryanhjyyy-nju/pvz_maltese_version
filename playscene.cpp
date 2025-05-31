@@ -76,26 +76,19 @@ PlayScene::PlayScene(int levelNum) :
     connect(myGameScene,&MyGameScene::plantFinished, this,[=](){
         restHeartLabel->setText(QString::number(myGameScene->getRestHeart()));
         Card::setCurRestHeart(myGameScene->getRestHeart());
+        myCards[myGameScene->getChosenNum()]->startCooldown();
+        emit signalToCard();
     });
 
     //收集爱心以后剩余爱心增多
     connect(myGameScene, &MyGameScene::heartCollected, this,[=](){
         restHeartLabel->setText(QString::number(myGameScene->getRestHeart()));
         Card::setCurRestHeart(myGameScene->getRestHeart());
+        emit signalToCard();
     });
+
 }
 
-// void PlayScene::paintEvent(QPaintEvent *)
-// {
-//     QPainter painter(this);
-//     QPixmap pix;
-
-//     //背景图片
-//     pix.load(":/others/Image/grass.jpg");
-
-//     painter.drawPixmap(0,0,pix.width() * this->height() / pix.height(),this->height(),pix);
-
-// }
 
 void PlayScene::buildBackBtn(){
     //返回按钮
@@ -131,23 +124,20 @@ void PlayScene::setLevelText(){
     levNumLbl->setGeometry(50,this->height() - 80,180,100);
 }
 
-//todo: 将卡槽改成Item控件
+//设置卡槽
 void PlayScene::setCardBar(){
-    //设置卡槽
     QLabel * cardBarLbl = new QLabel;
     cardBarLbl->setParent(this);
-
     QPixmap pix;
     pix.load(":/others/Image/cardBar.png");
     pix = pix.scaled(pix.width() * 1.5,pix.height() * 1.5);
     cardBarLbl->setFixedSize(pix.width(),pix.height());
     cardBarLbl->setPixmap(pix);
     cardBarLbl->move(350,0);
-
 }
 
+//设置卡牌在槽中
 void PlayScene::setCardsInBar(){
-    //设置卡牌
     for(int i = 0; i < (levelIndex < 8 ? levelIndex : 8); i++){
         //设置卡牌
         Card *card = new Card(i);
@@ -156,6 +146,9 @@ void PlayScene::setCardsInBar(){
         card->whiteType = this->whiteTypes[i];
         card->coolTime = this->coolTimes[i];
         card->heartCost = this->heartCosts[i];
+
+        //将卡牌指针添加到容器中
+        myCards.append(card);
 
         //设置卡牌图标
         QLabel *whiteIcon = new QLabel;
@@ -191,9 +184,22 @@ void PlayScene::setCardsInBar(){
 
         //链接卡牌被选择事件和处理卡牌选择事件
         connect(card, &Card::cardSelected, this, &PlayScene::handleCardSelected);
-        connect(card,&Card::cardSelected, myGameScene, [=](){
+        connect(card, &Card::cardSelected, myGameScene, [=](){
             myGameScene->setChosenNum(i);
         });
+
+        //除爱心小狗外，其他小狗一开始就进入冷却
+        if(i != 1) {
+            card->startCooldown();
+        }
+
+        //初次检查爱心是否足够
+        if(card->heartCost <= myGameScene->getRestHeart()) {
+            card->setHeartIsEnough(true);
+        }
+
+        //链接将信号传给卡牌
+        connect(this, &PlayScene::signalToCard, card, &Card::checkHeartEnough);
     }
 
 }

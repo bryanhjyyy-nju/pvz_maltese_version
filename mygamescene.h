@@ -19,6 +19,7 @@ public:
 
     //设置选择的卡牌序号
     void setChosenNum(int cardNum);
+    int getChosenNum(){ return chosenNum; }
 
     int getRestHeart(){ return restHeart; } // 得到剩余爱心的数值
 
