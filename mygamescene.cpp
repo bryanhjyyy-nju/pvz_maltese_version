@@ -81,9 +81,16 @@ void MyGameScene::setChosenNum(int cardNum){
     chosenNum = cardNum;
 }
 
-// void MyGameScene::generatedHeartFromWhite(QPointF dogPos){
-
-// }
+void MyGameScene::generateWhiteHeart(QPointF whitePos){
+    QPointF startPos = whitePos + QPointF(0, 0);
+    QPointF endPos = whitePos + QPointF(QRandomGenerator::global()->bounded(100) - 50, QRandomGenerator::global()->bounded(80));
+    Heart *heart = new Heart(startPos,endPos,this,QEasingCurve::OutBounce);
+    this->addItem(heart);
+    connect(heart, &Heart::collected,this,[=](){
+        addHeart(heart->value());
+        emit heartCollected();
+    });
+}
 
 
 
@@ -108,8 +115,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
                             break;
 
                         case 1:
-                            myDog = new HeartWhite;
-                            // connect(myDog, &HeartWhite::heartGenerated,this, &MyGameScene::generatedHeartFromWhite);
+                            myDog = new HeartWhite(this);
                             break;
 
                         case 2:

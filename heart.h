@@ -16,7 +16,7 @@ class Heart : public QObject,public QGraphicsPixmapItem
 
 
 public:
-    explicit Heart(QPointF startPos, QPointF endPos,MyGameScene *gameScene, QObject *parent = nullptr);
+    explicit Heart(QPointF startPos, QPointF endPos,MyGameScene *gameScene,QEasingCurve::Type type = QEasingCurve::Linear, QObject *parent = nullptr);
 
     QRectF boundingRect() const override;
     int value() const { return 25; } //返回爱心数值

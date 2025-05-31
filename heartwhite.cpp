@@ -1,7 +1,7 @@
 #include "heartwhite.h"
 
 
-HeartWhite::HeartWhite():WhiteDogs(":/white/Image/heartWhite.gif", 1.2)
+HeartWhite::HeartWhite(MyGameScene *scene):WhiteDogs(":/white/Image/heartWhite.gif", 1.2)
 {
     hp = 300;
     heartCost = 50;
@@ -11,5 +11,9 @@ HeartWhite::HeartWhite():WhiteDogs(":/white/Image/heartWhite.gif", 1.2)
         emit heartGenerated(this->pos());
     });
 
-    memHeartProductionTimer->start(12000); //每12s 产一个阳光
+    memHeartProductionTimer->start(20000); //每20s 产一个阳光
+
+    connect(this, &HeartWhite::heartGenerated, scene, [=](){
+        scene->generateWhiteHeart(this->pos());
+    });
 }

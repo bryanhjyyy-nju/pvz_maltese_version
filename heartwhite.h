@@ -4,12 +4,13 @@
 #include <QObject>
 #include "whitedogs.h"
 #include <QTimer>
+#include "mygamescene.h"
 
 class HeartWhite : public WhiteDogs
 {
     Q_OBJECT
 public:
-    explicit HeartWhite();
+    explicit HeartWhite(MyGameScene *scene);
 
 
 

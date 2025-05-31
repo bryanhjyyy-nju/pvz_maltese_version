@@ -9,7 +9,7 @@
 
 QPointF Heart::curMousePos = QPointF(0, 0);
 
-Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QObject *parent):QObject(parent), memEndPos(endPos)
+Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCurve::Type type, QObject *parent):QObject(parent), memEndPos(endPos)
 {
     //设置阳光图片
     QPixmap pix;
@@ -26,7 +26,7 @@ Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QObject *
     memFallAnim->setDuration(3000);
     memFallAnim->setStartValue(startPos);
     memFallAnim->setEndValue(endPos);
-    memFallAnim->setEasingCurve(QEasingCurve::Linear);
+    memFallAnim->setEasingCurve(type);
 
     //创建收集动画
     memCollectAnim = new QPropertyAnimation(this, "pos", this);

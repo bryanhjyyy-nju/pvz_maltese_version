@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include "myitem.h"
+// #include "mygamescene.h"
 
 class WhiteDogs : public MyItem
 {
