@@ -13,7 +13,7 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent)
     setFixedSize(1650,900);
 
     //设置窗口图标
-    setWindowIcon(QIcon(":/others/Image/dogIcon.jpg"));
+    setWindowIcon(QIcon(":/white/Image/dogIcon.jpg"));
 
     //设置窗口标题
     setWindowTitle("PvZ_Demo");

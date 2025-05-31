@@ -13,6 +13,11 @@
     <qresource prefix="/yellow">
         <file>Image/forkYellow.gif</file>
         <file>Image/heartYellow.gif</file>
+        <file>Image/angryYellow.gif</file>
+        <file>Image/cryingYellow.gif</file>
+        <file>Image/curiousYellow.gif</file>
+        <file>Image/dashYellow.gif</file>
+        <file>Image/guitarYellow.gif</file>
     </qresource>
     <qresource prefix="/others">
         <file>Image/backBtn.png</file>
@@ -27,5 +32,10 @@
         <file>Image/StartPage.jpg</file>
         <file>Image/Title.png</file>
         <file>Image/heart.png</file>
+        <file>Image/pause.png</file>
+        <file>Image/shopIcon.png</file>
+        <file>Image/coin.gif</file>
+        <file>Image/blueNote.png</file>
+        <file>Image/note.png</file>
     </qresource>
 </RCC>
