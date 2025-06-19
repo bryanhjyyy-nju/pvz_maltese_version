@@ -33,8 +33,8 @@ private:
                                    "allHeartWhite", //樱桃炸弹并释放爱心
                                    "dblSingWhite", //相当于双发射手
                                    "moneyWhite"}; //相当于寒冰菇
-    QVector<int> heartCosts = {100, 50,50,1,1,1,1,1}; //消耗爱心数量枚举
-    QVector<int> coolTimes = {7500,5000,15000,1,1,1,1,1}; //冷却时间枚举
+    QVector<int> heartCosts = {100, 50,50,50,50,50,50,50}; //消耗爱心数量枚举
+    QVector<int> coolTimes = {7500,5000,15000,7500,7500,7500,7500,7500}; //冷却时间枚举
 
     QVector<Card *> myCards;
 

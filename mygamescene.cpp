@@ -5,6 +5,11 @@
 #include "singingwhite.h"
 #include "heartwhite.h"
 #include "wallwhite.h"
+#include "linewhite.h"
+#include "dancingwhite.h"
+#include "allheartwhite.h"
+#include "dblsingwhite.h"
+#include "moneywhite.h"
 #include "card.h"
 #include <QRandomGenerator>
 #include "heart.h"
@@ -120,12 +125,30 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
                             myDog = new WallWhite;
                             break;
 
-                        default:
-                            myDog = new SingingWhite;
+                        case 3:
+                            myDog = new LineWhite;
+                            break;
+
+                        case 4:
+                            myDog = new DancingWhite;
+                            break;
+
+                        case 5:
+                            myDog = new AllHeartWhite;
+                            break;
+
+                        case 6:
+                            myDog = new DblSingWhite;
+                            break;
+
+                        case 7:
+                            myDog = new MoneyWhite;
                             break;
                         }
                 myDog->setPos(centerLoc - QPointF(myDog->pixmap().width() / 2.0, myDog->pixmap().height() / 2.0));
                 addItem(myDog);
+
+                dogMap[row * 9 + col] = myDog;
 
                 //爱心减少
                 cutHeart(myDog->HeartCost());

@@ -5,6 +5,7 @@
 #include <QGraphicsScene>
 #include "map.h"
 #include <QGraphicsTextItem>
+#include "whitedogs.h"
 
 class MyGameScene : public QGraphicsScene
 {
@@ -32,9 +33,10 @@ public:
 private:
     Map *mapGrid = NULL;  //添加地图网咯
     bool *mapOccupied = NULL; //添加占用状态表
+    WhiteDogs *dogMap[45] = {nullptr};
     void mousePressEvent(QGraphicsSceneMouseEvent * event) override;
     int chosenNum = 0;
-    int restHeart = 50; // 剩余阳光初始化为500
+    int restHeart = 50; // 剩余阳光初始化为50
 
     QTimer *memSkyHeartTimer; //天空中的爱心生成计时器
 

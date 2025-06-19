@@ -9,13 +9,18 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    allheartwhite.cpp \
     card.cpp \
     chooselevelscene.cpp \
+    dancingwhite.cpp \
+    dblsingwhite.cpp \
     heart.cpp \
     heartwhite.cpp \
+    linewhite.cpp \
     main.cpp \
     mainscene.cpp \
     map.cpp \
+    moneywhite.cpp \
     mygamescene.cpp \
     myitem.cpp \
     mypushbutton.cpp \
@@ -25,14 +30,19 @@ SOURCES += \
     whitedogs.cpp
 
 HEADERS += \
+    allheartwhite.h \
     card.h \
     cardstate.h \
     chooselevelscene.h \
+    dancingwhite.h \
+    dblsingwhite.h \
     gamestate.h \
     heart.h \
     heartwhite.h \
+    linewhite.h \
     mainscene.h \
     map.h \
+    moneywhite.h \
     mygamescene.h \
     myitem.h \
     mypushbutton.h \
