@@ -27,7 +27,8 @@ SOURCES += \
     playscene.cpp \
     singingwhite.cpp \
     wallwhite.cpp \
-    whitedogs.cpp
+    whitedogs.cpp \
+    yellowdogs.cpp
 
 HEADERS += \
     allheartwhite.h \
@@ -49,7 +50,8 @@ HEADERS += \
     playscene.h \
     singingwhite.h \
     wallwhite.h \
-    whitedogs.h
+    whitedogs.h \
+    yellowdogs.h
 
 FORMS += \
     mainscene.ui

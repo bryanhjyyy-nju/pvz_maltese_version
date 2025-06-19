@@ -17,7 +17,7 @@ public:
 
 protected:
     int heartCost = 0;
-    qreal myScale = 1.0;
+    // qreal myScale = 1.0;
 
 signals:
 };
