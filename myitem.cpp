@@ -48,7 +48,7 @@ void MyItem::setupGifAnimation(const QString& gifPath, qreal scale){
 
 QPainterPath MyItem::shape() const {
     QPainterPath path;
-    path.addEllipse(boundingRect().center(), 40, 65);
+    path.addEllipse(boundingRect().center(), 40, 60);
     return path;
 }
 

@@ -20,6 +20,7 @@
 MyGameScene::MyGameScene(QMainWindow *parent)
     : QGraphicsScene(parent)
 {
+
     //设置有效操作范围
     setSceneRect(0, 0, 1650, 900);
 
@@ -193,7 +194,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
 }
 
 void MyGameScene::setAYellowDog(int r){
-    YellowDogs *zombie = new YellowDogs(r);
+    YellowDogs *zombie = new YellowDogs(r, this);
     this->addItem(zombie);
     zombie->setPos(QPointF(480 + 9 * 121 - zombie->pixmap().width() / 2, 130 + 145 * (r + 0.5) - zombie->pixmap().height() / 2));
     zombie->startMoving(MyDirection::Left);
