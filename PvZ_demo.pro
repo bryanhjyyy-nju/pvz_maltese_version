@@ -44,6 +44,7 @@ HEADERS += \
     mainscene.h \
     map.h \
     moneywhite.h \
+    myDirection.h \
     mygamescene.h \
     myitem.h \
     mypushbutton.h \

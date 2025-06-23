@@ -3,12 +3,17 @@
 
 #include <QObject>
 #include "whitedogs.h"
+#include <QPropertyAnimation>
+
 
 class LineWhite : public WhiteDogs
 {
     Q_OBJECT
 public:
     explicit LineWhite();
+
+private:
+    QPropertyAnimation *memRunningAnim;
 
 signals:
 };

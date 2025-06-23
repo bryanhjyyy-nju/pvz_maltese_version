@@ -14,7 +14,8 @@
 #include <QRandomGenerator>
 #include "heart.h"
 #include <QApplication>
-
+#include "yellowdogs.h"
+#include "myDirection.h"
 
 MyGameScene::MyGameScene(QMainWindow *parent)
     : QGraphicsScene(parent)
@@ -36,11 +37,19 @@ MyGameScene::MyGameScene(QMainWindow *parent)
     addItem(mapGrid);
     initMapOccupied(9, 5);
 
+    //添加游戏计时器
+    memGameTimer = new QTimer(this);
+    memGameTimer->start(100);
+
     //添加天空中随即爱心生成计时器
     memSkyHeartTimer = new QTimer(this);
     connect(memSkyHeartTimer, &QTimer::timeout, this, &MyGameScene::generateSkyHeart);
     memSkyHeartTimer->start(10000 + QRandomGenerator::global()->bounded(3000));
 
+    //添加小金毛生成计时器
+    memYellowDogsTimer = new QTimer(this);
+    connect(memYellowDogsTimer, &QTimer::timeout, this, [=](){setAYellowDog(2);});
+    memYellowDogsTimer->start(10000);
 }
 
 //初始化地图占用表
@@ -150,6 +159,8 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
 
                 dogMap[row * 9 + col] = myDog;
 
+                myDog->setItPos(row, col);//设置当前植物的所在行和列
+
                 //爱心减少
                 cutHeart(myDog->HeartCost());
 
@@ -179,4 +190,19 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
         Heart::curMousePos = event->scenePos();
         emit sceneClicked();
     }
+}
+
+void MyGameScene::setAYellowDog(int r){
+    YellowDogs *zombie = new YellowDogs(r);
+    this->addItem(zombie);
+    zombie->setPos(QPointF(480 + 9 * 121 - zombie->pixmap().width() / 2, 130 + 145 * (r + 0.5) - zombie->pixmap().height() / 2));
+    zombie->startMoving(MyDirection::Left);
+
+    ////debug
+    // QTimer *debugTimer = new QTimer(this);
+    // debugTimer->start(5000);
+    // debugTimer->setSingleShot(true);
+    // connect(debugTimer,&QTimer::timeout, this, [=](){
+    //     zombie->stopMoving();
+    // });
 }

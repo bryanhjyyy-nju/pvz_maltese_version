@@ -6,6 +6,7 @@
 #include "map.h"
 #include <QGraphicsTextItem>
 #include "whitedogs.h"
+#include <QTimer>
 
 class MyGameScene : public QGraphicsScene
 {
@@ -29,7 +30,7 @@ public:
 
     void generateSkyHeart(); //天空中随机生成爱心
     void generateWhiteHeart(QPointF whitePos); //从小白中产出爱心
-
+    void setAYellowDog(int r); //在第r行产生一只小金毛
 private:
     Map *mapGrid = NULL;  //添加地图网咯
     bool *mapOccupied = NULL; //添加占用状态表
@@ -39,6 +40,8 @@ private:
     int restHeart = 50; // 剩余阳光初始化为50
 
     QTimer *memSkyHeartTimer; //天空中的爱心生成计时器
+    QTimer *memYellowDogsTimer; //小金毛计时器
+    QTimer *memGameTimer; //游戏总的计时器
 
 signals:
     void plantFinished();

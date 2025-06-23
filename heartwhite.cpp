@@ -1,4 +1,4 @@
-#include "heartwhite.h"
+  #include "heartwhite.h"
 
 
 HeartWhite::HeartWhite(MyGameScene *scene):WhiteDogs(":/white/Image/heartWhite.gif", 1.2)
