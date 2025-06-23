@@ -15,11 +15,18 @@ public:
 
     int HeartCost(){ return heartCost; }
 
+    void cutHp(int atk){ hp -= atk; }
+
+    //移除自身
+    void removeItself(){ emit pleaseRemoveMe(itRow,itCol); }
+
 protected:
     int heartCost = 0;
     // qreal myScale = 1.0;
 
+
 signals:
+    void pleaseRemoveMe(int r,int c);
 };
 
 #endif // WHITEDOGS_H

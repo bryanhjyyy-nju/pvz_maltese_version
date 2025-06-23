@@ -30,7 +30,7 @@ public:
     int getItRow() const { return itRow; }
     int getHp() const { return hp; } //返回血量的函数
     void startMoving(MyDirection dir);
-    void stopMoving() {movingAnim->stop();}
+    virtual void stopMoving() {movingAnim->stop();}
     // qreal getMyScale() const{ return myScale; } //返回缩放比例
 protected:
     QMovie *movie = NULL; //动画效果

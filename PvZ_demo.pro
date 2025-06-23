@@ -10,6 +10,7 @@ CONFIG += c++17
 
 SOURCES += \
     allheartwhite.cpp \
+    bullet.cpp \
     card.cpp \
     chooselevelscene.cpp \
     dancingwhite.cpp \
@@ -32,6 +33,7 @@ SOURCES += \
 
 HEADERS += \
     allheartwhite.h \
+    bullet.h \
     card.h \
     cardstate.h \
     chooselevelscene.h \

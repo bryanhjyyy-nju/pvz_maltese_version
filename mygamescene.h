@@ -29,6 +29,7 @@ public:
 
     void cutHeart(int amont){ restHeart -= amont; } //剩余爱心的数值减去消耗爱心数值
     void addHeart(int amont){ restHeart += amont; } //剩余爱心的数量加上收集到爱心的数量
+    void removeWhite(int r, int c); //移除小白
 
     void generateSkyHeart(); //天空中随机生成爱心
     void generateWhiteHeart(QPointF whitePos); //从小白中产出爱心

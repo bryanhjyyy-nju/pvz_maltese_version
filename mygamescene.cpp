@@ -40,7 +40,7 @@ MyGameScene::MyGameScene(QMainWindow *parent)
 
     //添加游戏计时器
     memGameTimer = new QTimer(this);
-    memGameTimer->start(100);
+    memGameTimer->start(500);
 
     //添加天空中随即爱心生成计时器
     memSkyHeartTimer = new QTimer(this);
@@ -162,6 +162,9 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
 
                 myDog->setItPos(row, col);//设置当前植物的所在行和列
 
+                //信号链接删除小狗
+                connect(myDog,&WhiteDogs::pleaseRemoveMe, this, &MyGameScene::removeWhite);
+
                 //爱心减少
                 cutHeart(myDog->HeartCost());
 
@@ -206,4 +209,11 @@ void MyGameScene::setAYellowDog(int r){
     // connect(debugTimer,&QTimer::timeout, this, [=](){
     //     zombie->stopMoving();
     // });
+}
+
+void MyGameScene::removeWhite(int r,int c){
+    removeItem(dogMap[9 * r + c]);
+    delete dogMap[9 * r + c];
+    dogMap[9 * r + c] = nullptr;
+    mapOccupied[9 * r + c] = false;
 }

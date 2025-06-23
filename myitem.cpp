@@ -60,8 +60,8 @@ void MyItem::setItPos(int r, int c){
 void MyItem::startMoving(MyDirection dir){
     if(movingAnim){
         if(dir == MyDirection::Left){
-            qreal distance = speed * 1.0;
-            movingAnim->setEndValue(pos() + QPointF(-distance, 0));
+            movingAnim->setStartValue(pos());
+            movingAnim->setEndValue(pos());
             movingAnim->start();
         }
     }
