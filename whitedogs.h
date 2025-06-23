@@ -17,11 +17,14 @@ public:
 
     void cutHp(int atk){ hp -= atk; }
 
+    void setTimer(QTimer *timer){ whiteDogTimer = timer; }
+
     //移除自身
     void removeItself(){ emit pleaseRemoveMe(itRow,itCol); }
 
 protected:
     int heartCost = 0;
+    QTimer *whiteDogTimer = nullptr;
     // qreal myScale = 1.0;
 
 

@@ -34,6 +34,7 @@ public:
     void generateSkyHeart(); //天空中随机生成爱心
     void generateWhiteHeart(QPointF whitePos); //从小白中产出爱心
     void setAYellowDog(int r); //在第r行产生一只小金毛
+    void generateBullet(int r, int c); //产生子弹
 private:
     Map *mapGrid = NULL;  //添加地图网咯
     bool *mapOccupied = NULL; //添加占用状态表
@@ -45,7 +46,7 @@ private:
     QTimer *memSkyHeartTimer; //天空中的爱心生成计时器
     QTimer *memYellowDogsTimer; //小金毛计时器
     QTimer *memGameTimer; //游戏总的计时器
-
+    QTimer *memGameLongTimer;
 signals:
     void plantFinished();
     void heartCollected();

@@ -16,6 +16,7 @@
 #include <QApplication>
 #include "yellowdogs.h"
 #include "myDirection.h"
+#include "bullet.h"
 
 MyGameScene::MyGameScene(QMainWindow *parent)
     : QGraphicsScene(parent)
@@ -107,6 +108,20 @@ void MyGameScene::generateWhiteHeart(QPointF whitePos){
     });
 }
 
+//todo:
+void MyGameScene::generateBullet(int r,int c){
+    QPointF startPos(380 + 121 * (c + 0.5),130 + 145 *(r + 0.2));
+
+    qDebug() << "generated!";
+
+    Bullet *blt = new Bullet(startPos, memGameTimer);
+    this->addItem(blt);
+    // connect(memGameTimer, &QTimer::timeout, this,[&](){
+    //     blt->setPos(blt->pos() + QPointF(20, 0));
+    //     if(blt->pos().x() > 1700){ blt->deleteLater(); }
+    // });
+}
+
 void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
 
 
@@ -124,7 +139,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
                 WhiteDogs * myDog;
                 switch (chosenNum){
                         case 0:
-                            myDog = new SingingWhite;
+                        myDog = new SingingWhite(row, col, this);
                             break;
 
                         case 1:

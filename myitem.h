@@ -9,6 +9,7 @@
 #include <QPainter>
 #include <QPropertyAnimation>
 #include "myDirection.h"
+#include <QTimer>
 
 class MyItem : public QObject,public QGraphicsPixmapItem
 {
