@@ -17,14 +17,14 @@ SingingWhite::SingingWhite(int r, int c,MyGameScene *myScene):WhiteDogs(":/white
     connect(myScene->getGameTimer(), &QTimer::timeout, this,[=](){
         if(!isZombieOnYourLawn){
             if(isInFrontOfMe(myScene->getZombieMap(r))){
-                qDebug() << "1";
+                // qDebug() << "1";
                 isZombieOnYourLawn = true;
                 whiteDogTimer->start();
             }
         }
         else{
             if(!isInFrontOfMe(myScene->getZombieMap(r))){
-                qDebug() << "2";
+                // qDebug() << "2";
                 isZombieOnYourLawn = false;
                 whiteDogTimer->stop();
             }

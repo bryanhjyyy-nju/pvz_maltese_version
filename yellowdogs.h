@@ -10,7 +10,7 @@ class YellowDogs : public MyItem
 {
     Q_OBJECT
 public:
-    explicit YellowDogs(int row, MyGameScene *myScene);
+    explicit YellowDogs(int row, MyGameScene *myScene,int typeNum);
     bool checkCollision();
     void startAttacking(WhiteDogs *tar);
     void getAttacked(int atk);
@@ -18,9 +18,12 @@ public:
     void cutHp(int atk){ hp -= atk; } //减少血量
     void removeItself(){ emit pleaseRemoveMe(this); }; //移除自己
 
-private:
+    void initArgues(int typeNum); //初始化血量和速度和图像
+
+protected:
     WhiteDogs *targetWhiteDog;
     bool memIsMoving;
+    int atkPower = 10;
 
 signals:
     void isAttacked();
@@ -28,5 +31,14 @@ signals:
     void pleaseRemoveMe(YellowDogs *zb);
     void arrivedYourHome();
 };
+
+// class GuitarDog : public YellowDogs
+// {
+//     Q_OBJECT
+
+// public:
+//     explicit GuitarDog(int row, MyGameScene *myScene);
+//     void initArgues() override;
+// };
 
 #endif // YELLOWDOGS_H

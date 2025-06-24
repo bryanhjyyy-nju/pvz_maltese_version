@@ -56,14 +56,14 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
         case 1:
             //添加小金毛生成计时器
             memYellowDogsTimer = new QTimer(this);
-            connect(memYellowDogsTimer, &QTimer::timeout, this, [=](){setAYellowDog(2);});
+            connect(memYellowDogsTimer, &QTimer::timeout, this, [=](){setAYellowDog(2, 0);});
             memYellowDogsTimer->start(20000);
             break;
         default:
             //添加小金毛生成计时器
             memYellowDogsTimer = new QTimer(this);
-            connect(memYellowDogsTimer, &QTimer::timeout, this, [=](){setAYellowDog(2);});
-            memYellowDogsTimer->start(20000);
+            connect(memYellowDogsTimer, &QTimer::timeout, this, [=](){setAYellowDog(2, 1);});
+            memYellowDogsTimer->start(30000);
             break;
     }
 
@@ -221,8 +221,8 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
     }
 }
 
-void MyGameScene::setAYellowDog(int r){
-    YellowDogs *zombie = new YellowDogs(r, this);
+void MyGameScene::setAYellowDog(int r,int typeNum){
+    YellowDogs *zombie = new YellowDogs(r,this,typeNum);
     this->zombieMap[r].append(zombie);
     this->addItem(zombie);
     connect(zombie, &YellowDogs::arrivedYourHome, this, &MyGameScene::gameLose);

@@ -1,13 +1,11 @@
 #include "yellowdogs.h"
 #include <QDebug>
 
-YellowDogs::YellowDogs(int row,MyGameScene *myScene): targetWhiteDog(nullptr),memIsMoving(true){
+YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog(nullptr),memIsMoving(true){
     itRow = row;
     setZValue(5);
-    //用刀叉小黄先实例化一只
-    hp = 300;
-    speed = 30;
-    setupGifAnimation(":/yellow/Image/forkYellow.gif",0.6);
+    //初始化血量，攻击力，移动速度，贴图
+    initArgues(typeNum);
 
     movingAnim = new QPropertyAnimation(this, "pos", this);
     movingAnim->setDuration(1000);
@@ -25,10 +23,12 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene): targetWhiteDog(nullptr),me
     connect(this, &YellowDogs::isAttacked, this, [this](){
         if(hp <= 0){ removeItself(); }
     });
+
     connect(myScene->memGameTimer,&QTimer::timeout, this,[=](){
         if(checkCollision()){
+            //攻击逻辑
             stopMoving();
-            targetWhiteDog->cutHp(10);
+            targetWhiteDog->cutHp(atkPower);
             if(targetWhiteDog->getHp() <= 0){
                 targetWhiteDog->removeItself();
                 targetWhiteDog = nullptr;
@@ -38,6 +38,7 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene): targetWhiteDog(nullptr),me
         }
         else{
             if(!memIsMoving){
+                //继续走
                 memIsMoving = true;
                 startMoving(MyDirection::Left);
             }
@@ -48,6 +49,21 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene): targetWhiteDog(nullptr),me
         // }
     });
 
+}
+
+void YellowDogs::initArgues(int typeNum){
+    if(typeNum == 1){
+        hp = 800;
+        speed = 20;
+        atkPower = 12;
+        setupGifAnimation(":/yellow/Image/guitarYellow.gif",0.4);
+    }
+    else {
+        hp = 300;
+        speed = 30;
+        atkPower = 10;
+        setupGifAnimation(":/yellow/Image/forkYellow.gif",0.55);
+    }
 }
 
 bool YellowDogs::checkCollision(){
@@ -82,3 +98,10 @@ void YellowDogs::getAttacked(int atk){
     emit isAttacked();
 }
 
+// GuitarDog::GuitarDog(int row, MyGameScene *myScene) : YellowDogs(row, myScene){}
+
+// void GuitarDog::initArgues(){
+//     hp = 800;
+//     speed = 20;
+//     setupGifAnimation(":/yellow/Image/guitarYellow.gif",0.6);
+// }

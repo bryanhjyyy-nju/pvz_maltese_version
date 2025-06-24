@@ -33,7 +33,7 @@ public:
 
     void generateSkyHeart(); //天空中随机生成爱心
     void generateWhiteHeart(QPointF whitePos); //从小白中产出爱心
-    void setAYellowDog(int r); //在第r行产生一只小金毛
+    void setAYellowDog(int r, int typeNum = 0); //在第r行产生一只小金毛
     void generateBullet(int r, int c); //产生子弹
     QTimer * getGameTimer(){ return memGameTimer; } //获取gameTimer
     // int getZombieNum(int r){ return zombieMap[r]; } //获取第 r 行的僵尸数量
