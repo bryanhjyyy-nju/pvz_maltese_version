@@ -32,10 +32,17 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene): targetWhiteDog(nullptr),me
             if(targetWhiteDog->getHp() <= 0){
                 targetWhiteDog->removeItself();
                 targetWhiteDog = nullptr;
+                // memIsMoving = true;
+                // startMoving(MyDirection::Left);
+            }
+        }
+        else{
+            if(!memIsMoving){
                 memIsMoving = true;
                 startMoving(MyDirection::Left);
             }
         }
+        if(x() < 10){ emit arrivedYourHome(); }
         // else if(!checkCollision()){
         //     startMoving(MyDirection::Left);
         // }

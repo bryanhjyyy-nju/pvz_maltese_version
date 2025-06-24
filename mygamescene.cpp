@@ -60,10 +60,10 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
             memYellowDogsTimer->start(20000);
             break;
         default:
-            // //添加小金毛生成计时器
-            // memYellowDogsTimer = new QTimer(this);
-            // connect(memYellowDogsTimer, &QTimer::timeout, this, [=](){setAYellowDog(2);});
-            // memYellowDogsTimer->start(20000);
+            //添加小金毛生成计时器
+            memYellowDogsTimer = new QTimer(this);
+            connect(memYellowDogsTimer, &QTimer::timeout, this, [=](){setAYellowDog(2);});
+            memYellowDogsTimer->start(20000);
             break;
     }
 
@@ -225,6 +225,7 @@ void MyGameScene::setAYellowDog(int r){
     YellowDogs *zombie = new YellowDogs(r, this);
     this->zombieMap[r].append(zombie);
     this->addItem(zombie);
+    connect(zombie, &YellowDogs::arrivedYourHome, this, &MyGameScene::gameLose);
     zombie->setPos(QPointF(480 + 9 * 121 - zombie->pixmap().width() / 2, 130 + 145 * (r + 0.5) - zombie->pixmap().height() / 2));
     connect(zombie, &YellowDogs::pleaseRemoveMe, this,[=](YellowDogs *zb){
         this->removeItem(zb);

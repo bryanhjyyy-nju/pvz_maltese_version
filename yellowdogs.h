@@ -26,6 +26,7 @@ signals:
     void isAttacked();
     void attacking(WhiteDogs *tar);
     void pleaseRemoveMe(YellowDogs *zb);
+    void arrivedYourHome();
 };
 
 #endif // YELLOWDOGS_H

@@ -67,6 +67,9 @@ private:
 signals:
     void playSceneBack();
     void signalToCard();
+    void gameLose();
+    void gameWin();
+    void gamePause();
 
 private slots:
     void handleCardSelected(Card* card);

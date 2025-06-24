@@ -44,6 +44,11 @@ PlayScene::PlayScene(int levelNum) :
     // 设置主窗口
     setCentralWidget(myGraphicsView);  // 将视图设置为中心部件
 
+    //接收游戏胜利失败暂停信号
+    connect(myGameScene, &MyGameScene::gameLose, this, &PlayScene::gameLose);
+    connect(myGameScene, &MyGameScene::gameWin, this, &PlayScene::gameWin);
+    connect(myGameScene, &MyGameScene::gamePause, this, &PlayScene::gamePause);
+
     // 配置视图
     myGraphicsView->setRenderHint(QPainter::Antialiasing);  // 抗锯齿
     myGraphicsView->setAlignment(Qt::AlignLeft | Qt::AlignTop);  // 对齐方式

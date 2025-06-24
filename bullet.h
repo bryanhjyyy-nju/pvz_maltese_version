@@ -24,7 +24,7 @@ protected:
     YellowDogs *targetZombie = nullptr;
     int itRow = 0;
     int speed = 200;
-    int atkPower = 50;
+    int atkPower = 30;
 
 signals:
     void i_hit_it(YellowDogs *zb);

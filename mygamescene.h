@@ -59,6 +59,11 @@ signals:
     void plantFinished();
     void heartCollected();
     void sceneClicked();
+    void gameWin();
+    void gameLose();
+    void gameRestart();
+    void gamePause();
+
 
 public slots:
     // void generatedHeartFromWhite(QPointF dogPos);
