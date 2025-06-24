@@ -8,14 +8,11 @@ SingingWhite::SingingWhite(int r, int c,MyGameScene *scene):WhiteDogs(":/white/I
     heartCost = 100;
     setItPos(r,c);
     whiteDogTimer = new QTimer(this);
-    whiteDogTimer->start(2000);
     connect(this, &SingingWhite::bulletShot,scene, &MyGameScene::generateBullet);
     connect(whiteDogTimer,&QTimer::timeout,this,[=](){
         emit bulletShot(r,c);
     });
-
-
-
+    whiteDogTimer->start(2000);
 }
 
 

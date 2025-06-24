@@ -41,7 +41,7 @@ MyGameScene::MyGameScene(QMainWindow *parent)
 
     //添加游戏计时器
     memGameTimer = new QTimer(this);
-    memGameTimer->start(500);
+    memGameTimer->start(100);
 
     //添加天空中随即爱心生成计时器
     memSkyHeartTimer = new QTimer(this);
@@ -110,16 +110,10 @@ void MyGameScene::generateWhiteHeart(QPointF whitePos){
 
 //todo:
 void MyGameScene::generateBullet(int r,int c){
-    QPointF startPos(380 + 121 * (c + 0.5),130 + 145 *(r + 0.2));
-
+    //调试
     qDebug() << "generated!";
-
-    Bullet *blt = new Bullet(startPos, memGameTimer);
+    Bullet *blt = new Bullet(r, c, memGameTimer);
     this->addItem(blt);
-    // connect(memGameTimer, &QTimer::timeout, this,[&](){
-    //     blt->setPos(blt->pos() + QPointF(20, 0));
-    //     if(blt->pos().x() > 1700){ blt->deleteLater(); }
-    // });
 }
 
 void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
@@ -215,6 +209,10 @@ void MyGameScene::setAYellowDog(int r){
     YellowDogs *zombie = new YellowDogs(r, this);
     this->addItem(zombie);
     zombie->setPos(QPointF(480 + 9 * 121 - zombie->pixmap().width() / 2, 130 + 145 * (r + 0.5) - zombie->pixmap().height() / 2));
+    connect(zombie, &YellowDogs::pleaseRemoveMe, this,[this](YellowDogs *zb){
+        this->removeItem(zb);
+        zb->deleteLater();
+    });
     zombie->startMoving(MyDirection::Left);
 
     ////debug

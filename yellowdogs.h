@@ -13,8 +13,10 @@ public:
     explicit YellowDogs(int row, MyGameScene *myScene);
     bool checkCollision();
     void startAttacking(WhiteDogs *tar);
-    void getAttacked();
+    void getAttacked(int atk);
     void stopMoving(); //重定义
+    void cutHp(int atk){ hp -= atk; } //减少血量
+    void removeItself(){ emit pleaseRemoveMe(this); }; //移除自己
 
 private:
     WhiteDogs *targetWhiteDog;
@@ -23,6 +25,7 @@ private:
 signals:
     void isAttacked();
     void attacking(WhiteDogs *tar);
+    void pleaseRemoveMe(YellowDogs *zb);
 };
 
 #endif // YELLOWDOGS_H

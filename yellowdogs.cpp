@@ -3,8 +3,9 @@
 
 YellowDogs::YellowDogs(int row,MyGameScene *myScene): targetWhiteDog(nullptr),memIsMoving(true){
     itRow = row;
-
+    setZValue(5);
     //用刀叉小黄先实例化一只
+    hp = 300;
     speed = 30;
     setupGifAnimation(":/yellow/Image/forkYellow.gif",0.6);
 
@@ -19,16 +20,15 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene): targetWhiteDog(nullptr),me
             movingAnim->setStartValue(pos());
             movingAnim->setEndValue(target);
             movingAnim->start();
-        // if(x() < 0){
-        //     scene()
-        //     delete this;
-        // }
         }
+    });
+    connect(this, &YellowDogs::isAttacked, this, [this](){
+        if(hp <= 0){ removeItself(); }
     });
     connect(myScene->memGameTimer,&QTimer::timeout, this,[=](){
         if(checkCollision()){
             stopMoving();
-            targetWhiteDog->cutHp(50);
+            targetWhiteDog->cutHp(10);
             if(targetWhiteDog->getHp() <= 0){
                 targetWhiteDog->removeItself();
                 targetWhiteDog = nullptr;
@@ -40,7 +40,7 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene): targetWhiteDog(nullptr),me
         //     startMoving(MyDirection::Left);
         // }
     });
-    setZValue(5);
+
 }
 
 bool YellowDogs::checkCollision(){
@@ -69,3 +69,9 @@ void YellowDogs::stopMoving(){
         movingAnim->stop();
     }
 }
+
+void YellowDogs::getAttacked(int atk){
+    cutHp(atk);
+    emit isAttacked();
+}
+
