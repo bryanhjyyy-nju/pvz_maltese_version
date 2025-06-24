@@ -12,7 +12,7 @@ class MyGameScene : public QGraphicsScene
 {
     Q_OBJECT
 public:
-    explicit MyGameScene(QMainWindow *parent = nullptr);
+    explicit MyGameScene(int n = 1,QMainWindow *parent = nullptr);
 
     ~MyGameScene();
 
@@ -35,13 +35,21 @@ public:
     void generateWhiteHeart(QPointF whitePos); //从小白中产出爱心
     void setAYellowDog(int r); //在第r行产生一只小金毛
     void generateBullet(int r, int c); //产生子弹
+    QTimer * getGameTimer(){ return memGameTimer; } //获取gameTimer
+    // int getZombieNum(int r){ return zombieMap[r]; } //获取第 r 行的僵尸数量
+    const QVector<MyItem *> &getZombieMap(int r){ return zombieMap[r]; }
 private:
+    int gameLevelNum = 0;
+
     Map *mapGrid = NULL;  //添加地图网咯
     bool *mapOccupied = NULL; //添加占用状态表
     WhiteDogs *dogMap[45] = {nullptr};
     void mousePressEvent(QGraphicsSceneMouseEvent * event) override;
     int chosenNum = 0;
     int restHeart = 50; // 剩余阳光初始化为50
+    // int zombieMap[5] = {0};
+    QVector<QVector<MyItem *>> zombieMap;
+
 
     QTimer *memSkyHeartTimer; //天空中的爱心生成计时器
     QTimer *memYellowDogsTimer; //小金毛计时器

@@ -11,10 +11,11 @@ class SingingWhite : public WhiteDogs
 public:
     explicit SingingWhite(int r, int c,MyGameScene *scene);
     void shootBullet(int r, int c);
+    bool isInFrontOfMe(const QVector<MyItem *> &items);
 
 
 protected:
-
+    bool isZombieOnYourLawn;
 
 signals:
     void bulletShot(int r,int c);

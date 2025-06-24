@@ -19,10 +19,11 @@ public:
     bool checkCollision();
 
 
-private:
+protected:
     QPropertyAnimation *memMovingAnim;
     YellowDogs *targetZombie = nullptr;
     int itRow = 0;
+    int speed = 200;
     int atkPower = 50;
 
 signals:

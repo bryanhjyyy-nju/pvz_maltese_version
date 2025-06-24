@@ -7,8 +7,8 @@ Bullet::Bullet(int r, int c, QTimer *gameTimer)
     QPixmap pix;
     pix.load(":/others/Image/note.png");
     setPixmap(pix);
-    setPos(480 + c,130 + 145 * (r + 0.2)); //设置起始位置
-    setZValue(7); //确保在最上层
+    setPos(400 + c * 121,130 + 145 * (r + 0.2)); //设置起始位置
+    setZValue(7); //确保在植物上面
     connect(this, &Bullet::i_hit_it,this, &Bullet::disappear);
     connect(gameTimer,&QTimer::timeout, this, [=](){
         if(checkCollision()){
@@ -21,10 +21,10 @@ Bullet::Bullet(int r, int c, QTimer *gameTimer)
     memMovingAnim->setDuration(100);
     memMovingAnim->setEasingCurve(QEasingCurve::Linear);
     memMovingAnim->setStartValue(pos());
-    memMovingAnim->setEndValue(pos() + QPointF(10, 0));
+    memMovingAnim->setEndValue(pos() + QPointF(speed * 0.1, 0));
     connect(memMovingAnim,&QPropertyAnimation::finished, this, [=](){
         memMovingAnim->setStartValue(pos());
-        memMovingAnim->setEndValue(pos() + QPointF(10, 0));
+        memMovingAnim->setEndValue(pos() + QPointF(speed * 0.1, 0));
         memMovingAnim->start();
     });
     memMovingAnim->start();
@@ -34,6 +34,7 @@ Bullet::Bullet(int r, int c, QTimer *gameTimer)
 
 void Bullet::disappear(){
     scene()->removeItem(this);
+    // qDebug() << "removeBullet!";
     this->deleteLater();
 }
 

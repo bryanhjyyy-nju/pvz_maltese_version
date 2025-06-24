@@ -18,12 +18,16 @@
 #include "myDirection.h"
 #include "bullet.h"
 
-MyGameScene::MyGameScene(QMainWindow *parent)
+MyGameScene::MyGameScene(int n,QMainWindow *parent)
     : QGraphicsScene(parent)
 {
+    gameLevelNum = n;
 
     //设置有效操作范围
     setSceneRect(0, 0, 1650, 900);
+
+    //初始化存储僵尸的容器
+    zombieMap.resize(5);
 
     //加载背景
     QPixmap backgroundPixmap(":/others/Image/grass.jpg");
@@ -48,10 +52,22 @@ MyGameScene::MyGameScene(QMainWindow *parent)
     connect(memSkyHeartTimer, &QTimer::timeout, this, &MyGameScene::generateSkyHeart);
     memSkyHeartTimer->start(10000 + QRandomGenerator::global()->bounded(3000));
 
-    //添加小金毛生成计时器
-    memYellowDogsTimer = new QTimer(this);
-    connect(memYellowDogsTimer, &QTimer::timeout, this, [=](){setAYellowDog(2);});
-    memYellowDogsTimer->start(10000);
+    switch(gameLevelNum){
+        case 1:
+            //添加小金毛生成计时器
+            memYellowDogsTimer = new QTimer(this);
+            connect(memYellowDogsTimer, &QTimer::timeout, this, [=](){setAYellowDog(2);});
+            memYellowDogsTimer->start(20000);
+            break;
+        default:
+            // //添加小金毛生成计时器
+            // memYellowDogsTimer = new QTimer(this);
+            // connect(memYellowDogsTimer, &QTimer::timeout, this, [=](){setAYellowDog(2);});
+            // memYellowDogsTimer->start(20000);
+            break;
+    }
+
+
 }
 
 //初始化地图占用表
@@ -111,7 +127,7 @@ void MyGameScene::generateWhiteHeart(QPointF whitePos){
 //todo:
 void MyGameScene::generateBullet(int r,int c){
     //调试
-    qDebug() << "generated!";
+    // qDebug() << "generated!";
     Bullet *blt = new Bullet(r, c, memGameTimer);
     this->addItem(blt);
 }
@@ -207,10 +223,12 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
 
 void MyGameScene::setAYellowDog(int r){
     YellowDogs *zombie = new YellowDogs(r, this);
+    this->zombieMap[r].append(zombie);
     this->addItem(zombie);
     zombie->setPos(QPointF(480 + 9 * 121 - zombie->pixmap().width() / 2, 130 + 145 * (r + 0.5) - zombie->pixmap().height() / 2));
-    connect(zombie, &YellowDogs::pleaseRemoveMe, this,[this](YellowDogs *zb){
+    connect(zombie, &YellowDogs::pleaseRemoveMe, this,[=](YellowDogs *zb){
         this->removeItem(zb);
+        zombieMap[r].removeOne(zb);
         zb->deleteLater();
     });
     zombie->startMoving(MyDirection::Left);

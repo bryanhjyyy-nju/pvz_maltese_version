@@ -9,7 +9,7 @@
 
 PlayScene::PlayScene(int levelNum) :
     levelIndex(levelNum), //维护传进来的关卡号, 加载地图
-    myGameScene(new MyGameScene(this)),
+    myGameScene(new MyGameScene(levelNum,this)),
     myGraphicsView(new QGraphicsView(myGameScene, this))
 {
 
