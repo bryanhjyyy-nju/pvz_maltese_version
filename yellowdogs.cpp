@@ -1,30 +1,42 @@
 #include "yellowdogs.h"
 #include <QDebug>
 
-YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog(nullptr),memIsMoving(true){
+YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog(nullptr){
     itRow = row;
     setZValue(5);
     //初始化血量，攻击力，移动速度，贴图
     initArgues(typeNum);
 
-    movingAnim = new QPropertyAnimation(this, "pos", this);
-    movingAnim->setDuration(1000);
-    // movingAnim->setLoopCount(-1);
-    movingAnim->setEasingCurve(QEasingCurve::Linear);
-    qreal distance = speed * 1.0;
-    connect(movingAnim, &QPropertyAnimation::finished, this,[=](){
-        if(memIsMoving){
-            QPointF target = pos() + QPointF(-distance, 0);
-            movingAnim->setStartValue(pos());
-            movingAnim->setEndValue(target);
-            movingAnim->start();
-        }
-    });
+    //设置位置
+    setPos(QPointF(480 + 9 * 121 - pixmap().width() / 2, 130 + 145 * (row + 0.5) - pixmap().height() / 2));
+
+    //先关联被打和移除自己的信号和槽
     connect(this, &YellowDogs::isAttacked, this, [this](){
         if(hp <= 0){ removeItself(); }
     });
 
+    //设置运动动画
+    movingAnim = new QPropertyAnimation(this, "pos", this);
+    movingAnim->setDuration(1000);
+    // movingAnim->setLoopCount(-1);
+    qreal distance = speed * 1.0;
+    movingAnim->setEasingCurve(QEasingCurve::Linear);
+    movingAnim->setEndValue(pos() + QPointF(-distance, 0));
+
+    connect(movingAnim, &QPropertyAnimation::finished, this,[=](){
+        if(memIsMoving){
+            movingAnim->setStartValue(pos());
+            movingAnim->setEndValue(pos() + QPointF(-distance, 0));
+            movingAnim->start();
+        }
+    });
+
     connect(myScene->memGameTimer,&QTimer::timeout, this,[=](){
+        if (x() < 20) {
+            emit arrivedYourHome();
+            this->stopMoving();
+            return;
+        }
         if(checkCollision()){
             //攻击逻辑
             stopMoving();
@@ -32,21 +44,11 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog
             if(targetWhiteDog->getHp() <= 0){
                 targetWhiteDog->removeItself();
                 targetWhiteDog = nullptr;
-                // memIsMoving = true;
-                // startMoving(MyDirection::Left);
             }
         }
         else{
-            if(!memIsMoving){
-                //继续走
-                memIsMoving = true;
-                startMoving(MyDirection::Left);
-            }
+            startMoving();
         }
-        if(x() < 10){ emit arrivedYourHome(); }
-        // else if(!checkCollision()){
-        //     startMoving(MyDirection::Left);
-        // }
     });
 
 }
@@ -82,15 +84,8 @@ bool YellowDogs::checkCollision(){
             return true; // 发现碰撞，返回 true
         }
     }
-
+    targetWhiteDog = nullptr;
     return false; // 没有找到碰撞的 WhiteDogs
-}
-
-void YellowDogs::stopMoving(){
-    if(memIsMoving){
-        memIsMoving = false;
-        movingAnim->stop();
-    }
 }
 
 void YellowDogs::getAttacked(int atk){
@@ -105,3 +100,17 @@ void YellowDogs::getAttacked(int atk){
 //     speed = 20;
 //     setupGifAnimation(":/yellow/Image/guitarYellow.gif",0.6);
 // }
+
+void YellowDogs::gamePaused(){
+    if(movie){
+        movie->setPaused(true);
+    }
+    stopMoving();
+}
+
+void YellowDogs::gameContinued(){
+    if(movie){
+        movie->setPaused(false);
+    }
+    startMoving();
+}

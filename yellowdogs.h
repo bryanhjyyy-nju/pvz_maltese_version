@@ -14,15 +14,16 @@ public:
     bool checkCollision();
     void startAttacking(WhiteDogs *tar);
     void getAttacked(int atk);
-    void stopMoving(); //重定义
     void cutHp(int atk){ hp -= atk; } //减少血量
     void removeItself(){ emit pleaseRemoveMe(this); }; //移除自己
 
     void initArgues(int typeNum); //初始化血量和速度和图像
 
+    void gamePaused() override;
+    void gameContinued() override;
+
 protected:
     WhiteDogs *targetWhiteDog;
-    bool memIsMoving;
     int atkPower = 10;
 
 signals:

@@ -55,6 +55,14 @@ private:
     QTimer *memYellowDogsTimer; //小金毛计时器
     QTimer *memGameTimer; //游戏总的计时器
     QTimer *memGameLongTimer;
+
+    void checkWinCondition(); // 检查胜利条件的私有函数
+    void stopAllTimers();     // 停止所有计时器的辅助函数
+
+    int m_totalZombiesForLevel = 0; // 本关卡总僵尸数
+    int m_zombiesSpawned = 0;       // 已生成的僵尸数
+    int m_zombiesKilled = 0;        // 已消灭的僵尸数
+    bool m_isGameOver = false;      // 标记游戏是否已结束
 signals:
     void plantFinished();
     void heartCollected();
@@ -67,6 +75,8 @@ signals:
 
 public slots:
     // void generatedHeartFromWhite(QPointF dogPos);
+    void winTheGame();   // 游戏胜利的槽函数
+    void loseTheGame();  // 游戏失败的槽函数
 };
 
 #endif // MYGAMESCENE_H

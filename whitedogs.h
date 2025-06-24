@@ -11,8 +11,6 @@ class WhiteDogs : public MyItem
 public:
     explicit WhiteDogs(const QString& gifPath, qreal scale = 1.0);
 
-    //放置的位置
-
     int HeartCost(){ return heartCost; }
 
     void cutHp(int atk){ hp -= atk; }
@@ -21,6 +19,7 @@ public:
 
     //移除自身
     void removeItself(){ emit pleaseRemoveMe(itRow,itCol); }
+
 
 protected:
     int heartCost = 0;

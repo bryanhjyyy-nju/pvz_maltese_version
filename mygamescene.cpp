@@ -15,13 +15,34 @@
 #include "heart.h"
 #include <QApplication>
 #include "yellowdogs.h"
-#include "myDirection.h"
 #include "bullet.h"
 
 MyGameScene::MyGameScene(int n,QMainWindow *parent)
     : QGraphicsScene(parent)
 {
     gameLevelNum = n;
+    m_isGameOver = false;
+    m_zombiesSpawned = 0;
+    m_zombiesKilled = 0;
+
+    // 根据关卡设置总僵尸数
+    switch(gameLevelNum) {
+        case 1: m_totalZombiesForLevel = 5; break;
+        case 2: m_totalZombiesForLevel = 15; break;
+        case 3: m_totalZombiesForLevel = 20; break;
+        case 4: m_totalZombiesForLevel = 25; break;
+        case 5: m_totalZombiesForLevel = 30; break;
+        case 6: m_totalZombiesForLevel = 35; break;
+        case 7: m_totalZombiesForLevel = 40; break;
+        case 8: m_totalZombiesForLevel = 50; break;
+        case 9: m_totalZombiesForLevel = 60; break;
+        case 10: m_totalZombiesForLevel = 75; break;
+        default: m_totalZombiesForLevel = 10; break;
+    }
+
+    // 连接游戏胜利和失败的信号到对应的槽函数
+    connect(this, &MyGameScene::gameWin, this, &MyGameScene::winTheGame);
+    connect(this, &MyGameScene::gameLose, this, &MyGameScene::loseTheGame);
 
     //设置有效操作范围
     setSceneRect(0, 0, 1650, 900);
@@ -52,20 +73,109 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
     connect(memSkyHeartTimer, &QTimer::timeout, this, &MyGameScene::generateSkyHeart);
     memSkyHeartTimer->start(10000 + QRandomGenerator::global()->bounded(3000));
 
+    //todo
+    //插入小金毛
+    memYellowDogsTimer = new QTimer(this);
+
+    // --- 根据关卡等级定义生成参数 ---
+    int minInterval, maxInterval; // 每波僵尸生成的最小/最大时间间隔 (毫秒)
+    int minRow, maxRow;           // 允许生成的最小/最大行号
+    double toughZombieChance;     // 生成种类1(高血量)僵尸的概率 (0.0 to 1.0)
+    int zombiesPerWave = 1;       // 每波僵尸的基础数量
+    double multiSpawnChance = 0.0;// 每波额外生成一个僵尸的概率
+
     switch(gameLevelNum){
         case 1:
-            //添加小金毛生成计时器
-            memYellowDogsTimer = new QTimer(this);
-            connect(memYellowDogsTimer, &QTimer::timeout, this, [=](){setAYellowDog(2, 0);});
-            memYellowDogsTimer->start(20000);
+            minRow = 2; maxRow = 2; // 仅在中间行
+            minInterval = 18000; maxInterval = 22000; // 间隔长
+            toughZombieChance = 0.0;
             break;
-        default:
-            //添加小金毛生成计时器
-            memYellowDogsTimer = new QTimer(this);
-            connect(memYellowDogsTimer, &QTimer::timeout, this, [=](){setAYellowDog(2, 1);});
-            memYellowDogsTimer->start(30000);
+        case 2:
+            minRow = 1; maxRow = 3; // 中间三行
+            minInterval = 16000; maxInterval = 20000;
+            toughZombieChance = 0.0;
+            break;
+        case 3:
+            minRow = 1; maxRow = 3;
+            minInterval = 14000; maxInterval = 18000; // 间隔缩短
+            toughZombieChance = 0.0;
+            break;
+        case 4:
+            minRow = 0; maxRow = 4; // 全部行
+            minInterval = 12000; maxInterval = 16000;
+            toughZombieChance = 0.0;
+            break;
+        case 5:
+            minRow = 0; maxRow = 4;
+            minInterval = 11000; maxInterval = 15000;
+            toughZombieChance = 0.15; // 15% 概率出现种类1
+            break;
+        case 6:
+            minRow = 0; maxRow = 4;
+            minInterval = 10000; maxInterval = 14000;
+            toughZombieChance = 0.25; // 25% 概率
+            break;
+        case 7:
+            minRow = 0; maxRow = 4;
+            minInterval = 9000; maxInterval = 12000;
+            toughZombieChance = 0.35; // 35% 概率
+            multiSpawnChance = 0.10; // 10% 概率额外生成一个
+            break;
+        case 8:
+            minRow = 0; maxRow = 4;
+            minInterval = 8000; maxInterval = 11000;
+            toughZombieChance = 0.45; // 45% 概率
+            multiSpawnChance = 0.25; // 25% 概率额外生成一个
+            break;
+        case 9:
+            minRow = 0; maxRow = 4;
+            minInterval = 7000; maxInterval = 9000;
+            toughZombieChance = 0.55; // 55% 概率
+            multiSpawnChance = 0.40; // 40% 概率额外生成一个
+            break;
+        case 10:
+            minRow = 0; maxRow = 4;
+            minInterval = 5000; maxInterval = 8000; // 间隔很短
+            toughZombieChance = 0.65; // 65% 概率
+            zombiesPerWave = 2; // 每波至少2个
+            multiSpawnChance = 0.20; // 20% 概率生成第3个
+            break;
+        default: // 处理无效关卡号，难度同第一关
+            minRow = 2; maxRow = 2;
+            minInterval = 18000; maxInterval = 22000;
+            toughZombieChance = 0.0;
             break;
     }
+
+    connect(memYellowDogsTimer, &QTimer::timeout, this, [=](){
+        // 计算本波要生成的僵尸数量
+        int spawnCount = zombiesPerWave;
+        if (QRandomGenerator::global()->generateDouble() < multiSpawnChance) {
+            spawnCount++;
+        }
+
+        for (int i = 0; i < spawnCount; ++i) {
+            // 1. 在允许的范围内随机选择一行
+            // QRandomGenerator::bounded(N) 生成 [0, N-1] 的整数
+            int row = QRandomGenerator::global()->bounded(maxRow - minRow + 1) + minRow;
+
+            // 2. 根据概率选择僵尸种类
+            int type = 0; // 默认为种类0
+            if (QRandomGenerator::global()->generateDouble() < toughZombieChance) {
+                type = 1; // 种类1(高血量)
+            }
+
+            // 3. 调用函数生成僵尸
+            setAYellowDog(row, type);
+        }
+
+        // 4. 为下一波僵尸设置一个新的随机时间间隔
+        int nextInterval = QRandomGenerator::global()->bounded(minInterval, maxInterval + 1);
+        memYellowDogsTimer->setInterval(nextInterval);
+    });
+
+    // 启动计时器，设置一个初始延迟，避免游戏一开始就出僵尸
+    memYellowDogsTimer->start(15000); // 第一波僵尸在15秒后开始生成
 
 
 }
@@ -124,7 +234,6 @@ void MyGameScene::generateWhiteHeart(QPointF whitePos){
     });
 }
 
-//todo:
 void MyGameScene::generateBullet(int r,int c){
     //调试
     // qDebug() << "generated!";
@@ -222,17 +331,29 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
 }
 
 void MyGameScene::setAYellowDog(int r,int typeNum){
+    // 如果已生成的僵尸达到本关总数，则停止生成并返回
+    if(m_zombiesSpawned >= m_totalZombiesForLevel){
+        memYellowDogsTimer->stop();
+        return;
+    }
+    m_zombiesSpawned++;
+
     YellowDogs *zombie = new YellowDogs(r,this,typeNum);
     this->zombieMap[r].append(zombie);
     this->addItem(zombie);
     connect(zombie, &YellowDogs::arrivedYourHome, this, &MyGameScene::gameLose);
-    zombie->setPos(QPointF(480 + 9 * 121 - zombie->pixmap().width() / 2, 130 + 145 * (r + 0.5) - zombie->pixmap().height() / 2));
     connect(zombie, &YellowDogs::pleaseRemoveMe, this,[=](YellowDogs *zb){
         this->removeItem(zb);
         zombieMap[r].removeOne(zb);
         zb->deleteLater();
+
+        // 僵尸被消灭，更新计数并检查胜利条件
+        if (!m_isGameOver) {
+            m_zombiesKilled++;
+            checkWinCondition();
+        }
     });
-    zombie->startMoving(MyDirection::Left);
+    zombie->startMoving();
 
     ////debug
     // QTimer *debugTimer = new QTimer(this);
@@ -248,4 +369,72 @@ void MyGameScene::removeWhite(int r,int c){
     delete dogMap[9 * r + c];
     dogMap[9 * r + c] = nullptr;
     mapOccupied[9 * r + c] = false;
+}
+
+void MyGameScene::checkWinCondition()
+{
+    // 如果游戏已结束，或生成的僵尸还未达到关卡总数，则不进行判断
+    if (m_isGameOver || m_zombiesSpawned < m_totalZombiesForLevel) {
+        return;
+    }
+
+    // 如果所有生成的僵尸都已被消灭，则胜利
+    if (m_zombiesKilled >= m_totalZombiesForLevel) {
+        emit gameWin();
+    }
+}
+
+void MyGameScene::stopAllTimers()
+{
+    // memGameTimer->stop();
+    memSkyHeartTimer->stop();
+    memYellowDogsTimer->stop();
+}
+
+void MyGameScene::winTheGame()
+{
+    if (m_isGameOver) return; // 防止重复执行
+    m_isGameOver = true;
+
+    stopAllTimers(); // 停止所有游戏活动
+
+    // 创建 "WIN" 文本
+    QGraphicsSimpleTextItem *winText = new QGraphicsSimpleTextItem("WIN");
+    QFont font("Arial", 150, QFont::Bold);
+    winText->setFont(font);
+    winText->setBrush(QBrush(Qt::green));
+
+    // 将文本居中
+    QPointF center = sceneRect().center();
+    QRectF textRect = winText->boundingRect();
+    winText->setPos(center.x() - textRect.width() / 2, center.y() - textRect.height() / 2);
+
+    // 确保文本在最上层显示
+    winText->setZValue(20);
+
+    addItem(winText);
+}
+
+void MyGameScene::loseTheGame()
+{
+    if (m_isGameOver) return; // 防止重复执行
+    m_isGameOver = true;
+
+    stopAllTimers(); // 停止所有游戏活动
+
+    // 创建 "LOSE" 文本
+    QGraphicsSimpleTextItem *loseText = new QGraphicsSimpleTextItem("LOSE");
+    QFont font("Arial", 150, QFont::Bold);
+    loseText->setFont(font);
+    loseText->setBrush(QBrush(Qt::red));
+
+    // 将文本居中
+    QPointF center = sceneRect().center();
+    QRectF textRect = loseText->boundingRect();
+    loseText->setPos(center.x() - textRect.width() / 2, center.y() - textRect.height() / 2);
+
+    // 确保文本在最上层显示
+    loseText->setZValue(20);
+
+    addItem(loseText);
 }

@@ -57,12 +57,24 @@ void MyItem::setItPos(int r, int c){
     itCol = c;
 }
 
-void MyItem::startMoving(MyDirection dir){
-    if(movingAnim){
-        if(dir == MyDirection::Left){
-            movingAnim->setStartValue(pos());
-            movingAnim->setEndValue(pos());
+void MyItem::startMoving(){
+    if (!memIsMoving){
+        if(movingAnim->state() == movingAnim->Stopped){
+            memIsMoving = true;
             movingAnim->start();
+        }
+        else if(movingAnim->state() == movingAnim->Paused){
+            memIsMoving = true;
+            movingAnim->setPaused(false);
+        }
+    }
+}
+
+void MyItem::stopMoving(){
+    if(memIsMoving){
+        if(movingAnim){
+            memIsMoving = false;
+            movingAnim->setPaused(true);
         }
     }
 }
@@ -72,3 +84,15 @@ void MyItem::startMoving(MyDirection dir){
 //     painter->setPen(Qt::red);
 //     painter->drawPath(shape());
 // }
+
+void MyItem::gamePaused(){
+    if(movie){
+        movie->setPaused(true);
+    }
+}
+
+void MyItem::gameContinued(){
+    if(movie){
+        movie->setPaused(false);
+    }
+}
