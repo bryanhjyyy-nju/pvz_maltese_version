@@ -26,7 +26,7 @@ protected:
     QPropertyAnimation *memMovingAnim;
     YellowDogs *targetZombie = nullptr;
     int itRow = 0;
-    int speed = 200;
+    int speed = 300;
     int atkPower = 30;
 
 signals:

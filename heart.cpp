@@ -14,6 +14,7 @@ Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCu
     //设置阳光图片
     QPixmap pix;
     pix.load(":/others/Image/heart.png");
+    pix = pix.scaled(pix.width() * 0.6, pix.height() * 0.6);
     setPixmap(pix);
     setPos(startPos); //设置起始位置
     setZValue(10); //确保在最上层
@@ -35,7 +36,7 @@ Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCu
 
     //创建爱心消失计时器
     memDisappearTimer = new QTimer(this);
-    memDisappearTimer->setInterval(10000);
+    memDisappearTimer->setInterval(5000);
     memDisappearTimer->setSingleShot(true);
 
     //链接信号和曹

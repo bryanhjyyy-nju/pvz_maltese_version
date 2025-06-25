@@ -2,7 +2,7 @@
 
 DblSingWhite::DblSingWhite(int r, int c,MyGameScene *myScene) : WhiteDogs(":/white/Image/dblSingWhite.gif",0.35)
 {
-    hp = 300;
+    hp = 500;
     heartCost = 200;
     isZombieOnYourLawn = false;
     setItPos(r,c);
@@ -11,7 +11,7 @@ DblSingWhite::DblSingWhite(int r, int c,MyGameScene *myScene) : WhiteDogs(":/whi
     connect(whiteDogTimer,&QTimer::timeout,this,[=](){
         emit bulletShot(r,c);
     });
-    whiteDogTimer->setInterval(1000);
+    whiteDogTimer->setInterval(800);
     connect(myScene->getGameTimer(), &QTimer::timeout, this,[=](){
         if(!isZombieOnYourLawn){
             if(isInFrontOfMe(myScene->getZombieMap(r))){

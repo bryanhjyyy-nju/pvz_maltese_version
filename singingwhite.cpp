@@ -4,7 +4,7 @@
 
 SingingWhite::SingingWhite(int r, int c,MyGameScene *myScene):WhiteDogs(":/white/Image/singingWhite.gif")
 {
-    hp = 300;
+    hp = 500;
     heartCost = 100;
     isZombieOnYourLawn = false;
     setItPos(r,c);
@@ -13,7 +13,7 @@ SingingWhite::SingingWhite(int r, int c,MyGameScene *myScene):WhiteDogs(":/white
     connect(whiteDogTimer,&QTimer::timeout,this,[=](){
         emit bulletShot(r,c);
     });
-    whiteDogTimer->setInterval(2000);
+    whiteDogTimer->setInterval(1600);
     connect(myScene->getGameTimer(), &QTimer::timeout, this,[=](){
         if(!isZombieOnYourLawn){
             if(isInFrontOfMe(myScene->getZombieMap(r))){

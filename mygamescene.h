@@ -67,6 +67,7 @@ private:
     int m_zombiesSpawned = 0;       // 已生成的僵尸数
     int m_zombiesKilled = 0;        // 已消灭的僵尸数
     bool m_isGameOver = false;      // 标记游戏是否已结束
+
 signals:
     void plantFinished();
     void heartCollected();

@@ -21,15 +21,16 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
     : QGraphicsScene(parent)
 {
     gameLevelNum = n;
+    // qDebug() << n;
     m_isGameOver = false;
     m_zombiesSpawned = 0;
     m_zombiesKilled = 0;
 
     // 根据关卡设置总僵尸数
     switch(gameLevelNum) {
-        case 1: m_totalZombiesForLevel = 5; break;
-        case 2: m_totalZombiesForLevel = 15; break;
-        case 3: m_totalZombiesForLevel = 20; break;
+        case 1: m_totalZombiesForLevel = 7; break;
+        case 2: m_totalZombiesForLevel = 12; break;
+        case 3: m_totalZombiesForLevel = 15; break;
         case 4: m_totalZombiesForLevel = 25; break;
         case 5: m_totalZombiesForLevel = 30; break;
         case 6: m_totalZombiesForLevel = 35; break;
@@ -39,6 +40,7 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
         case 10: m_totalZombiesForLevel = 75; break;
         default: m_totalZombiesForLevel = 10; break;
     }
+    // qDebug() << m_totalZombiesForLevel;
 
     // 连接游戏胜利和失败的信号到对应的槽函数
     connect(this, &MyGameScene::gameWin, this, &MyGameScene::winTheGame);
@@ -71,7 +73,10 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
     //添加天空中随即爱心生成计时器
     memSkyHeartTimer = new QTimer(this);
     connect(memSkyHeartTimer, &QTimer::timeout, this, &MyGameScene::generateSkyHeart);
-    memSkyHeartTimer->start(10000 + QRandomGenerator::global()->bounded(3000));
+    memSkyHeartTimer->start(6000 + QRandomGenerator::global()->bounded(3000));
+    connect(memSkyHeartTimer, &QTimer::timeout, memSkyHeartTimer, [=](){
+        memSkyHeartTimer->setInterval(6000 + QRandomGenerator::global()->bounded(3000));
+    });
 
     //todo
     //插入小金毛
@@ -177,7 +182,20 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
     // 启动计时器，设置一个初始延迟，避免游戏一开始就出僵尸
     memYellowDogsTimer->start(15000); // 第一波僵尸在15秒后开始生成
 
-
+    //todo : 设置僵尸一大波来
+    // switch(gameLevelNum) {
+    // case 1: ; break;
+    // case 2: ; break;
+    // case 3: ; break;
+    // case 4: ; break;
+    // case 5: ; break;
+    // case 6: ; break;
+    // case 7: ; break;
+    // case 8: ; break;
+    // case 9: ; break;
+    // case 10: ; break;
+    // default: ; break;
+    // }
 }
 
 //初始化地图占用表
@@ -331,10 +349,10 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
 
                 if(chosenNum == 3){ myDog->startMoving(); }
             }
-            else{
-                // qDebug() << "已被占用";
+            // else{
+            //     // qDebug() << "已被占用";
 
-            }
+            // }
 
             QGraphicsScene::mousePressEvent(event);
         }
@@ -353,6 +371,8 @@ void MyGameScene::setAYellowDog(int r,int typeNum){
         return;
     }
     m_zombiesSpawned++;
+    //调试代码
+    // qDebug() << m_zombiesSpawned;
 
     YellowDogs *zombie = new YellowDogs(r,this,typeNum);
     this->zombieMap[r].append(zombie);
@@ -366,6 +386,8 @@ void MyGameScene::setAYellowDog(int r,int typeNum){
         // 僵尸被消灭，更新计数并检查胜利条件
         if (!m_isGameOver) {
             m_zombiesKilled++;
+            //调试
+            // qDebug() << m_zombiesKilled;
             checkWinCondition();
         }
     });

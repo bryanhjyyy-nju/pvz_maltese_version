@@ -1,5 +1,6 @@
 #include "yellowdogs.h"
 #include <QDebug>
+#include <QRandomGenerator>
 
 YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog(nullptr){
     itRow = row;
@@ -8,7 +9,7 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog
     initArgues(typeNum);
 
     //设置位置
-    setPos(QPointF(480 + 9 * 121 - pixmap().width() / 2, 130 + 145 * (row + 0.5) - pixmap().height() / 2));
+    setPos(QPointF(QRandomGenerator::global()->bounded(200) + 480 + 9 * 121 - pixmap().width() / 2, 130 + 145 * (row + 0.5) - pixmap().height() / 2));
 
     //先关联被打和移除自己的信号和槽
     connect(this, &YellowDogs::isAttacked, this, [this](){
@@ -36,7 +37,7 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog
             this->stopMoving();
             return;
         }
-        if (x() < 20) {
+        if (x() < 100) {
             emit arrivedYourHome();
             this->stopMoving();
             return;
@@ -60,7 +61,7 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog
 
 void YellowDogs::initArgues(int typeNum){
     if(typeNum == 1){
-        hp = 800;
+        hp = 600;
         speed = 20;
         atkPower = 12;
         setupGifAnimation(":/yellow/Image/guitarYellow.gif",0.4);
