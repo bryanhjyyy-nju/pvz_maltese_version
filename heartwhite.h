@@ -15,10 +15,8 @@ public:
     void gamePaused() override;
     void gameContinued() override;
 
-
-
 protected:
-    QTimer* memHeartProductionTimer;
+    // QTimer* memHeartProductionTimer;
 
 signals:
     void heartGenerated(QPointF pos);

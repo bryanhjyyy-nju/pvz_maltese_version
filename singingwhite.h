@@ -9,7 +9,7 @@ class SingingWhite : public WhiteDogs
 {
     Q_OBJECT
 public:
-    explicit SingingWhite(int r, int c,MyGameScene *scene);
+    explicit SingingWhite(int r, int c,MyGameScene *myScene);
     void shootBullet(int r, int c);
     bool isInFrontOfMe(const QVector<MyItem *> &items);
 

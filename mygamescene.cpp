@@ -292,11 +292,11 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
                             break;
 
                         case 5:
-                            myDog = new AllHeartWhite;
+                            myDog = new AllHeartWhite(this);
                             break;
 
                         case 6:
-                            myDog = new DblSingWhite;
+                            myDog = new DblSingWhite(row, col, this);
                             break;
 
                         case 7:

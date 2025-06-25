@@ -31,13 +31,13 @@ private:
     QVector<QString> whiteTypes = {"singingWhite", //相当于豌豆射手
                                    "heartWhite", //相当于向日葵
                                    "wallWhite", //相当于坚果
-                                   "lineWhite", //相当于火爆辣椒
+                                   "lineWhite", //相当于小推车
                                    "dancingWhite", //减速效果
-                                   "allHeartWhite", //樱桃炸弹并释放爱心
-                                   "dblSingWhite", //相当于双发射手
-                                   "moneyWhite"}; //相当于寒冰菇
-    QVector<int> heartCosts = {100, 50,50,50,50,50,50,50}; //消耗爱心数量枚举
-    QVector<int> coolTimes = {7500,5000,15000,7500,7500,7500,7500,7500}; //冷却时间枚举
+                                   "allHeartWhite", //产爱心更快的向日葵
+                                   "dblSingWhite", //发射子弹更快的豌豆射手
+                                   "moneyWhite"}; //毫无效果
+    QVector<int> heartCosts = {100, 50,50,50,50,125,200,0}; //消耗爱心数量枚举
+    QVector<int> coolTimes = {7500,5000,15000,7500,7500,12500,15000,10000}; //冷却时间枚举
 
     QVector<Card *> myCards;
 

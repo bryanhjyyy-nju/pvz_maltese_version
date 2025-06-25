@@ -6,12 +6,12 @@ HeartWhite::HeartWhite(MyGameScene *myScene):WhiteDogs(":/white/Image/heartWhite
     hp = 300;
     heartCost = 50;
 
-    memHeartProductionTimer = new QTimer(this);
-    connect(memHeartProductionTimer,&QTimer::timeout,this,[this](){
+    whiteDogTimer = new QTimer(this);
+    connect(whiteDogTimer,&QTimer::timeout,this,[this](){
         emit heartGenerated(this->pos());
     });
 
-    memHeartProductionTimer->start(12000); //每 20s 产一个阳光
+    whiteDogTimer->start(12000); //每 12s 产一个阳光
 
     connect(this, &HeartWhite::heartGenerated, myScene, [=](){
         myScene->generateWhiteHeart(this->pos());
@@ -22,9 +22,9 @@ void HeartWhite::gamePaused(){
     if(movie){
         movie->stop();
     }
-    if(memHeartProductionTimer){
-        if(memHeartProductionTimer->isActive()){
-            memHeartProductionTimer->stop();
+    if(whiteDogTimer){
+        if(whiteDogTimer->isActive()){
+            whiteDogTimer->stop();
         }
     }
 }
@@ -33,9 +33,9 @@ void HeartWhite::gameContinued(){
     if(movie){
         movie->start();
     }
-    if(memHeartProductionTimer){
-        if(!memHeartProductionTimer->isActive()){
-            memHeartProductionTimer->start();
+    if(whiteDogTimer){
+        if(!whiteDogTimer->isActive()){
+            whiteDogTimer->start();
         }
     }
 }
