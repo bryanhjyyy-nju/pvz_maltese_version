@@ -45,6 +45,7 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog
             //攻击逻辑
             stopMoving();
             targetWhiteDog->cutHp(atkPower);
+            if(targetWhiteDog->getAtkType()){ getAttacked(atkPower * 0.8); } //跳舞小狗反弹80%伤害
             if(targetWhiteDog->getHp() <= 0){
                 targetWhiteDog->removeItself();
                 targetWhiteDog = nullptr;
@@ -97,13 +98,6 @@ void YellowDogs::getAttacked(int atk){
     emit isAttacked();
 }
 
-// GuitarDog::GuitarDog(int row, MyGameScene *myScene) : YellowDogs(row, myScene){}
-
-// void GuitarDog::initArgues(){
-//     hp = 800;
-//     speed = 20;
-//     setupGifAnimation(":/yellow/Image/guitarYellow.gif",0.6);
-// }
 
 void YellowDogs::gamePaused(){
     if(movie){

@@ -4,16 +4,25 @@
 #include <QObject>
 #include "whitedogs.h"
 #include <QPropertyAnimation>
+#include "mygamescene.h"
+#include "yellowdogs.h"
 
 
 class LineWhite : public WhiteDogs
 {
     Q_OBJECT
 public:
-    explicit LineWhite();
+    explicit LineWhite(int row, int col, MyGameScene *myScene, QPointF cPos);
+
+    bool checkCollision();
+
+    void gamePaused() override;
+    void gameContinued() override;
 
 private:
-    QPropertyAnimation *memRunningAnim;
+    bool m_isGamePaused = false;
+    // QPropertyAnimation *memRunningAnim;
+    YellowDogs *targetYellowDog = nullptr;
 
 signals:
 };

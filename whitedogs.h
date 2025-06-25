@@ -17,6 +17,8 @@ public:
 
     void setTimer(QTimer *timer){ whiteDogTimer = timer; }
 
+    virtual bool getAtkType(){ return false; }
+
     //移除自身
     void removeItself(){ emit pleaseRemoveMe(itRow,itCol); }
 

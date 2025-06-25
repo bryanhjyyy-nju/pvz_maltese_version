@@ -271,38 +271,38 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
                 //创建植物并定位
                 WhiteDogs * myDog;
                 switch (chosenNum){
-                        case 0:
-                        myDog = new SingingWhite(row, col, this);
-                            break;
+                    case 0:
+                    myDog = new SingingWhite(row, col, this);
+                        break;
 
-                        case 1:
-                            myDog = new HeartWhite(this);
-                            break;
+                    case 1:
+                        myDog = new HeartWhite(this);
+                        break;
 
-                        case 2:
-                            myDog = new WallWhite;
-                            break;
+                    case 2:
+                        myDog = new WallWhite;
+                        break;
 
-                        case 3:
-                            myDog = new LineWhite;
-                            break;
+                    case 3:
+                        myDog = new LineWhite(row, col, this, centerLoc);
+                        break;
 
-                        case 4:
-                            myDog = new DancingWhite;
-                            break;
+                    case 4:
+                        myDog = new DancingWhite;
+                        break;
 
-                        case 5:
-                            myDog = new AllHeartWhite(this);
-                            break;
+                    case 5:
+                        myDog = new AllHeartWhite(this);
+                        break;
 
-                        case 6:
-                            myDog = new DblSingWhite(row, col, this);
-                            break;
+                    case 6:
+                        myDog = new DblSingWhite(row, col, this);
+                        break;
 
-                        case 7:
-                            myDog = new MoneyWhite;
-                            break;
-                        }
+                    case 7:
+                        myDog = new MoneyWhite;
+                        break;
+                }
                 myDog->setPos(centerLoc - QPointF(myDog->pixmap().width() / 2.0, myDog->pixmap().height() / 2.0));
                 addItem(myDog);
 
@@ -328,6 +328,8 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
                 //用于调试
                 // qDebug() << col << " " << row;
                 emit plantFinished(); //发送种植完成信号
+
+                if(chosenNum == 3){ myDog->startMoving(); }
             }
             else{
                 // qDebug() << "已被占用";

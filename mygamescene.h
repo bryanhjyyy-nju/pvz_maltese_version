@@ -18,6 +18,7 @@ public:
     ~MyGameScene();
 
     friend class YellowDogs;
+    friend class LineWhite;
 
     //地图网格占用情况初始化
     bool initMapOccupied(int cols, int rows);

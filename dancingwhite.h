@@ -10,6 +10,8 @@ class DancingWhite : public WhiteDogs
 public:
     explicit DancingWhite();
 
+    bool getAtkType() override{ return true; }
+
 signals:
 };
 
