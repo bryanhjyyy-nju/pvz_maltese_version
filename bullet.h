@@ -18,6 +18,9 @@ public:
     void disappear();
     bool checkCollision();
 
+    void gamePaused();
+    void gameContinued();
+
 
 protected:
     QPropertyAnimation *memMovingAnim;
@@ -28,6 +31,7 @@ protected:
 
 signals:
     void i_hit_it(YellowDogs *zb);
+    void hasDisappeared();
 };
 
 #endif // BULLET_H

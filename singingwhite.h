@@ -13,6 +13,9 @@ public:
     void shootBullet(int r, int c);
     bool isInFrontOfMe(const QVector<MyItem *> &items);
 
+    void gamePaused() override;
+    void gameContinued() override;
+
 
 protected:
     bool isZombieOnYourLawn;

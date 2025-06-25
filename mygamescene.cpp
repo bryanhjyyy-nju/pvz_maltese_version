@@ -211,11 +211,16 @@ void MyGameScene::generateSkyHeart(){
     //创建爱心添加到场景
     Heart *heart = new Heart(startPos, endPos, this);
     this->addItem(heart);
+    hearts.append(heart);
 
     //链接信号和槽
     connect(heart, &Heart::collected,this,[=](){
         addHeart(heart->value());
         emit heartCollected();
+        hearts.removeOne(heart);
+    });
+    connect(heart, &Heart::i_have_disappeared, this,[=](){
+        hearts.removeOne(heart);
     });
 }
 
@@ -228,9 +233,14 @@ void MyGameScene::generateWhiteHeart(QPointF whitePos){
     QPointF endPos = whitePos + QPointF(QRandomGenerator::global()->bounded(100) - 50, QRandomGenerator::global()->bounded(80));
     Heart *heart = new Heart(startPos,endPos,this,QEasingCurve::OutBounce);
     this->addItem(heart);
+    hearts.append(heart);
     connect(heart, &Heart::collected,this,[=](){
         addHeart(heart->value());
         emit heartCollected();
+        hearts.removeOne(heart);
+    });
+    connect(heart, &Heart::i_have_disappeared, this,[=](){
+        hearts.removeOne(heart);
     });
 }
 
@@ -239,6 +249,10 @@ void MyGameScene::generateBullet(int r,int c){
     // qDebug() << "generated!";
     Bullet *blt = new Bullet(r, c, memGameTimer);
     this->addItem(blt);
+    bullets.append(blt);
+    connect(blt, &Bullet::hasDisappeared, this,[=](){
+        bullets.removeOne(blt);
+    });
 }
 
 void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
@@ -323,7 +337,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
             QGraphicsScene::mousePressEvent(event);
         }
     }
-    else{
+    else if(Card::currentState() == GameState::Normal){
         // qDebug() << "scene clicked";
         Heart::curMousePos = event->scenePos();
         emit sceneClicked();
@@ -386,7 +400,7 @@ void MyGameScene::checkWinCondition()
 
 void MyGameScene::stopAllTimers()
 {
-    // memGameTimer->stop();
+    memGameTimer->stop();
     memSkyHeartTimer->stop();
     memYellowDogsTimer->stop();
 }
@@ -397,6 +411,17 @@ void MyGameScene::winTheGame()
     m_isGameOver = true;
 
     stopAllTimers(); // 停止所有游戏活动
+    for(int i = 0; i < 45; i++){
+        if(dogMap[i] != nullptr){
+            dogMap[i]->gamePaused();
+        }
+    }
+    for(QGraphicsPixmapItem *item : bullets){
+        ((Bullet *)item)->gamePaused();
+    }
+    for(QGraphicsPixmapItem *item : hearts){
+        ((Heart *)item)->gamePaused();
+    }
 
     // 创建 "WIN" 文本
     QGraphicsSimpleTextItem *winText = new QGraphicsSimpleTextItem("WIN");
@@ -421,6 +446,22 @@ void MyGameScene::loseTheGame()
     m_isGameOver = true;
 
     stopAllTimers(); // 停止所有游戏活动
+    for(int i = 0; i < 5;i++){
+        for(QGraphicsPixmapItem *item : zombieMap[i]){
+            ((YellowDogs *)item)->gamePaused();
+        }
+    }
+    for(int i = 0; i < 45; i++){
+        if(dogMap[i] != nullptr){
+            dogMap[i]->gamePaused();
+        }
+    }
+    for(QGraphicsPixmapItem *item : bullets){
+        ((Bullet *)item)->gamePaused();
+    }
+    for(QGraphicsPixmapItem *item : hearts){
+        ((Heart *)item)->gamePaused();
+    }
 
     // 创建 "LOSE" 文本
     QGraphicsSimpleTextItem *loseText = new QGraphicsSimpleTextItem("LOSE");

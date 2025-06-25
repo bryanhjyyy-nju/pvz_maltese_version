@@ -42,6 +42,9 @@ public:
 
     void startCooldown(); //开始冷却
 
+    void gamePaused();
+    void gameContinued();
+
 private:
     void updateCoolingEffect(); //更新冷却效果
     void updateNormalEffect(); //更新正常效果

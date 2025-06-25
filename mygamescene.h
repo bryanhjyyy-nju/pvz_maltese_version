@@ -7,6 +7,7 @@
 #include <QGraphicsTextItem>
 #include "whitedogs.h"
 #include <QTimer>
+#include <QGraphicsPixmapItem>
 
 class MyGameScene : public QGraphicsScene
 {
@@ -49,12 +50,14 @@ private:
     int restHeart = 50; // 剩余阳光初始化为50
     // int zombieMap[5] = {0};
     QVector<QVector<MyItem *>> zombieMap;
+    QVector<QGraphicsPixmapItem *> bullets;
+    QVector<QGraphicsPixmapItem *> hearts;
 
 
     QTimer *memSkyHeartTimer; //天空中的爱心生成计时器
     QTimer *memYellowDogsTimer; //小金毛计时器
     QTimer *memGameTimer; //游戏总的计时器
-    QTimer *memGameLongTimer;
+    // QTimer *memGameLongTimer;
 
     void checkWinCondition(); // 检查胜利条件的私有函数
     void stopAllTimers();     // 停止所有计时器的辅助函数
@@ -69,8 +72,8 @@ signals:
     void sceneClicked();
     void gameWin();
     void gameLose();
-    void gameRestart();
-    void gamePause();
+    // void gameRestart();
+    // void gamePause();
 
 
 public slots:

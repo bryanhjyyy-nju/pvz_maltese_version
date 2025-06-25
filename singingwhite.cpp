@@ -41,3 +41,19 @@ bool SingingWhite::isInFrontOfMe(const QVector<MyItem *> &items){
     return false;
 }
 
+void SingingWhite::gamePaused(){
+    if(movie){
+        movie->stop();
+    }
+    if(whiteDogTimer){
+        if(whiteDogTimer->isActive()){
+            whiteDogTimer->stop();
+        }
+    }
+}
+
+void SingingWhite::gameContinued(){
+    if(movie){
+        movie->start();
+    }
+}

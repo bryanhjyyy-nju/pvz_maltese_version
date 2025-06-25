@@ -26,8 +26,12 @@ public:
     // void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     static QPointF curMousePos;
 
+    void gamePaused();
+    void gameContinued();
+
 signals:
     void collected();
+    void i_have_disappeared();
 
 protected:
 
@@ -41,6 +45,7 @@ private:
     QPropertyAnimation *memFallAnim; //爱心下落动画
     QTimer* memDisappearTimer; //爱心消失计时器
     bool isCollectable = true;
+    bool isDisappearing = false;
 };
 
 #endif // HEART_H

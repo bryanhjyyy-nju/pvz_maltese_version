@@ -73,8 +73,8 @@ void MyItem::startMoving(){
 void MyItem::stopMoving(){
     if(memIsMoving){
         if(movingAnim){
-            memIsMoving = false;
             movingAnim->setPaused(true);
+            memIsMoving = false;
         }
     }
 }

@@ -25,6 +25,7 @@ public:
 protected:
     WhiteDogs *targetWhiteDog;
     int atkPower = 10;
+    bool m_isGamePaused = false;
 
 signals:
     void isAttacked();

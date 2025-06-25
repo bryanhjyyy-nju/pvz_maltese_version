@@ -87,6 +87,7 @@ void Heart::hasReachedGround(){
 }
 
 void Heart::hasDisappear(){
+    isDisappearing = true;
     QPropertyAnimation *fadeAnim = new QPropertyAnimation(this, "opacity");
     fadeAnim->setStartValue(1.0);
     fadeAnim->setEndValue(0.0);
@@ -96,11 +97,52 @@ void Heart::hasDisappear(){
     //链接信号和槽
     connect(fadeAnim, &QPropertyAnimation::finished, this,[=](){
         scene()->removeItem(this);
+        emit i_have_disappeared();
         deleteLater();
     });
 }
 
+void Heart::gamePaused(){
+    if(memCollectAnim){
+        if(memCollectAnim->state() == memCollectAnim->Running){
+            memCollectAnim->setPaused(true);
+        }
+    }
+    if(memFallAnim){
+        if(memFallAnim->state() == memFallAnim->Running){
+            memFallAnim->setPaused(true);
+            isCollectable = false;
+        }
+    }
+    if(memDisappearTimer){
+        if(memDisappearTimer->isActive()){
+            memDisappearTimer->stop();
+            isCollectable = false;
+        }
+    }
+}
 
+void Heart::gameContinued(){
+    if(memCollectAnim){
+        if(memCollectAnim->state() == memCollectAnim->Paused){
+            memCollectAnim->setPaused(false);
+        }
+    }
+    if(memFallAnim){
+        if(memFallAnim->state() == memFallAnim->Paused){
+            memFallAnim->setPaused(false);
+            isCollectable = true;
+        }
+        else if(memFallAnim->state() == memFallAnim->Stopped && !isDisappearing){
+            if(memDisappearTimer){
+                if(!memDisappearTimer->isActive()){
+                    memDisappearTimer->start();
+                    isCollectable = true;
+                }
+            }
+        }
+    }
+}
 
 
 

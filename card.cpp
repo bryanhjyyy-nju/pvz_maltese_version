@@ -145,3 +145,19 @@ void Card::startCooldown(){
     // 更新冷却效果
     updateCoolingEffect();
 }
+
+void Card::gamePaused(){
+    if(memCoolTimer){
+        if(memCoolTimer->isActive()){
+            memCoolTimer->stop();
+        }
+    }
+}
+
+void Card::gameContinued(){
+    if(memCoolTimer){
+        if(!memCoolTimer->isActive() && isCooling()){
+            memCoolTimer->start();
+        }
+    }
+}

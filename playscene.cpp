@@ -13,6 +13,11 @@ PlayScene::PlayScene(int levelNum) :
     myGraphicsView(new QGraphicsView(myGameScene, this))
 {
 
+    //先初始化Card的静态成员
+    Card::setCurRestHeart(50);
+    Card::setGameState(GameState::Normal);
+    Card::setSelectedWhite("");
+
     //设置标题
     QString titleStr = QString(" 第 %1 关").arg(levelNum);
 
@@ -44,10 +49,14 @@ PlayScene::PlayScene(int levelNum) :
     // 设置主窗口
     setCentralWidget(myGraphicsView);  // 将视图设置为中心部件
 
+    connect(this, &PlayScene::gameLose, this, &PlayScene::gamePaused);
+    connect(this, &PlayScene::gameWin, this, &PlayScene::gamePaused);
     //接收游戏胜利失败暂停信号
     connect(myGameScene, &MyGameScene::gameLose, this, &PlayScene::gameLose);
     connect(myGameScene, &MyGameScene::gameWin, this, &PlayScene::gameWin);
-    connect(myGameScene, &MyGameScene::gamePause, this, &PlayScene::gamePause);
+    // connect(myGameScene, &MyGameScene::gamePause, this, &PlayScene::gamePause);
+
+
 
     // 配置视图
     myGraphicsView->setRenderHint(QPainter::Antialiasing);  // 抗锯齿
@@ -151,6 +160,8 @@ void PlayScene::setCardsInBar(){
         card->whiteType = this->whiteTypes[i];
         card->coolTime = this->coolTimes[i];
         card->heartCost = this->heartCosts[i];
+        connect(this, &PlayScene::gameLose, card, &Card::gamePaused);
+        connect(this, &PlayScene::gameWin, card, &Card::gamePaused);
 
         //将卡牌指针添加到容器中
         myCards.append(card);
@@ -213,4 +224,12 @@ void PlayScene::handleCardSelected(Card *card){
     // 进入预放置状态
     Card::setGameState(GameState::PrePlace);
     Card::setSelectedWhite(card->whiteType);
+}
+
+void PlayScene::gamePaused(){
+    Card::setGameState(GameState::Paused);
+}
+
+void PlayScene::gameContinued(){
+    Card::setGameState(GameState::Normal);
 }

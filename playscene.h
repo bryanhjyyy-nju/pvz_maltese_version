@@ -22,6 +22,9 @@ public:
     //构造函数：第几关
     PlayScene(int levelNum);
 
+    void gamePaused();
+    void gameContinued();
+
 private:
     //注：此处卡牌的小狗是直接画上去的
     //枚举白色小狗类型，冷却时间，花费爱心数量
@@ -69,7 +72,7 @@ signals:
     void signalToCard();
     void gameLose();
     void gameWin();
-    void gamePause();
+    // void gamePause();
 
 private slots:
     void handleCardSelected(Card* card);

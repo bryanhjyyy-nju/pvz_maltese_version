@@ -32,6 +32,10 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog
     });
 
     connect(myScene->memGameTimer,&QTimer::timeout, this,[=](){
+        if (m_isGamePaused){
+            this->stopMoving();
+            return;
+        }
         if (x() < 20) {
             emit arrivedYourHome();
             this->stopMoving();
@@ -105,6 +109,7 @@ void YellowDogs::gamePaused(){
     if(movie){
         movie->setPaused(true);
     }
+    m_isGamePaused = true;
     stopMoving();
 }
 
@@ -112,5 +117,6 @@ void YellowDogs::gameContinued(){
     if(movie){
         movie->setPaused(false);
     }
+    m_isGamePaused = false;
     startMoving();
 }

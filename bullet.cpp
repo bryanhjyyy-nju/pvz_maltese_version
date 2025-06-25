@@ -35,6 +35,7 @@ Bullet::Bullet(int r, int c, QTimer *gameTimer)
 void Bullet::disappear(){
     scene()->removeItem(this);
     // qDebug() << "removeBullet!";
+    emit hasDisappeared();
     this->deleteLater();
 }
 
@@ -55,4 +56,20 @@ bool Bullet::checkCollision(){
         }
     }
     return false;
+}
+
+void Bullet::gamePaused(){
+    if(memMovingAnim){
+        if(memMovingAnim->state() == memMovingAnim->Running){
+            memMovingAnim->setPaused(true);
+        }
+    }
+}
+
+void Bullet::gameContinued(){
+    if(memMovingAnim){
+        if(memMovingAnim->state() == memMovingAnim->Paused){
+            memMovingAnim->setPaused(false);
+        }
+    }
 }

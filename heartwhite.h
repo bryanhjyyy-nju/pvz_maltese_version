@@ -10,7 +10,10 @@ class HeartWhite : public WhiteDogs
 {
     Q_OBJECT
 public:
-    explicit HeartWhite(MyGameScene *scene);
+    explicit HeartWhite(MyGameScene *myScene);
+
+    void gamePaused() override;
+    void gameContinued() override;
 
 
 
