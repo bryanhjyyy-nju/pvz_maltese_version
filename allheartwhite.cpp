@@ -11,7 +11,7 @@ AllHeartWhite::AllHeartWhite(MyGameScene *myScene) :WhiteDogs(":/white/Image/all
         emit heartGenerated(this->pos());
     });
 
-    whiteDogTimer->start(6000); //每 3s 产一个阳光
+    whiteDogTimer->start(6000); //每 6s 产一个阳光
 
     connect(this, &AllHeartWhite::heartGenerated, myScene, [=](){
         myScene->generateWhiteHeart(this->pos());

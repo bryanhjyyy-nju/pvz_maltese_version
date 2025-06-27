@@ -36,7 +36,7 @@ Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCu
 
     //创建爱心消失计时器
     memDisappearTimer = new QTimer(this);
-    memDisappearTimer->setInterval(5000);
+    memDisappearTimer->setInterval(4500);
     memDisappearTimer->setSingleShot(true);
 
     //链接信号和曹

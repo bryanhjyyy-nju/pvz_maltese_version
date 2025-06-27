@@ -32,16 +32,30 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
         case 1: m_totalZombiesForLevel =3; break;
         case 2: m_totalZombiesForLevel = 6; break;
         case 3: m_totalZombiesForLevel = 10; break;
-        case 4: m_totalZombiesForLevel = 20; break;
-        case 5: m_totalZombiesForLevel = 25; break;
-        case 6: m_totalZombiesForLevel = 30; break;
-        case 7: m_totalZombiesForLevel = 32; break;
+        case 4: m_totalZombiesForLevel = 17; break;
+        case 5: m_totalZombiesForLevel = 20; break;
+        case 6: m_totalZombiesForLevel = 25; break;
+        case 7: m_totalZombiesForLevel = 30; break;
         case 8: m_totalZombiesForLevel = 35; break;
         case 9: m_totalZombiesForLevel = 40; break;
-        case 10: m_totalZombiesForLevel = 42; break;
+        case 10: m_totalZombiesForLevel = 50; break;
         default: m_totalZombiesForLevel = 3; break;
     }
     // qDebug() << m_totalZombiesForLevel;
+    QFont font;
+    font.setBold(true);
+    font.setFamily("黑体");
+    font.setPointSize(18);
+    QGraphicsTextItem * textZombieUp = this->addText("已击败：",font);
+    textZombieUp->setPos(QPointF(1330,10));
+    textZombieUp->setZValue(31);
+    QGraphicsTextItem * textZombieDown = this->addText(QString("%1/%2").arg(m_zombiesKilled).arg(m_totalZombiesForLevel),font);
+    textZombieDown->setPos(QPointF(1360,60));
+    textZombieDown->setZValue(31);
+    connect(this, &MyGameScene::changeRestZombieNumber, this, [=](){
+        // qDebug() << "change";
+        textZombieDown->setPlainText(QString("%1/%2").arg(m_zombiesKilled).arg(m_totalZombiesForLevel));
+    });
 
     // 连接游戏胜利和失败的信号到对应的槽函数
     connect(this, &MyGameScene::gameWin, this, &MyGameScene::winTheGame);
@@ -79,8 +93,7 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
     shovel->setScale(0.72);
     shovel->setZValue(30);
     addItem(shovel);
-    QFont font;
-    font.setBold(true);
+    // font.setBold(true);
     font.setFamily("Arial");
     font.setPointSize(25);
     QGraphicsTextItem * textShovel = this->addText("R",font);
@@ -112,11 +125,12 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
     memYellowDogsTimer = new QTimer(this);
 
     // --- 根据关卡等级定义生成参数 ---
-    int minInterval, maxInterval; // 每波僵尸生成的最小/最大时间间隔 (毫秒)
+    int minInterval, maxInterval; // 每波僵尸生成的最小/最大时间间隔 (毫秒) (写到成员变量内部去了)
     int minRow, maxRow;           // 允许生成的最小/最大行号
     double toughZombieChance = 0.0;     // 生成种类1(高血量)僵尸的概率 (0.0 to 1.0)
     int zombiesPerWave = 1;       // 每波僵尸的基础数量
     double multiSpawnChance = 0.0;// 每波额外生成一个僵尸的概率
+    double multimulti = 0.0; // 每波可能额外生成另一个僵尸
     double quickZombieChance = 0.0;     // 生成种类2(高移速)僵尸的概率（0.0 to 1.0）
 
     switch(gameLevelNum){
@@ -134,23 +148,26 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
             break;
         case 4:
             minRow = 0; maxRow = 4; // 全部行
-            minInterval = 12000; maxInterval = 16000;
+            minInterval = 4000; maxInterval = 16000;
+            toughZombieChance = 0.15;
             break;
         case 5:
             minRow = 0; maxRow = 4;
-            minInterval = 11000; maxInterval = 15000;
+            minInterval = 5000; maxInterval = 14000;
             toughZombieChance = 0.15; // 15% 概率出现种类1
             break;
         case 6:
             minRow = 0; maxRow = 4;
-            minInterval = 10000; maxInterval = 14000;
+            minInterval = 7000; maxInterval = 13000;
             toughZombieChance = 0.25; // 25% 概率
             break;
         case 7:
             minRow = 0; maxRow = 4;
-            minInterval = 9000; maxInterval = 12000;
+            minInterval = 13000; maxInterval = 18000;
             toughZombieChance = 0.35; // 35% 概率
-            multiSpawnChance = 0.10; // 10% 概率额外生成一个
+            quickZombieChance = 0.05; // 35% * 5% 概率生成一个冲刺小狗
+            zombiesPerWave = 2; //每波僵尸至少 2 个
+            multiSpawnChance = 0.05; // 5% 概率额外生成一个
             break;
         case 8:
             minRow = 0; maxRow = 4;
@@ -160,18 +177,19 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
             break;
         case 9:
             minRow = 0; maxRow = 4;
-            minInterval = 7000; maxInterval = 9000;
-            toughZombieChance = 0.55; // 55% 概率
-            quickZombieChance = 0.20; //15% 概率生成一个冲刺小狗
+            minInterval = 8000; maxInterval = 20000;
+            toughZombieChance = 0.50; // 50% 概率
+            quickZombieChance = 0.20; // 50% * 15% 概率生成一个冲刺小狗
             multiSpawnChance = 0.40; // 40% 概率额外生成一个
             break;
         case 10:
             minRow = 0; maxRow = 4;
-            minInterval = 5000; maxInterval = 8000; // 间隔很短
+            minInterval = 9000; maxInterval = 24000; // 间隔很短
             toughZombieChance = 0.65; // 65% 概率
             quickZombieChance = 0.35; // 30% 概率生成一个冲刺小狗
             zombiesPerWave = 2; // 每波至少2个
-            multiSpawnChance = 0.20; // 20% 概率生成第3个
+            multiSpawnChance = 0.30; // 20% 概率生成第3个
+            multimulti = 0.15; //可能额外多生成两个
             break;
         default: // 处理无效关卡号，难度同第一关
             minRow = 2; maxRow = 2;
@@ -185,6 +203,11 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
         if (QRandomGenerator::global()->generateDouble() < multiSpawnChance) {
             spawnCount++;
         }
+        if (QRandomGenerator::global()->generateDouble() < multimulti) {
+            spawnCount += 2;
+        }
+
+        //todo : 前期削减难度，后期增强难度
 
         for (int i = 0; i < spawnCount; ++i) {
             // 1. 在允许的范围内随机选择一行
@@ -204,6 +227,12 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
 
             // 3. 调用函数生成僵尸
             setAYellowDog(row, type);
+            // // 判断是否应当给游戏加速
+            // if (!beFaster && m_zombiesSpawned >= 21 &&  gameLevelNum == 9){
+            //     minInterval = 9000;
+            //     maxInterval = 12000;
+            //     beFaster = true;
+            // }
         }
 
         // 4. 为下一波僵尸设置一个新的随机时间间隔
@@ -212,22 +241,11 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
     });
 
     // 启动计时器，设置一个初始延迟，避免游戏一开始就出僵尸
-    memYellowDogsTimer->start(15000); // 第一波僵尸在15秒后开始生成
-
-    //todo : 设置僵尸一大波来
-    // switch(gameLevelNum) {
-    // case 1: ; break;
-    // case 2: ; break;
-    // case 3: ; break;
-    // case 4: ; break;
-    // case 5: ; break;
-    // case 6: ; break;
-    // case 7: ; break;
-    // case 8: ; break;
-    // case 9: ; break;
-    // case 10: ; break;
-    // default: ; break;
-    // }
+    if(gameLevelNum == 10){
+        memYellowDogsTimer->start(20000);
+    }else{
+        memYellowDogsTimer->start(15000); // 第一波僵尸在15秒后开始生成
+    }
 }
 
 //初始化地图占用表
@@ -455,6 +473,7 @@ void MyGameScene::setAYellowDog(int r,int typeNum){
             m_zombiesKilled++;
             //调试
             // qDebug() << m_zombiesKilled;
+            emit changeRestZombieNumber();
             checkWinCondition();
         }
     });

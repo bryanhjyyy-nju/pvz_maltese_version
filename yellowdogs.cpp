@@ -75,9 +75,9 @@ void YellowDogs::initArgues(int typeNum){
         setupGifAnimation(":/yellow/Image/guitarYellow.gif",0.4);
     }
     else if(typeNum == 2){
-        hp = 180;
+        hp = 360;
         speed = 50;
-        atkPower = 50;
+        atkPower = 80;
         setupGifAnimation(":/yellow/Image/dashYellow.gif",0.5);
     }
     else {

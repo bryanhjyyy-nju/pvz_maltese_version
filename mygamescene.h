@@ -71,7 +71,10 @@ private:
     int m_zombiesSpawned = 0;       // 已生成的僵尸数
     int m_zombiesKilled = 0;        // 已消灭的僵尸数
     bool m_isGameOver = false;      // 标记游戏是否已结束
+    // bool beFaster = false; // 加快游戏进度
     // bool m_isZombieWave = false;    // 标记是否正在经历大波僵尸
+    // int minInterval = 1000;
+    // int maxInterval = 1000; // 每波僵尸生成的最小/最大时间间隔 (毫秒)
 
     QGraphicsPixmapItem * shovel; //铲子
     void mouseMoveEvent(QGraphicsSceneMouseEvent * event) override;
@@ -87,6 +90,7 @@ signals:
     void mouseMovedTo(QPointF mousePos);
     void allowTracking();
     void banTracking();
+    void changeRestZombieNumber();
     // void gameRestart();
     // void gamePause();
 
