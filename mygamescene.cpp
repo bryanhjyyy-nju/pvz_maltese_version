@@ -279,10 +279,7 @@ void MyGameScene::generateBullet(int r,int c){
 }
 
 void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
-
-
     if (Card::currentState() == GameState::PrePlace){
-
         //转换到坐标网格系统
         int col, row;
         //转换成坐标网格系统
@@ -366,7 +363,28 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
         // qDebug() << "scene clicked";
         Heart::curMousePos = event->scenePos();
         emit sceneClicked();
+        QGraphicsScene::mousePressEvent(event);
     }
+    else if(Card::currentState() == GameState::Shoveling){
+        int col, row;
+        if(mapGrid->turnPosToMap(event->scenePos(),col,row)){
+            if(mapOccupied[row * 9 + col]){
+                dogMap[row * 9 + col]->removeItself();
+                Card::setGameState(GameState::Normal);
+            }
+        }
+        QGraphicsScene::mousePressEvent(event);
+    }
+}
+
+void MyGameScene::keyPressEvent(QKeyEvent *event){
+    if(Card::currentState() == GameState::Normal){
+        Card::setGameState(GameState::Shoveling);
+    }
+    else if(Card::currentState() == GameState::Shoveling){
+        Card::setGameState(GameState::Normal);
+    }
+    QGraphicsScene::keyPressEvent(event);
 }
 
 void MyGameScene::setAYellowDog(int r,int typeNum){

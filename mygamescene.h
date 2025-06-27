@@ -47,6 +47,9 @@ private:
     bool *mapOccupied = NULL; //添加占用状态表
     WhiteDogs *dogMap[45] = {nullptr};
     void mousePressEvent(QGraphicsSceneMouseEvent * event) override;
+    // void mouseReleaseEvent(QGraphicsSceneMouseEvent * event) override;
+    void keyPressEvent(QKeyEvent *event) override;
+
     int chosenNum = 0;
     int restHeart = 50; // 剩余阳光初始化为50
     // int zombieMap[5] = {0};
@@ -76,6 +79,7 @@ signals:
     void sceneClicked();
     void gameWin();
     void gameLose();
+    void shovelPlant(int r, int c);
     // void gameRestart();
     // void gamePause();
 
