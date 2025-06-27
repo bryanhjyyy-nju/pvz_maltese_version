@@ -22,10 +22,14 @@ public:
     void gamePaused() override;
     void gameContinued() override;
 
+    void startMoving() override;
+    virtual void stopMoving() override;
+
 protected:
     WhiteDogs *targetWhiteDog;
     int atkPower = 10;
     bool m_isGamePaused = false;
+    QPropertyAnimation *tempBackAnim;
 
 signals:
     void isAttacked();

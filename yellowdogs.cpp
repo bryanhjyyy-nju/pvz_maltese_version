@@ -16,6 +16,10 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog
         if(hp <= 0){ removeItself(); }
     });
 
+    tempBackAnim = new QPropertyAnimation(this, "pos", this);
+    tempBackAnim->setDuration(200);
+    tempBackAnim->setEasingCurve(QEasingCurve::Linear);
+
     //设置运动动画
     movingAnim = new QPropertyAnimation(this, "pos", this);
     movingAnim->setDuration(1000);
@@ -32,7 +36,7 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog
         }
     });
 
-    connect(myScene->memGameTimer,&QTimer::timeout, this,[=](){
+    connect(myScene->memLongGameTimer,&QTimer::timeout, this,[=](){
         if (m_isGamePaused){
             this->stopMoving();
             return;
@@ -46,7 +50,11 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog
             //攻击逻辑
             stopMoving();
             targetWhiteDog->cutHp(atkPower);
-            if(targetWhiteDog->getAtkType()){ getAttacked(atkPower * 0.8); } //跳舞小狗反弹80%伤害
+            if(targetWhiteDog->getAtkType() == 1){ getAttacked(atkPower * 0.5); } //跳舞小狗反弹80%伤害
+            else if(targetWhiteDog->getAtkType() == 2){
+                tempBackAnim->setEndValue(pos() + QPointF(100, 0));
+                tempBackAnim->start();
+            }
             if(targetWhiteDog->getHp() <= 0){
                 targetWhiteDog->removeItself();
                 targetWhiteDog = nullptr;
@@ -63,13 +71,19 @@ void YellowDogs::initArgues(int typeNum){
     if(typeNum == 1){
         hp = 600;
         speed = 20;
-        atkPower = 12;
+        atkPower = 60;
         setupGifAnimation(":/yellow/Image/guitarYellow.gif",0.4);
+    }
+    else if(typeNum == 2){
+        hp = 180;
+        speed = 50;
+        atkPower = 50;
+        setupGifAnimation(":/yellow/Image/dashYellow.gif",0.5);
     }
     else {
         hp = 300;
         speed = 30;
-        atkPower = 10;
+        atkPower = 50;
         setupGifAnimation(":/yellow/Image/forkYellow.gif",0.55);
     }
 }
@@ -114,4 +128,22 @@ void YellowDogs::gameContinued(){
     }
     m_isGamePaused = false;
     startMoving();
+}
+
+void YellowDogs::startMoving(){
+    if (!memIsMoving){
+        memIsMoving = true;
+        movingAnim->setStartValue(pos());
+        movingAnim->setEndValue(pos() - QPointF(speed, 0));
+        movingAnim->start();
+    }
+}
+
+void YellowDogs::stopMoving(){
+    if(memIsMoving){
+        if(movingAnim){
+            memIsMoving = false;
+            movingAnim->stop();
+        }
+    }
 }

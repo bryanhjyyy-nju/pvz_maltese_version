@@ -10,6 +10,8 @@ class MoneyWhite : public WhiteDogs
 public:
     explicit MoneyWhite();
 
+    int getAtkType() override{ return 2; }
+
 signals:
 };
 

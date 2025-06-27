@@ -58,7 +58,8 @@ private:
     QTimer *memSkyHeartTimer; //天空中的爱心生成计时器
     QTimer *memYellowDogsTimer; //小金毛计时器
     QTimer *memGameTimer; //游戏总的计时器
-    // QTimer *memGameLongTimer;
+    QTimer *memLongGameTimer; //0.5秒更新一次的计时器
+    // QTimer *memWaveTimer; //一大波僵尸持续时长计时器
 
     void checkWinCondition(); // 检查胜利条件的私有函数
     void stopAllTimers();     // 停止所有计时器的辅助函数
@@ -67,6 +68,7 @@ private:
     int m_zombiesSpawned = 0;       // 已生成的僵尸数
     int m_zombiesKilled = 0;        // 已消灭的僵尸数
     bool m_isGameOver = false;      // 标记游戏是否已结束
+    // bool m_isZombieWave = false;    // 标记是否正在经历大波僵尸
 
 signals:
     void plantFinished();

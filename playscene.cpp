@@ -51,6 +51,16 @@ PlayScene::PlayScene(int levelNum) :
 
     connect(this, &PlayScene::gameLose, this, &PlayScene::gamePaused);
     connect(this, &PlayScene::gameWin, this, &PlayScene::gamePaused);
+    connect(this, &PlayScene::gameLose, this, [=](){
+        QTimer::singleShot(3000,this,[=](){
+            emit this->playSceneBack();
+        });
+    });
+    connect(this, &PlayScene::gameWin, this, [=](){
+        QTimer::singleShot(3000,this,[=](){
+            emit this->playSceneBack();
+        });
+    });
     //接收游戏胜利失败暂停信号
     connect(myGameScene, &MyGameScene::gameLose, this, &PlayScene::gameLose);
     connect(myGameScene, &MyGameScene::gameWin, this, &PlayScene::gameWin);

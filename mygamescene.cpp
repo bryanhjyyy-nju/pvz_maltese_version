@@ -1,4 +1,4 @@
-//mygamescene.cpp
+ //mygamescene.cpp
 #include "mygamescene.h"
 #include <QDebug>
 #include <QGraphicsSceneMouseEvent>
@@ -28,17 +28,17 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
 
     // 根据关卡设置总僵尸数
     switch(gameLevelNum) {
-        case 1: m_totalZombiesForLevel = 7; break;
-        case 2: m_totalZombiesForLevel = 12; break;
-        case 3: m_totalZombiesForLevel = 15; break;
-        case 4: m_totalZombiesForLevel = 25; break;
-        case 5: m_totalZombiesForLevel = 30; break;
-        case 6: m_totalZombiesForLevel = 35; break;
-        case 7: m_totalZombiesForLevel = 40; break;
-        case 8: m_totalZombiesForLevel = 50; break;
-        case 9: m_totalZombiesForLevel = 60; break;
-        case 10: m_totalZombiesForLevel = 75; break;
-        default: m_totalZombiesForLevel = 10; break;
+        case 1: m_totalZombiesForLevel =3; break;
+        case 2: m_totalZombiesForLevel = 6; break;
+        case 3: m_totalZombiesForLevel = 10; break;
+        case 4: m_totalZombiesForLevel = 20; break;
+        case 5: m_totalZombiesForLevel = 25; break;
+        case 6: m_totalZombiesForLevel = 30; break;
+        case 7: m_totalZombiesForLevel = 32; break;
+        case 8: m_totalZombiesForLevel = 35; break;
+        case 9: m_totalZombiesForLevel = 40; break;
+        case 10: m_totalZombiesForLevel = 42; break;
+        default: m_totalZombiesForLevel = 3; break;
     }
     // qDebug() << m_totalZombiesForLevel;
 
@@ -69,6 +69,8 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
     //添加游戏计时器
     memGameTimer = new QTimer(this);
     memGameTimer->start(100);
+    memLongGameTimer = new QTimer(this);
+    memLongGameTimer->start(500);
 
     //添加天空中随即爱心生成计时器
     memSkyHeartTimer = new QTimer(this);
@@ -85,30 +87,27 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
     // --- 根据关卡等级定义生成参数 ---
     int minInterval, maxInterval; // 每波僵尸生成的最小/最大时间间隔 (毫秒)
     int minRow, maxRow;           // 允许生成的最小/最大行号
-    double toughZombieChance;     // 生成种类1(高血量)僵尸的概率 (0.0 to 1.0)
+    double toughZombieChance = 0.0;     // 生成种类1(高血量)僵尸的概率 (0.0 to 1.0)
     int zombiesPerWave = 1;       // 每波僵尸的基础数量
     double multiSpawnChance = 0.0;// 每波额外生成一个僵尸的概率
+    double quickZombieChance = 0.0;     // 生成种类2(高移速)僵尸的概率（0.0 to 1.0）
 
     switch(gameLevelNum){
         case 1:
             minRow = 2; maxRow = 2; // 仅在中间行
             minInterval = 18000; maxInterval = 22000; // 间隔长
-            toughZombieChance = 0.0;
             break;
         case 2:
             minRow = 1; maxRow = 3; // 中间三行
             minInterval = 16000; maxInterval = 20000;
-            toughZombieChance = 0.0;
             break;
         case 3:
             minRow = 1; maxRow = 3;
             minInterval = 14000; maxInterval = 18000; // 间隔缩短
-            toughZombieChance = 0.0;
             break;
         case 4:
             minRow = 0; maxRow = 4; // 全部行
             minInterval = 12000; maxInterval = 16000;
-            toughZombieChance = 0.0;
             break;
         case 5:
             minRow = 0; maxRow = 4;
@@ -136,19 +135,20 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
             minRow = 0; maxRow = 4;
             minInterval = 7000; maxInterval = 9000;
             toughZombieChance = 0.55; // 55% 概率
+            quickZombieChance = 0.20; //15% 概率生成一个冲刺小狗
             multiSpawnChance = 0.40; // 40% 概率额外生成一个
             break;
         case 10:
             minRow = 0; maxRow = 4;
             minInterval = 5000; maxInterval = 8000; // 间隔很短
             toughZombieChance = 0.65; // 65% 概率
+            quickZombieChance = 0.35; // 30% 概率生成一个冲刺小狗
             zombiesPerWave = 2; // 每波至少2个
             multiSpawnChance = 0.20; // 20% 概率生成第3个
             break;
         default: // 处理无效关卡号，难度同第一关
             minRow = 2; maxRow = 2;
             minInterval = 18000; maxInterval = 22000;
-            toughZombieChance = 0.0;
             break;
     }
 
@@ -167,7 +167,12 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
             // 2. 根据概率选择僵尸种类
             int type = 0; // 默认为种类0
             if (QRandomGenerator::global()->generateDouble() < toughZombieChance) {
-                type = 1; // 种类1(高血量)
+                if(QRandomGenerator::global()->generateDouble() < quickZombieChance){
+                    type = 2; //种类2(高移速)
+                }
+                else{
+                    type = 1; // 种类1(高血量)
+                }
             }
 
             // 3. 调用函数生成僵尸
@@ -427,6 +432,7 @@ void MyGameScene::stopAllTimers()
     memGameTimer->stop();
     memSkyHeartTimer->stop();
     memYellowDogsTimer->stop();
+    memLongGameTimer->stop();
 }
 
 void MyGameScene::winTheGame()
