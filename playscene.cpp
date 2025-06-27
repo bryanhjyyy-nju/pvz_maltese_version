@@ -6,6 +6,7 @@
 #include "card.h"
 #include <QVector>
 #include "mygamescene.h"
+#include <QMouseEvent>
 
 PlayScene::PlayScene(int levelNum) :
     levelIndex(levelNum), //维护传进来的关卡号, 加载地图
@@ -43,6 +44,11 @@ PlayScene::PlayScene(int levelNum) :
 
     //设置卡牌
     setCardsInBar();
+
+    //初始化预加载图片
+    preImageLabel = new QLabel(this);
+    preImageLabel->setVisible(false);
+    preImageLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
 
 
     //加载植物
@@ -111,6 +117,17 @@ PlayScene::PlayScene(int levelNum) :
         emit signalToCard();
     });
 
+    connect(myGameScene, &MyGameScene::allowTracking, this, [=](){
+        myGraphicsView->setMouseTracking(true);
+    });
+    connect(myGameScene, &MyGameScene::banTracking, this, [=](){
+        myGraphicsView->setMouseTracking(false);
+    });
+
+    connect(myGameScene, &MyGameScene::mouseMovedTo, this, [=](QPointF mousePos){
+        preImageLabel->move(mousePos.x() - preImageLabel->width() / 2, mousePos.y() - preImageLabel->height() / 2);
+        preImageLabel->setVisible(true);
+    });
 }
 
 
@@ -130,6 +147,8 @@ void PlayScene::buildBackBtn(){
             emit this->playSceneBack();
         });
     });
+
+    connect(myGameScene, &MyGameScene::pleaseRemovePreImage, this, &PlayScene::stopShow);
 }
 
 void PlayScene::setLevelText(){
@@ -212,6 +231,8 @@ void PlayScene::setCardsInBar(){
         connect(card, &Card::cardSelected, this, &PlayScene::handleCardSelected);
         connect(card, &Card::cardSelected, myGameScene, [=](){
             myGameScene->setChosenNum(i);
+            myGraphicsView->setMouseTracking(true);
+            startShow(i);
         });
 
         //除爱心小狗外，其他小狗一开始就进入冷却
@@ -235,6 +256,28 @@ void PlayScene::handleCardSelected(Card *card){
     Card::setGameState(GameState::PrePlace);
     Card::setSelectedWhite(card->whiteType);
 }
+
+void PlayScene::startShow(int num){
+    QPixmap pix;
+    pix.load(whiteImages[num]);
+    pix = pix.scaled(sizes[num] * 2, sizes[num] * 2);
+    preImageLabel->setFixedSize(sizes[num] * 2, sizes[num] * 2);
+    preImageLabel->setPixmap(pix);
+    // preImageLabel->move(100 - preImageLabel->width() / 2, 100 - preImageLabel->height() / 2);
+    // preImageLabel->setVisible(true);
+}
+
+void PlayScene::stopShow(){
+    preImageLabel->setVisible(false);
+    myGraphicsView->setMouseTracking(false);
+}
+
+// void PlayScene::mouseMoveEvent(QMouseEvent *event){
+//     if(imageFollowing){
+//         preImageLabel->move(event->pos().x(), event->pos().y());
+//     }
+//     QMainWindow::mouseMoveEvent(event);
+// }
 
 void PlayScene::gamePaused(){
     Card::setGameState(GameState::Paused);

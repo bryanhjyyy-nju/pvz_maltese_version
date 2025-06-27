@@ -73,6 +73,9 @@ private:
     bool m_isGameOver = false;      // 标记游戏是否已结束
     // bool m_isZombieWave = false;    // 标记是否正在经历大波僵尸
 
+    QGraphicsPixmapItem * shovel; //铲子
+    void mouseMoveEvent(QGraphicsSceneMouseEvent * event) override;
+
 signals:
     void plantFinished();
     void heartCollected();
@@ -80,6 +83,10 @@ signals:
     void gameWin();
     void gameLose();
     void shovelPlant(int r, int c);
+    void pleaseRemovePreImage();
+    void mouseMovedTo(QPointF mousePos);
+    void allowTracking();
+    void banTracking();
     // void gameRestart();
     // void gamePause();
 

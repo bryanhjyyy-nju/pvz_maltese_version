@@ -67,6 +67,10 @@ private:
     QGraphicsView* myGraphicsView;    // 可视化视图
     QLabel *restHeartLabel = NULL; //显示剩余阳光
 
+    QLabel *preImageLabel = NULL;
+    void startShow(int num);
+    void stopShow();
+
 signals:
     void playSceneBack();
     void signalToCard();

@@ -37,5 +37,7 @@
         <file>Image/coin.gif</file>
         <file>Image/blueNote.png</file>
         <file>Image/note.png</file>
+        <file>Image/shovel.png</file>
+        <file>Image/shovelBar.png</file>
     </qresource>
 </RCC>

@@ -16,6 +16,7 @@
 #include <QApplication>
 #include "yellowdogs.h"
 #include "bullet.h"
+#include <QPainter>
 
 MyGameScene::MyGameScene(int n,QMainWindow *parent)
     : QGraphicsScene(parent)
@@ -60,6 +61,32 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
     QGraphicsPixmapItem *backGroundItem = addPixmap(backgroundPixmap);
     backGroundItem->setPos(0, 0);
     backGroundItem->setScale(1);
+    // this->addRect(3,3,200,200,QPen(Qt::black,3), QBrush(Qt::yellow));
+    // font.setFamily("华文新魏");
+    // font.setPointSize(12);
+    // QGraphicsTextItem * textIt = this->addText("您选择的小白:",font);
+    // textIt->setScale(1.2);
+
+    QPixmap shovelPix(":/others/Image/shovelBar.png");
+    QGraphicsPixmapItem * shovelBar;
+    shovelBar = new QGraphicsPixmapItem(shovelPix);
+    shovelBar->setPos(QPointF(1200, 0));
+    shovelBar->setScale(0.8);
+    addItem(shovelBar);
+    shovelPix.load(":/others/Image/shovel.png");
+    shovel = new QGraphicsPixmapItem(shovelPix);
+    shovel->setPos(QPointF(1200,0));
+    shovel->setScale(0.72);
+    shovel->setZValue(30);
+    addItem(shovel);
+    QFont font;
+    font.setBold(true);
+    font.setFamily("Arial");
+    font.setPointSize(25);
+    QGraphicsTextItem * textShovel = this->addText("R",font);
+    textShovel->setPos(QPointF(1230,20));
+    textShovel->setZValue(31);
+
 
     //添加网格
     mapGrid = new Map(9, 5, QSize(121,145), QPointF(380,130));
@@ -323,6 +350,8 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
                         myDog = new MoneyWhite;
                         break;
                 }
+                emit pleaseRemovePreImage();
+
                 myDog->setPos(centerLoc - QPointF(myDog->pixmap().width() / 2.0, myDog->pixmap().height() / 2.0));
                 addItem(myDog);
 
@@ -370,19 +399,34 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
         if(mapGrid->turnPosToMap(event->scenePos(),col,row)){
             if(mapOccupied[row * 9 + col]){
                 dogMap[row * 9 + col]->removeItself();
+                emit banTracking();
                 Card::setGameState(GameState::Normal);
+                shovel->setPos(1200,0);
             }
         }
         QGraphicsScene::mousePressEvent(event);
     }
 }
 
+void MyGameScene::mouseMoveEvent(QGraphicsSceneMouseEvent * event){
+    if(Card::currentState() == GameState::Shoveling){
+        shovel->setPos(event->scenePos() - QPointF(shovel->pixmap().width() / 2.0, shovel->pixmap().height() / 2.0));
+    }
+    else if(Card::currentState() == GameState::PrePlace){
+        emit mouseMovedTo(event->scenePos());
+    }
+    QGraphicsScene::mouseMoveEvent(event);
+}
+
 void MyGameScene::keyPressEvent(QKeyEvent *event){
     if(Card::currentState() == GameState::Normal){
+        emit allowTracking();
         Card::setGameState(GameState::Shoveling);
     }
     else if(Card::currentState() == GameState::Shoveling){
+        emit banTracking();
         Card::setGameState(GameState::Normal);
+        shovel->setPos(1200,0);
     }
     QGraphicsScene::keyPressEvent(event);
 }
