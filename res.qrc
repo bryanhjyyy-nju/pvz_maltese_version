@@ -40,4 +40,9 @@
         <file>Image/shovel.png</file>
         <file>Image/shovelBar.png</file>
     </qresource>
+    <qresource prefix="/music">
+        <file>Media/buttonConfirm.mp3</file>
+        <file>Media/plant.mp3</file>
+        <file>Media/sunShine.mp3</file>
+    </qresource>
 </RCC>

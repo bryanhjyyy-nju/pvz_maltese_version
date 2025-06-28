@@ -145,6 +145,7 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
         case 3:
             minRow = 1; maxRow = 3;
             minInterval = 14000; maxInterval = 18000; // 间隔缩短
+            multiSpawnChance = 0.10;
             break;
         case 4:
             minRow = 0; maxRow = 4; // 全部行
@@ -184,7 +185,7 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
             break;
         case 10:
             minRow = 0; maxRow = 4;
-            minInterval = 9000; maxInterval = 24000; // 间隔很短
+            minInterval = 7500; maxInterval = 23500; // 间隔很短
             toughZombieChance = 0.65; // 65% 概率
             quickZombieChance = 0.35; // 30% 概率生成一个冲刺小狗
             zombiesPerWave = 2; // 每波至少2个
@@ -366,6 +367,10 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
 
                     case 7:
                         myDog = new MoneyWhite;
+                        break;
+
+                    default:
+                        myDog = new WallWhite;
                         break;
                 }
                 emit pleaseRemovePreImage();

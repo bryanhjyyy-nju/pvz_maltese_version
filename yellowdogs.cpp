@@ -9,7 +9,7 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog
     initArgues(typeNum);
 
     //设置位置
-    setPos(QPointF(QRandomGenerator::global()->bounded(200) + 480 + 9 * 121 - pixmap().width() / 2, 130 + 145 * (row + 0.5) - pixmap().height() / 2));
+    setPos(QPointF(QRandomGenerator::global()->bounded(180) + 500 + 9 * 121 - pixmap().width() / 2, 130 + 145 * (row + 0.5) - pixmap().height() / 2));
 
     //先关联被打和移除自己的信号和槽
     connect(this, &YellowDogs::isAttacked, this, [this](){
@@ -69,20 +69,20 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog
 
 void YellowDogs::initArgues(int typeNum){
     if(typeNum == 1){
-        hp = 600;
-        speed = 20;
+        hp = 800;
+        speed = 15 + QRandomGenerator::global()->bounded(8);
         atkPower = 60;
         setupGifAnimation(":/yellow/Image/guitarYellow.gif",0.4);
     }
     else if(typeNum == 2){
-        hp = 360;
-        speed = 50;
+        hp = 400;
+        speed = 40 + QRandomGenerator::global()->bounded(10);
         atkPower = 80;
         setupGifAnimation(":/yellow/Image/dashYellow.gif",0.5);
     }
     else {
         hp = 300;
-        speed = 30;
+        speed = 25 + QRandomGenerator::global()->bounded(8);
         atkPower = 50;
         setupGifAnimation(":/yellow/Image/forkYellow.gif",0.55);
     }

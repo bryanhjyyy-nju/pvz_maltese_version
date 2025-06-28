@@ -36,8 +36,8 @@ private:
                                    "allHeartWhite", //产爱心更快的向日葵
                                    "dblSingWhite", //发射子弹更快的豌豆射手
                                    "moneyWhite"}; //毫无效果
-    QVector<int> heartCosts = {100,50,50,0,150,125,200,75}; //消耗爱心数量枚举
-    QVector<int> coolTimes = {7500,5000,17500,30000,12500,12500,15000,10000}; //冷却时间枚举
+    QVector<int> heartCosts = {100,50,50,0,75,125,200,75}; //消耗爱心数量枚举
+    QVector<int> coolTimes = {7500,5000,17500,45000,20000,12500,15000,10000}; //冷却时间枚举
 
     QVector<Card *> myCards;
 

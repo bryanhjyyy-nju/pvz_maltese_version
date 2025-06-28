@@ -88,6 +88,7 @@ void Heart::hasReachedGround(){
 }
 
 void Heart::hasDisappear(){
+    isCollectable = false;
     isDisappearing = true;
     QPropertyAnimation *fadeAnim = new QPropertyAnimation(this, "opacity");
     fadeAnim->setStartValue(1.0);
