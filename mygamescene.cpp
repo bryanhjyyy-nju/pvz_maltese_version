@@ -172,24 +172,25 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
             break;
         case 8:
             minRow = 0; maxRow = 4;
-            minInterval = 8000; maxInterval = 11000;
-            toughZombieChance = 0.45; // 45% 概率
-            multiSpawnChance = 0.25; // 25% 概率额外生成一个
+            minInterval = 5000; maxInterval = 15000;
+            toughZombieChance = 0.75; // 75% 概率
+            multiSpawnChance = 0.15; // 15% 概率额外生成一个
             break;
         case 9:
             minRow = 0; maxRow = 4;
-            minInterval = 8000; maxInterval = 20000;
-            toughZombieChance = 0.50; // 50% 概率
-            quickZombieChance = 0.20; // 50% * 15% 概率生成一个冲刺小狗
+            minInterval = 10000; maxInterval = 16000;
+            toughZombieChance = 0.60; // 60% 概率
+            quickZombieChance = 0.30; // 60% * 30% 概率生成一个冲刺小狗
             multiSpawnChance = 0.40; // 40% 概率额外生成一个
+            multimulti = 0.05; // 5% 概率额外生成两个
             break;
         case 10:
             minRow = 0; maxRow = 4;
             minInterval = 7500; maxInterval = 23500; // 间隔很短
             toughZombieChance = 0.65; // 65% 概率
-            quickZombieChance = 0.35; // 30% 概率生成一个冲刺小狗
+            quickZombieChance = 0.35; // 35% 概率生成一个冲刺小狗
             zombiesPerWave = 2; // 每波至少2个
-            multiSpawnChance = 0.30; // 20% 概率生成第3个
+            multiSpawnChance = 0.30; // 30% 概率生成第3个
             multimulti = 0.15; //可能额外多生成两个
             break;
         default: // 处理无效关卡号，难度同第一关
@@ -243,8 +244,9 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
 
     // 启动计时器，设置一个初始延迟，避免游戏一开始就出僵尸
     if(gameLevelNum == 10){
-        memYellowDogsTimer->start(20000);
-    }else{
+        memYellowDogsTimer->start(28000);
+    }
+    else{
         memYellowDogsTimer->start(15000); // 第一波僵尸在15秒后开始生成
     }
 }
@@ -551,7 +553,7 @@ void MyGameScene::winTheGame()
     winText->setPos(center.x() - textRect.width() / 2, center.y() - textRect.height() / 2);
 
     // 确保文本在最上层显示
-    winText->setZValue(20);
+    winText->setZValue(32);
 
     addItem(winText);
 }
@@ -591,7 +593,7 @@ void MyGameScene::loseTheGame()
     loseText->setPos(center.x() - textRect.width() / 2, center.y() - textRect.height() / 2);
 
     // 确保文本在最上层显示
-    loseText->setZValue(20);
+    loseText->setZValue(32);
 
     addItem(loseText);
 }
