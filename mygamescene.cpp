@@ -17,6 +17,7 @@
 #include "yellowdogs.h"
 #include "bullet.h"
 #include <QPainter>
+#include <QKeyEvent>
 
 MyGameScene::MyGameScene(int n,QMainWindow *parent)
     : QGraphicsScene(parent)
@@ -244,7 +245,7 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
 
     // 启动计时器，设置一个初始延迟，避免游戏一开始就出僵尸
     if(gameLevelNum == 10){
-        memYellowDogsTimer->start(28000);
+        memYellowDogsTimer->start(20000);
     }
     else{
         memYellowDogsTimer->start(15000); // 第一波僵尸在15秒后开始生成
@@ -444,11 +445,11 @@ void MyGameScene::mouseMoveEvent(QGraphicsSceneMouseEvent * event){
 }
 
 void MyGameScene::keyPressEvent(QKeyEvent *event){
-    if(Card::currentState() == GameState::Normal){
+    if(event->key() == Qt::Key_R && Card::currentState() == GameState::Normal){
         emit allowTracking();
         Card::setGameState(GameState::Shoveling);
     }
-    else if(Card::currentState() == GameState::Shoveling){
+    else if(event->key() == Qt::Key_R && Card::currentState() == GameState::Shoveling){
         emit banTracking();
         Card::setGameState(GameState::Normal);
         shovel->setPos(1200,0);
