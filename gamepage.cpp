@@ -111,6 +111,7 @@ bool GamePage::eventFilter(QObject *watched,QEvent *event) {
     auto *widget=qobject_cast<QWidget*>(watched);
     while(widget && widget!=this) widget=widget->parentWidget();
     if(!widget) return false;
+    if(key->key()==Qt::Key_Escape) return true;
     if(key->key()==Qt::Key_F11) {
         if(!key->isAutoRepeat()) emit fullScreenRequested();
         return true;

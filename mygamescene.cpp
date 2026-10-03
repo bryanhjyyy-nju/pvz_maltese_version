@@ -216,11 +216,6 @@ void MyGameScene::mouseMoveEvent(QGraphicsSceneMouseEvent * event){
 }
 
 void MyGameScene::keyPressEvent(QKeyEvent *event){
-    if(event->key() == Qt::Key_Escape && (Card::currentState() == GameState::PrePlace
-                                          || Card::currentState() == GameState::Shoveling)) {
-        cancelSelection();
-        return;
-    }
     if(event->key() == Qt::Key_R){
         toggleShovel();
         return;

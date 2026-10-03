@@ -158,7 +158,7 @@ private slots:
         QVERIFY(scene->findChildren<WhiteDogs*>().isEmpty());
         QTest::keyClick(view,Qt::Key_R);
         QCOMPARE(Card::currentState(),GameState::Shoveling);
-        QTest::keyClick(view,Qt::Key_Escape);
+        QTest::mouseClick(view->viewport(),Qt::RightButton);
         QCOMPARE(Card::currentState(),GameState::Normal);
         play.gamePaused();
         scene->toggleShovel();
@@ -588,7 +588,7 @@ private slots:
         if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+"/battle-fullscreen.png"));
         QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(1240,50)));
         QCOMPARE(Card::currentState(),GameState::Shoveling);
-        QTest::keyClick(view,Qt::Key_Escape);
+        QTest::mouseClick(view->viewport(),Qt::RightButton);
         QTest::keyClick(view,Qt::Key_Space); QTest::qWait(30);
         auto *pause=play->findChild<PauseDialog*>();
         QVERIFY(pause); QVERIFY(pause->isVisible());
@@ -773,6 +773,38 @@ private slots:
         if(root.playPage())
             for(auto *timer : root.playPage()->findChildren<QTimer*>()) QVERIFY(!timer->isActive());
         for(auto *sound : AudioManager::instance().findChildren<QSoundEffect*>()) QVERIFY(!sound->isPlaying());
+    }
+    void escapeOnlyLeavesFullScreen() {
+        QTemporaryDir dir;
+        GameWindow root(nullptr,dir.filePath("progress.json"));
+        root.show(); root.startLevel(8); QTest::qWait(40);
+        auto *play=root.playPage();
+        auto *view=play->findChild<QGraphicsView*>();
+        auto *scene=play->findChild<MyGameScene*>();
+        scene->toggleShovel();
+        QTest::keyClick(view,Qt::Key_Escape);
+        QCOMPARE(Card::currentState(),GameState::Shoveling);
+        root.setFullScreenEnabled(true); QTest::qWait(40);
+        QTest::keyClick(view,Qt::Key_Escape);
+        QTRY_VERIFY(!root.isFullScreen());
+        QCOMPARE(Card::currentState(),GameState::Shoveling);
+        QTest::mouseClick(view->viewport(),Qt::RightButton);
+        view->setFocus(); QTest::keyClick(view,Qt::Key_Space); QTest::qWait(30);
+        auto *menu=play->findChild<PauseDialog*>();
+        QVERIFY(menu && menu->isVisible());
+        root.setFullScreenEnabled(true); QTest::qWait(40);
+        QTest::keyClick(menu,Qt::Key_Escape);
+        QTRY_VERIFY(!root.isFullScreen());
+        QVERIFY(menu->isVisible()); QCOMPARE(Card::currentState(),GameState::Paused);
+        QTest::keyClick(menu,Qt::Key_Escape);
+        QVERIFY(menu->isVisible());
+        QTimer::singleShot(50,menu,[menu] {
+            auto *dialog=menu->findChild<AlmanacDialog*>();
+            QVERIFY(dialog); QTest::keyClick(dialog,Qt::Key_Escape);
+            QVERIFY(dialog->isVisible()); dialog->reject();
+        });
+        QTest::mouseClick(menu->findChild<QPushButton*>("almanac"),Qt::LeftButton);
+        QVERIFY(menu->isVisible()); QCOMPARE(Card::currentState(),GameState::Paused);
     }
     void enemyLimit() {
         MyGameScene scene(1);

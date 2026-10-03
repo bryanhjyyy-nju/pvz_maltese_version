@@ -41,6 +41,7 @@ PauseDialog::PauseDialog(QWidget *parent) : QDialog(parent) {
 }
 void PauseDialog::reject() { emit resumeRequested(); }
 void PauseDialog::keyPressEvent(QKeyEvent *event) {
+    if(event->key()==Qt::Key_Escape) { event->accept(); return; }
     if(event->key() == Qt::Key_Space) {
         if(!event->isAutoRepeat()) emit resumeRequested();
         event->accept();

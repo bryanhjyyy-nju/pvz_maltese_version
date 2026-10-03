@@ -110,6 +110,10 @@ bool GameWindow::eventFilter(QObject *watched,QEvent *event) {
     while(widget && widget!=this) widget=widget->parentWidget();
     if(!widget) return false;
     auto *key=static_cast<QKeyEvent*>(event);
+    if(key->key()==Qt::Key_Escape) {
+        if(!key->isAutoRepeat() && isFullScreen()) setFullScreenEnabled(false);
+        return true;
+    }
     if(key->key()==Qt::Key_F11) {
         if(!key->isAutoRepeat()) toggleFullScreen();
         return true;
