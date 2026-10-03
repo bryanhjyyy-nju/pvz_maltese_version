@@ -191,6 +191,7 @@ void PlayScene::setCardsInBar(){
         card->whiteType = plant.id;
         card->coolTime = plant.cooldownMs;
         card->heartCost = plant.cost;
+        card->setToolTip(GameCatalog::plantDetails(i));
         connect(this, &PlayScene::gameLose, card, &Card::gamePaused);
         connect(this, &PlayScene::gameWin, card, &Card::gamePaused);
 

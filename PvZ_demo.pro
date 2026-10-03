@@ -72,3 +72,6 @@ HEADERS += gamecatalog.h
 
 SOURCES += progressstore.cpp
 HEADERS += progressstore.h
+
+SOURCES += almanacdialog.cpp
+HEADERS += almanacdialog.h

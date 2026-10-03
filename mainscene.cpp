@@ -1,4 +1,5 @@
 #include "mainscene.h"
+#include "almanacdialog.h"
 #include "ui_mainscene.h"
 #include <QPainter>
 #include "mypushbutton.h"
@@ -37,6 +38,12 @@ MainScene::MainScene(QWidget *parent)
         hide();
         chooseScene->show();
         chooseScene->continueGame();
+    });
+    auto *almanac = new QPushButton("植物 / 僵尸图鉴", this);
+    almanac->setGeometry(830, 730, 210, 48);
+    connect(almanac, &QPushButton::clicked, this, [this] {
+        AlmanacDialog dialog(this);
+        dialog.exec();
     });
     //插入两个动画
     setGif(400,400,this->width() * 0.05,this->height() * 0.45);

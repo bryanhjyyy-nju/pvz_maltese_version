@@ -358,6 +358,14 @@ void MyGameScene::mouseMoveEvent(QGraphicsSceneMouseEvent * event){
 }
 
 void MyGameScene::keyPressEvent(QKeyEvent *event){
+    if(event->key() == Qt::Key_Escape && (Card::currentState() == GameState::PrePlace
+                                          || Card::currentState() == GameState::Shoveling)) {
+        Card::setGameState(GameState::Normal);
+        emit pleaseRemovePreImage();
+        emit banTracking();
+        shovel->setPos(1200,0);
+        return;
+    }
     if(event->key() == Qt::Key_R && Card::currentState() == GameState::Normal){
         emit allowTracking();
         Card::setGameState(GameState::Shoveling);

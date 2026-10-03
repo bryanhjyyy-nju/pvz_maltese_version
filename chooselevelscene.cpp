@@ -1,4 +1,5 @@
 #include "chooselevelscene.h"
+#include "almanacdialog.h"
 #include <QMessageBox>
 #include <QPainter>
 #include "mypushbutton.h"
@@ -31,6 +32,12 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent)
     progressLabel = new QLabel(this);
     progressLabel->setGeometry(280, 840, 1100, 45);
     progressLabel->setAlignment(Qt::AlignCenter);
+    auto *almanac = new QPushButton("植物 / 僵尸图鉴", this);
+    almanac->setGeometry(1090, 785, 210, 48);
+    connect(almanac, &QPushButton::clicked, this, [this] {
+        AlmanacDialog dialog(this);
+        dialog.exec();
+    });
     refreshProgress();
 }
 
