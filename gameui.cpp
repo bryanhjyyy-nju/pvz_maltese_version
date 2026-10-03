@@ -19,6 +19,9 @@ QString GameUi::styleSheet() {
         QSlider::groove:horizontal { height:12px; border-radius:6px; background:#d9bc86; }
         QSlider::sub-page:horizontal { background:#91ba58; border-radius:6px; }
         QSlider::handle:horizontal { background:#f6ce6c; border:3px solid #65452d; width:22px; margin:-7px 0; border-radius:10px; }
+        QScrollBar:vertical { background:#e9cf9b; width:14px; margin:0; border-radius:7px; }
+        QScrollBar::handle:vertical { background:#ae8144; border:2px solid #805c34; border-radius:6px; min-height:30px; }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height:0; }
     )");
 }
 void GameUi::styleButton(QPushButton *button, const QString& color) {

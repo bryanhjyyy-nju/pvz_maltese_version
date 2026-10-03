@@ -1,4 +1,5 @@
 #include "audiomanager.h"
+#include "gameui.h"
 #include <QApplication>
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -61,12 +62,23 @@ void AudioManager::setEffectsVolume(int volume) {
 void AudioManager::showSettings(QWidget *parent) {
     QDialog dialog(parent);
     dialog.setWindowTitle("声音设置");
-    dialog.setMinimumWidth(400);
+    dialog.setMinimumWidth(520);
+    GameUi::apply(&dialog);
     QFormLayout layout(&dialog);
+    layout.setContentsMargins(30,25,30,25);
+    layout.setVerticalSpacing(22);
+    auto *title = new QLabel("让草坪唱起来！",&dialog);
+    title->setStyleSheet("font-size:26px; font-weight:bold; color:#805024;");
+    layout.addRow(title);
     auto addSlider = [&](const QString& label, int value, bool music) {
         auto *slider = new QSlider(Qt::Horizontal,&dialog);
         slider->setRange(0,100); slider->setValue(value);
-        layout.addRow(label,slider);
+        auto *valueLabel = new QLabel(QString("%1  %2%").arg(label).arg(value),&dialog);
+        valueLabel->setMinimumWidth(150);
+        layout.addRow(valueLabel,slider);
+        connect(slider,&QSlider::valueChanged,valueLabel,[valueLabel,label](int v) {
+            valueLabel->setText(QString("%1  %2%").arg(label).arg(v));
+        });
         connect(slider,&QSlider::valueChanged,&dialog,[this,music](int v) {
             if(music) setMusicVolume(v); else setEffectsVolume(v);
         });
@@ -76,6 +88,7 @@ void AudioManager::showSettings(QWidget *parent) {
     layout.addRow(new QLabel("拖到最左侧即可静音；设置会自动保存。",&dialog));
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close,&dialog);
     buttons->button(QDialogButtonBox::Close)->setText("关闭");
+    GameUi::styleButton(buttons->button(QDialogButtonBox::Close),"gold");
     connect(buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
     layout.addRow(buttons);
     dialog.exec();

@@ -1,6 +1,7 @@
 #include "audiomanager.h"
 #include "chooselevelscene.h"
 #include "almanacdialog.h"
+#include "gameui.h"
 #include <QMessageBox>
 #include <QPainter>
 #include "mypushbutton.h"
@@ -27,13 +28,16 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent, const QString& progressPath)
     //每一关对应的按钮
     buildLevelBtn();
     continueButton = new QPushButton(this);
+    GameUi::styleButton(continueButton);
     continueButton->setObjectName("continueGame");
     continueButton->setGeometry(620, 785, 400, 48);
     connect(continueButton, &QPushButton::clicked, this, &ChooseLevelScene::continueGame);
     progressLabel = new QLabel(this);
     progressLabel->setGeometry(280, 840, 1100, 45);
     progressLabel->setAlignment(Qt::AlignCenter);
+    progressLabel->setStyleSheet("background:#fff0c8; color:#65452d; border:2px solid #997341; border-radius:14px; font:16px 'Microsoft YaHei'; padding:5px;");
     auto *almanac = new QPushButton("植物 / 僵尸图鉴", this);
+    GameUi::styleButton(almanac,"gold");
     almanac->setGeometry(1090, 785, 210, 48);
     connect(almanac, &QPushButton::clicked, this, [this] {
         AlmanacDialog dialog(this);

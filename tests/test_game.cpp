@@ -20,6 +20,7 @@
 #include <QPushButton>
 #include "enemyprojectile.h"
 #include "waveplanner.h"
+#include "combateffect.h"
 #include <QRandomGenerator>
 
 class GameTests : public QObject {
@@ -100,6 +101,17 @@ private slots:
         QVERIFY(menu); QVERIFY(menu->isVisible());
         QCOMPARE(Card::currentState(),GameState::Paused);
         QTest::qWait(50);
+        bool almanacStayedPaused=false;
+        QTimer::singleShot(70,menu,[&] {
+            for(auto *dialog : menu->findChildren<QDialog*>()) {
+                if(!dynamic_cast<AlmanacDialog*>(dialog)) continue;
+                almanacStayedPaused=Card::currentState()==GameState::Paused;
+                dialog->reject();
+            }
+        });
+        QTest::mouseClick(menu->findChild<QPushButton*>("almanac"),Qt::LeftButton);
+        QVERIFY(almanacStayedPaused);
+        QVERIFY(menu->isVisible());
         QTest::keyClick(menu,Qt::Key_Space);
         QVERIFY(!menu->isVisible());
         QCOMPARE(Card::currentState(),GameState::Normal);
@@ -155,6 +167,36 @@ private slots:
         play.show(); QTest::qWait(100);
         play.gamePaused();
         QVERIFY(play.grab().save(folder+"/battle.png"));
+        play.gameContinued();
+        auto *view=play.findChild<QGraphicsView*>();
+        view->setFocus(); QTest::qWait(50);
+        QTest::keyClick(view,Qt::Key_Space); QTest::qWait(50);
+        auto *pause=play.findChild<PauseDialog*>();
+        QVERIFY(pause); QVERIFY(pause->isVisible());
+        QVERIFY(pause->grab().save(folder+"/pause.png"));
+        play.gameContinued();
+        auto *scene=play.findChild<MyGameScene*>();
+        scene->setChosenNum(1);
+        Card::setGameState(GameState::PrePlace);
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,490)));
+        for(int i=0;i<3;++i) {
+            scene->setAYellowDog(i+1,i);
+            auto *enemy=static_cast<YellowDogs*>(scene->getZombieMap(i+1).back());
+            enemy->stopMoving(); enemy->setPos(750,130+145*(i+1+.5)-enemy->boundingRect().height()/2);
+            if(i==0) enemy->getAttacked(30);
+            if(i==1) enemy->shootRest();
+            if(i==2) enemy->getAttacked(10000);
+        }
+        QTest::qWait(120); play.gamePaused();
+        QVERIFY(play.grab().save(folder+"/combat.png"));
+        QTimer::singleShot(70,&play,[&play,folder] {
+            for(auto *dialog : play.findChildren<QDialog*>()) {
+                if(dialog->windowTitle()!="声音设置") continue;
+                dialog->grab().save(folder+"/audio.png");
+                dialog->reject();
+            }
+        });
+        AudioManager::instance().showSettings(&play);
     }
     void continueFlow() {
         QTemporaryDir dir;
@@ -309,6 +351,39 @@ private slots:
         play.gameContinued();
         QTest::qWait(100);
         QCOMPARE(enemy->pos(),pos);
+    }
+    void meleeFeedback() {
+        PlayScene play(8);
+        play.show();
+        auto *scene=play.findChild<MyGameScene*>();
+        auto *view=play.findChild<QGraphicsView*>();
+        scene->setChosenNum(1);
+        Card::setGameState(GameState::PrePlace);
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,490)));
+        auto *plant=scene->plantAhead(2,1000);
+        QVERIFY(plant);
+        scene->setAYellowDog(2,1);
+        auto *enemy=static_cast<YellowDogs*>(scene->getZombieMap(2).front());
+        enemy->stopMoving(); enemy->setPos(plant->pos()+QPointF(60,0));
+        QVERIFY(enemy->checkCollision());
+        enemy->shootRest();
+        QVERIFY(scene->findChildren<EnemyProjectile*>().isEmpty());
+        int health=plant->getHp();
+        enemy->startAttacking(plant);
+        QCOMPARE(plant->getHp(),health-GameCatalog::enemies()[1].attack);
+        QCOMPARE(enemy->biteProgress(),0.0);
+        QVERIFY(!scene->findChildren<CombatEffect*>().isEmpty());
+        QTest::qWait(70); play.gamePaused();
+        auto bite=enemy->biteProgress();
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(!folder.isEmpty()) QVERIFY(play.grab().save(folder+"/bite.png"));
+        QTest::qWait(350); QCOMPARE(enemy->biteProgress(),bite);
+        play.gameContinued();
+        enemy->getAttacked(10000);
+        health=plant->getHp();
+        enemy->startAttacking(plant); enemy->shootRest();
+        QCOMPARE(plant->getHp(),health);
+        QVERIFY(scene->findChildren<EnemyProjectile*>().isEmpty());
     }
     void combatAnimationsAndRange() {
         PlayScene play(8);

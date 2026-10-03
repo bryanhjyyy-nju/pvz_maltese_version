@@ -330,6 +330,7 @@ void PlayScene::buildPauseBtn() {
     auto toggle = [this] { togglePauseMenu(); };
     connect(pauseButton,&QPushButton::clicked,this,toggle);
     auto *shortcut = new QShortcut(QKeySequence(Qt::Key_Space),this);
+    shortcut->setAutoRepeat(false);
     pauseShortcut = shortcut;
     connect(shortcut,&QShortcut::activated,this,toggle);
     auto *almanac = new QPushButton("植物 / 僵尸图鉴",this);

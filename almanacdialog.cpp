@@ -1,5 +1,7 @@
 #include "almanacdialog.h"
 #include "gamecatalog.h"
+#include "gameui.h"
+#include <QVariant>
 #include <QDialogButtonBox>
 #include <QPushButton>
 #include <QGridLayout>
@@ -12,13 +14,16 @@
 AlmanacDialog::AlmanacDialog(QWidget *parent) : QDialog(parent) {
     setWindowTitle("草坪图鉴 · 植物与僵尸");
     resize(1000, 720);
-    setStyleSheet("QDialog {background:#f2f5e9;} QLabel {color:#26392e;}"
-                  "QFrame#entry {background:#fffdf5; border:1px solid #c6d4b6; border-radius:12px;}"
-                  "QTabBar::tab {padding:12px 28px;} QScrollArea {border:0;}");
+    setStyleSheet(GameUi::styleSheet()+"QScrollArea {border:0; background:#fff2d4;} QScrollArea > QWidget > QWidget {background:#fff2d4;}");
     auto *layout = new QVBoxLayout(this);
+    auto *titleRow = new QHBoxLayout;
+    auto *star = new QLabel(this);
+    star->setPixmap(QPixmap(":/ui/Image/ui/minimap_icon_star_yellow.png").scaled(42,42,Qt::KeepAspectRatio,Qt::SmoothTransformation));
+    titleRow->addWidget(star);
     auto *title = new QLabel("认识你的草坪伙伴", this);
     title->setStyleSheet("font-size:26px; font-weight:bold; padding:10px;");
-    layout->addWidget(title);
+    titleRow->addWidget(title,1);
+    layout->addLayout(titleRow);
     auto *tabs = new QTabWidget(this);
     layout->addWidget(tabs);
     for(int group=0;group<2;++group) {
@@ -31,6 +36,7 @@ AlmanacDialog::AlmanacDialog(QWidget *parent) : QDialog(parent) {
         for(int i=0;i<count;++i) {
             auto *entry = new QFrame(page);
             entry->setObjectName("entry");
+            entry->setProperty("panel",true);
             entry->setMinimumHeight(220);
             auto *row = new QHBoxLayout(entry);
             auto *icon = new QLabel(entry);
@@ -42,22 +48,33 @@ AlmanacDialog::AlmanacDialog(QWidget *parent) : QDialog(parent) {
             icon->setMovie(movie);
             movie->start();
             row->addWidget(icon);
-            auto *details = new QLabel(group == 0 ? GameCatalog::plantDetails(i) : GameCatalog::enemyDetails(i),entry);
+            auto *text = new QVBoxLayout;
+            const auto lines=(group == 0 ? GameCatalog::plantDetails(i) : GameCatalog::enemyDetails(i)).split('\n');
+            auto *name = new QLabel(lines[0],entry);
+            name->setStyleSheet(group == 0 ? "font-size:21px; font-weight:bold; color:#547733;" : "font-size:21px; font-weight:bold; color:#a45c32;");
+            text->addWidget(name);
+            auto *stats = new QLabel(lines[1]+"\n"+lines[2],entry);
+            stats->setWordWrap(true);
+            stats->setStyleSheet("background:#f1d79f; border-radius:8px; padding:7px; font-size:14px; color:#65452d;");
+            text->addWidget(stats);
+            auto *details = new QLabel(lines.mid(3).join("\n"),entry);
             details->setWordWrap(true);
-            details->setMinimumWidth(260);
+            details->setMinimumWidth(240);
             details->setStyleSheet("font-size:15px; padding:5px;");
-            row->addWidget(details,1);
+            text->addWidget(details,1);
+            row->addLayout(text,1);
             grid->addWidget(entry,i/2,i%2);
         }
         grid->setRowStretch((count+1)/2,1);
         scroll->setWidget(page);
         tabs->addTab(scroll,group == 0 ? "植物卡片 · 小白" : "僵尸卡片 · 金毛");
     }
-    auto *hint = new QLabel("关卡逐步开放植物卡片；爱心可点击收集。R 切换铲子，Esc 取消选择。",this);
+    auto *hint = new QLabel("关卡逐步开放植物卡片；点击爱心收集。点击铲子或按 R 切换，空格暂停，Esc 取消选择。",this);
     hint->setWordWrap(true);
     layout->addWidget(hint);
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close,this);
     buttons->button(QDialogButtonBox::Close)->setText("关闭");
+    GameUi::styleButton(buttons->button(QDialogButtonBox::Close),"gold");
     connect(buttons,&QDialogButtonBox::rejected,this,&QDialog::reject);
     layout->addWidget(buttons);
 }
