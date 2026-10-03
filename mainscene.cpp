@@ -4,7 +4,8 @@
 #include "gameui.h"
 #include "ui_mainscene.h"
 #include <QPainter>
-#include "mypushbutton.h"
+#include "gameartwork.h"
+#include <QPushButton>
 #include <QDebug>
 #include <QMovie>
 #include <QLabel>
@@ -25,7 +26,7 @@ MainScene::MainScene(QWidget *parent)
     setWindowIcon(QIcon(":/white/Image/dogIcon.jpg"));
 
     //设置窗口标题
-    setWindowTitle("PvZ_Demo");
+    setWindowTitle("小白大战小金毛");
 
     //添加开始按钮
     buildStartBtn();
@@ -69,17 +70,15 @@ void MainScene::paintEvent(QPaintEvent *)
 
     painter.drawPixmap(0,0,this->width(),this->height(),pix);
 
-    //绘制游戏标题
-    pix.load(":/others/Image/Title.png");
-    pix = pix.scaled(pix.width() * 2,pix.height() * 2);
-    painter.drawPixmap(this->width() * 0.5 - pix.width() * 0.5,this->height() * 0.2,pix);
+    GameArtwork::drawTitle(painter,QRectF(325,155,1000,235),"小白大战小金毛");
+
 }
 
 void MainScene::buildStartBtn(){
-    //添加开始按钮
-    MyPushButton * startBtn = new MyPushButton(":/others/Image/StartBtn.png");
-    startBtn->setParent(this);
-    startBtn->move(this->width() * 0.5 - startBtn->width() * 0.5,this->height() * 0.55);
+    auto *startBtn = new QPushButton("开始游戏",this);
+    startBtn->setObjectName("startGame");
+    GameUi::styleButton(startBtn,"sunshine");
+    startBtn->setGeometry(610,495,430,84);
 
     //实例化选择关卡的场景
     chooseScene = new ChooseLevelScene;
@@ -90,32 +89,22 @@ void MainScene::buildStartBtn(){
         this->show();
     });
 
-    //开始按钮弹跳特效
-    connect(startBtn,&MyPushButton::clicked,this,[=](){
-        startBtn->zoom1();
-        startBtn->zoom2();
-
-        //延时进入关卡场景
-        QTimer::singleShot(300,this,[=]{
-            //自身隐藏
-            this->hide();
-            //显示选择关卡场景
-            chooseScene->show();
-        });
+    connect(startBtn,&QPushButton::clicked,this,[this] {
+        AudioManager::instance().play("click");
+        hide();
+        chooseScene->refreshProgress();
+        chooseScene->show();
     });
 }
 
-void MainScene::buildQuitBtn(){
-    //添加退出游戏按钮
-    MyPushButton * quitBtn = new MyPushButton(":/others/Image/QuitBtn.png");
-    quitBtn->setParent(this);
-    quitBtn->move(this->width() * 0.5 - quitBtn->width() * 0.5,this->height() * 0.55 + quitBtn->height() * 1.05);
-
-    //退出按钮按下时弹跳特效
-    connect(quitBtn,&MyPushButton::clicked,this,[=](){
-        quitBtn->zoom1();
-        quitBtn->zoom2();
-        QTimer::singleShot(300,this,[=]{this->close();});
+void MainScene::buildQuitBtn() {
+    auto *quitBtn = new QPushButton("退出游戏",this);
+    quitBtn->setObjectName("quitGame");
+    GameUi::styleButton(quitBtn,"sunshine");
+    quitBtn->setGeometry(610,595,430,84);
+    connect(quitBtn,&QPushButton::clicked,this,[this] {
+        AudioManager::instance().play("click");
+        close();
     });
 }
 

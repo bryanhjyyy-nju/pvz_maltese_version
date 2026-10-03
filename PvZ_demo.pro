@@ -5,6 +5,8 @@ SOURCES += combateffect.cpp enemyprojectile.cpp
 HEADERS += combateffect.h enemyprojectile.h
 SOURCES += waveplanner.cpp
 HEADERS += waveplanner.h
+SOURCES += gameartwork.cpp
+HEADERS += gameartwork.h
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 

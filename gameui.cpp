@@ -12,6 +12,9 @@ QString GameUi::styleSheet() {
         QPushButton[cartoon="true"]:pressed { border-bottom:3px solid #65452d; padding-top:8px; }
         QPushButton[cartoon="true"][color="gold"] { background:#f2c66c; }
         QPushButton[cartoon="true"][color="red"] { background:#efa18a; }
+        QPushButton[cartoon="true"][color="sunshine"] { background:#ffeb32; color:#171711; font-family:'华文琥珀','Microsoft YaHei'; font-size:34px; border-radius:25px; border-width:4px; border-bottom-width:8px; padding:8px 24px; }
+        QPushButton[cartoon="true"][color="sunshine"]:hover { background:#fff478; }
+        QPushButton[cartoon="true"][color="sunshine"]:pressed { background:#f6ce2e; border-bottom-width:4px; padding-top:12px; }
         QPushButton[cartoon="true"]:disabled { background:#c5bd9f; color:#81745e; }
         QTabWidget::pane { border:3px solid #9b7444; border-radius:12px; background:#fff2d4; }
         QTabBar::tab { background:#e4c18b; padding:12px 28px; border:2px solid #9b7444; border-radius:8px; font-weight:bold; }

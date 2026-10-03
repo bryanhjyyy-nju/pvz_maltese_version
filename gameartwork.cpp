@@ -1,0 +1,91 @@
+#include "gameartwork.h"
+#include <QPainter>
+#include <QPainterPath>
+#include <QFontDatabase>
+#include <QFontMetricsF>
+#include <QtMath>
+namespace GameArtwork {
+void drawTitle(QPainter& p, const QRectF& area, const QString& text) {
+    p.save();
+    p.setRenderHint(QPainter::Antialiasing);
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+    const auto families=QFontDatabase().families();
+#else
+    const auto families=QFontDatabase::families();
+#endif
+    QFont font(families.contains("华文琥珀") ? "华文琥珀" : "Microsoft YaHei");
+    font.setPixelSize(100); font.setWeight(QFont::Black);
+    const QFontMetricsF metrics(font);
+    const qreal spacing=8;
+    const qreal total=metrics.horizontalAdvance(text)+(text.size()-1)*spacing;
+    const qreal scale=qMin(1.0,(area.width()-40)/total);
+    p.translate(area.center().x()-total*scale/2,area.center().y()+32);
+    p.scale(scale,scale);
+    qreal offset=0;
+    const int tilt[]={-4,3,-2,4,-3,2,-3};
+    for(int i=0;i<text.size();++i) {
+        p.save();
+        p.translate(offset,qSin(i*1.5)*7);
+        p.rotate(tilt[i%7]);
+        QPainterPath glyph;
+        glyph.addText(0,0,font,QString(text[i]));
+        p.translate(3,9);
+        p.setPen(QPen(QColor("#ba8432"),18,Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));
+        p.setBrush(QColor("#ba8432")); p.drawPath(glyph);
+        p.translate(-3,-9);
+        p.setPen(QPen(QColor("#fff8d7"),12,Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));
+        p.setBrush(QColor("#242018")); p.drawPath(glyph);
+        p.setPen(Qt::NoPen); p.drawPath(glyph);
+        p.restore();
+        offset+=metrics.horizontalAdvance(text[i])+spacing;
+    }
+    p.restore();
+    p.save();
+    p.setPen(QPen(QColor("#fff6b0"),5,Qt::SolidLine,Qt::RoundCap));
+    for(const auto& point : {QPointF(area.left()+45,area.center().y()-20),QPointF(area.right()-45,area.center().y()+10)}) {
+        p.drawLine(point-QPointF(0,12),point+QPointF(0,12));
+        p.drawLine(point-QPointF(12,0),point+QPointF(12,0));
+    }
+    p.restore();
+}
+QPixmap cuteShovel() {
+    QPixmap pixmap(84,84); pixmap.fill(Qt::transparent);
+    QPainter p(&pixmap); p.setRenderHint(QPainter::Antialiasing);
+    p.translate(42,42); p.rotate(27); p.translate(-42,-42);
+    p.setPen(QPen(QColor("#6c492e"),3,Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));
+    p.setBrush(QColor("#f4be6a"));
+    p.drawRoundedRect(QRectF(38,20,8,36),4,4);
+    p.setBrush(QColor("#ffd575"));
+    p.drawRoundedRect(QRectF(29,3,26,23),8,8);
+    p.setBrush(QColor("#fff1cb"));
+    p.drawRoundedRect(QRectF(36,9,12,10),4,4);
+    QPainterPath blade;
+    blade.moveTo(23,43); blade.quadTo(42,38,61,43);
+    blade.lineTo(59,61); blade.quadTo(55,73,42,80);
+    blade.quadTo(29,73,25,61); blade.closeSubpath();
+    QLinearGradient mint(25,43,58,78);
+    mint.setColorAt(0,QColor("#ddfae8")); mint.setColorAt(1,QColor("#87cdb0"));
+    p.setBrush(mint); p.drawPath(blade);
+    p.setPen(QPen(QColor("#fffef1"),3,Qt::SolidLine,Qt::RoundCap));
+    p.drawLine(28,49,27,57);
+    p.setPen(Qt::NoPen); p.setBrush(QColor("#563a26"));
+    p.drawEllipse(QPointF(35,55),2,3); p.drawEllipse(QPointF(49,55),2,3);
+    p.setBrush(QColor("#f1a6a1"));
+    p.drawEllipse(QPointF(30,60),4,2); p.drawEllipse(QPointF(54,60),4,2);
+    p.setPen(QPen(QColor("#563a26"),2,Qt::SolidLine,Qt::RoundCap));
+    p.drawArc(QRectF(36,57,12,9),190*16,160*16);
+    return pixmap;
+}
+QPixmap shovelSlot() {
+    QPixmap pixmap(104,110); pixmap.fill(Qt::transparent);
+    QPainter p(&pixmap); p.setRenderHint(QPainter::Antialiasing);
+    p.setPen(QPen(QColor("#6c492e"),4)); p.setBrush(QColor("#c09655"));
+    p.drawRoundedRect(QRectF(3,7,98,100),18,18);
+    p.setBrush(QColor("#ffedb6")); p.drawRoundedRect(QRectF(3,3,98,99),18,18);
+    p.setPen(Qt::NoPen); p.setBrush(QColor("#b7d58b"));
+    p.drawRoundedRect(QRectF(74,84,23,19),6,6);
+    p.setPen(QColor("#563a26")); p.setFont(QFont("Arial",10,QFont::Bold));
+    p.drawText(QRectF(74,84,23,19),Qt::AlignCenter,"R");
+    return pixmap;
+}
+}

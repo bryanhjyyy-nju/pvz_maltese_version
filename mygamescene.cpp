@@ -17,6 +17,7 @@
 #include <QApplication>
 #include "yellowdogs.h"
 #include "combateffect.h"
+#include "gameartwork.h"
 #include "bullet.h"
 #include <QPainter>
 #include <QKeyEvent>
@@ -64,23 +65,16 @@ void MyGameScene::setupBoard() {
     backGroundItem->setPos(0, 0);
     backGroundItem->setScale(1);
 
-    QPixmap shovelPix(":/others/Image/shovelBar.png");
-    QGraphicsPixmapItem * shovelBar;
-    shovelBar = new QGraphicsPixmapItem(shovelPix);
-    shovelBar->setPos(QPointF(1200, 0));
-    shovelBar->setScale(0.8);
+    auto *shovelBar = new QGraphicsPixmapItem(GameArtwork::shovelSlot());
+    shovelBar->setPos(GameArtwork::shovelSlotRect().topLeft());
+    shovelBar->setZValue(29);
+    shovelBar->setToolTip("点击拿起 / 放下铲子，也可以按 R");
     addItem(shovelBar);
-    shovelPix.load(":/others/Image/shovel.png");
-    shovel = new QGraphicsPixmapItem(shovelPix);
-    shovel->setPos(QPointF(1200,0));
-    shovel->setScale(0.72);
+    shovel = new QGraphicsPixmapItem(GameArtwork::cuteShovel());
+    shovel->setPos(GameArtwork::shovelHome());
     shovel->setZValue(30);
+    shovel->setToolTip("可爱铲子 · 点击拿起 / 放下");
     addItem(shovel);
-    font.setFamily("Arial");
-    font.setPointSize(25);
-    QGraphicsTextItem * textShovel = this->addText("R",font);
-    textShovel->setPos(QPointF(1230,20));
-    textShovel->setZValue(31);
 
     mapGrid = new Map(9, 5, QSize(121,145), QPointF(380,130));
     addItem(mapGrid);
@@ -178,7 +172,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
     }
     if(event->button() != Qt::LeftButton) return;
     if(Card::currentState() != GameState::Paused && Card::currentState() != GameState::GameOver
-        && QRectF(1200,0,100,105).contains(event->scenePos())) {
+        && GameArtwork::shovelSlotRect().contains(event->scenePos())) {
         toggleShovel();
         return;
     }
@@ -302,7 +296,7 @@ void MyGameScene::cancelSelection() {
     Card::setGameState(GameState::Normal);
     emit pleaseRemovePreImage();
     emit banTracking();
-    shovel->setPos(1200,0);
+    shovel->setPos(GameArtwork::shovelHome());
 }
 
 void MyGameScene::toggleShovel() {

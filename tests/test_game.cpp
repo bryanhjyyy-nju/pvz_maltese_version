@@ -21,6 +21,7 @@
 #include "enemyprojectile.h"
 #include "waveplanner.h"
 #include "combateffect.h"
+#include "gameartwork.h"
 #include <QRandomGenerator>
 
 class GameTests : public QObject {
@@ -126,13 +127,22 @@ private slots:
         play.show();
         auto *scene = play.findChild<MyGameScene*>();
         auto *view = play.findChild<QGraphicsView*>();
+        QGraphicsPixmapItem *shovel=nullptr;
+        for(auto *item : scene->items())
+            if(item->toolTip().startsWith("可爱铲子")) shovel=dynamic_cast<QGraphicsPixmapItem*>(item);
+        QVERIFY(shovel);
+        QCOMPARE(shovel->pos(),GameArtwork::shovelHome());
+        QVERIFY(GameArtwork::shovelSlotRect().contains(shovel->sceneBoundingRect()));
         auto click = [&](const QPointF& pos) {
             QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(pos));
         };
         click(QPointF(1240,50));
         QCOMPARE(Card::currentState(),GameState::Shoveling);
+        QTest::mouseMove(view->viewport(),view->mapFromScene(QPointF(580,500)));
+        QTRY_VERIFY(shovel->pos()!=GameArtwork::shovelHome());
         click(QPointF(1240,50));
         QCOMPARE(Card::currentState(),GameState::Normal);
+        QCOMPARE(shovel->pos(),GameArtwork::shovelHome());
         scene->setChosenNum(1);
         Card::setGameState(GameState::PrePlace);
         click(QPointF(440,490));
@@ -219,6 +229,24 @@ private slots:
         picker.continueGame();
         QCOMPARE(picker.play->levelIndex,2);
         picker.play->close();
+    }
+    void cartoonMenuButtons() {
+        MainScene menu;
+        menu.show();
+        QCOMPARE(menu.windowTitle(),QString("小白大战小金毛"));
+        auto *start=menu.findChild<QPushButton*>("startGame");
+        auto *quit=menu.findChild<QPushButton*>("quitGame");
+        QVERIFY(start); QVERIFY(quit);
+        QCOMPARE(start->text(),QString("开始游戏"));
+        QCOMPARE(quit->text(),QString("退出游戏"));
+        QVERIFY(start->icon().isNull()); QVERIFY(quit->icon().isNull());
+        QCOMPARE(start->property("color").toString(),QString("sunshine"));
+        QTest::mouseClick(start,Qt::LeftButton);
+        QVERIFY(!menu.isVisible()); QVERIFY(menu.chooseScene->isVisible());
+        menu.chooseScene->chooseSceneBack();
+        QVERIFY(menu.isVisible());
+        QTest::mouseClick(quit,Qt::LeftButton);
+        QVERIFY(!menu.isVisible());
     }
     void progressRoundTrip() {
         QTemporaryDir dir;
@@ -423,7 +451,11 @@ private slots:
         scene->setAYellowDog(2,1);
         auto *enemy = static_cast<YellowDogs*>(scene->getZombieMap(2).front());
         enemy->stopMoving(); enemy->setPos(750,430);
-        enemy->shootNote();
+        auto *rangedTimer=enemy->findChild<QTimer*>("guitarRangedTimer");
+        QVERIFY(rangedTimer);
+        rangedTimer->start(80);
+        QTRY_COMPARE_WITH_TIMEOUT(scene->findChildren<EnemyProjectile*>().size(),1,300);
+        rangedTimer->setInterval(GameCatalog::GuitarShotIntervalMs);
         auto shots = scene->findChildren<EnemyProjectile*>();
         QCOMPARE(shots.size(),1);
         QCOMPARE(shots.front()->damage(),GameCatalog::enemies()[1].attack/4);
