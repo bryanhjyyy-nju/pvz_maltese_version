@@ -134,7 +134,7 @@ PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening,bool endless,
     initializePage(QRect(20,760,250,44));
     banner=new BattleBanner(this);
     connect(myGameScene,&MyGameScene::finalWaveApproaching,this,[this] {
-        banner->announce("最后一波小金毛即将来袭！","finalWave");
+        banner->announce("最后一波小金毛即将来袭！","finalWave",false);
     });
     if(withOpening) {
         openingActive=true; Card::setGameState(GameState::Paused);

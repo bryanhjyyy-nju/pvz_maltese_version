@@ -6,7 +6,7 @@ class BattleBanner : public QWidget {
     Q_OBJECT
 public:
     explicit BattleBanner(QWidget *parent);
-    void announce(const QString& text,const QString& sound);
+    void announce(const QString& text,const QString& sound,bool withFlash=true);
     void stop();
 signals:
     void finished();
@@ -16,4 +16,5 @@ private:
     QString message;
     QVariantAnimation animation;
     qreal progress=0;
+    bool flash=true;
 };

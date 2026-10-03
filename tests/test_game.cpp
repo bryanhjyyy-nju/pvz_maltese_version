@@ -47,6 +47,30 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void finalWaveTextAllowsPlantingAndShoveling() {
+        PlayScene play(4,nullptr,false); play.show();
+        auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
+        auto *card=play.findChild<Card*>("plantCard0"); auto *banner=play.findChild<BattleBanner*>();
+        scene->addHeart(100); Card::setCurRestHeart(scene->getRestHeart()); emit card->cooldownFinished();
+        const auto before=play.grab().toImage();
+        emit scene->finalWaveApproaching();
+        auto *animation=banner->findChild<QVariantAnimation*>("bannerAnimation"); animation->setCurrentTime(450);
+        QVERIFY(banner->isVisible()); QVERIFY(banner->testAttribute(Qt::WA_TransparentForMouseEvents));
+        QVERIFY(scene->getGameTimer()->isActive());
+        QCOMPARE(play.grab().toImage().pixelColor(1000,700),before.pixelColor(1000,700));
+        const auto point=view->viewport()->mapTo(&play,view->mapFromScene(QPointF(805,450)));
+        auto *target=play.childAt(point); QCOMPARE(target,view->viewport());
+        QTest::mouseClick(card,Qt::LeftButton); QCOMPARE(Card::currentState(),GameState::PrePlace);
+        QTest::mouseClick(target,Qt::LeftButton,Qt::NoModifier,target->mapFrom(&play,point));
+        QCOMPARE(scene->findChildren<WhiteDogs*>().size(),1);
+        scene->toggleShovel(); QCOMPARE(Card::currentState(),GameState::Shoveling);
+        QTest::mouseClick(target,Qt::LeftButton,Qt::NoModifier,target->mapFrom(&play,point));
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        QVERIFY(scene->findChildren<WhiteDogs*>().isEmpty()); QVERIFY(banner->isVisible());
+        QCOMPARE(Card::currentState(),GameState::Normal);
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(!folder.isEmpty()) QVERIFY(play.grab().save(folder+"/final-wave-interactive.png"));
+    }
     void goldPavingFallsInOrder() {
         Lawn first(1); first.setRevealProgress(0);
         for(int row=0;row<5;++row) for(int col=0;col<9;++col) QCOMPARE(first.brickFallProgress(row,col),0.0);

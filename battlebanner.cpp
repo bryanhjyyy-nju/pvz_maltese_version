@@ -13,8 +13,8 @@ BattleBanner::BattleBanner(QWidget *parent) : QWidget(parent),animation(this) {
     connect(&animation,&QVariantAnimation::finished,this,[this] { hide(); emit finished(); });
     hide();
 }
-void BattleBanner::announce(const QString& text,const QString& sound) {
-    animation.stop(); message=text; progress=0;
+void BattleBanner::announce(const QString& text,const QString& sound,bool withFlash) {
+    animation.stop(); message=text; progress=0; flash=withFlash;
     setGeometry(parentWidget()->rect()); show(); raise();
     AudioManager::instance().play(sound); animation.start();
 }
@@ -25,8 +25,10 @@ void BattleBanner::paintEvent(QPaintEvent*) {
     p.translate(rect().center()); p.scale(scale,scale);
     const qreal alpha=progress>.78 ? (1-progress)/.22 : 1;
     p.setOpacity(alpha);
-    QRadialGradient flash(0,0,680); flash.setColorAt(0,QColor(255,229,128,190)); flash.setColorAt(1,Qt::transparent);
-    p.fillRect(QRectF(-825,-450,1650,900),flash);
+    if(flash) {
+        QRadialGradient glow(0,0,680); glow.setColorAt(0,QColor(255,229,128,190)); glow.setColorAt(1,Qt::transparent);
+        p.fillRect(QRectF(-825,-450,1650,900),glow);
+    }
     const qreal impact=progress<.2 ? 1+.35*qPow(1-progress/.2,2) : 1;
     p.translate(progress<.2 ? qSin(progress*180)*6 : 0,0); p.scale(impact,impact);
     QFont font("华文琥珀"); font.setPixelSize(68); font.setWeight(QFont::Black);
