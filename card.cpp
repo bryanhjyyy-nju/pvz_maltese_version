@@ -1,159 +1,81 @@
-#include "audiomanager.h"
 #include "card.h"
-#include <QDebug>
+#include "audiomanager.h"
+#include "gamecatalog.h"
 #include <QPainter>
-#include "gamestate.h"
+#include <QPainterPath>
 #include <QTimer>
-#include <QGraphicsEffect>
-#include "cardstate.h"
 
-GameState Card::cardGameState = GameState::Normal;
-QString Card::cardSelectedWhite = "";
-int Card::curRestHeart = 50;
+GameState Card::cardGameState=GameState::Normal;
+QString Card::cardSelectedWhite;
+int Card::curRestHeart=50;
 
-Card::Card(int cardNum):whiteType("") ,coolTime(0) ,heartCost(0),cardIndex(cardNum) {
-    //图片加载
-    bool ret = artwork.load(":/others/Image/card.png");
-    if(!ret){
-        qDebug() << "图片加载失败" ;
-        return;
-    }
-    setFixedSize(QSize(artwork.width()*1.21,artwork.height()*1.21));
-
-    // 初始化冷却计时器
-    memCoolTimer = new QTimer(this);
-    memCoolTimer->setInterval(100); // 每100ms更新一次
-    connect(memCoolTimer, &QTimer::timeout, this, [this]() {
-        memCoolProgress += 100.0f / coolTime; // 计算进度
-        if (memCoolProgress >= 1.0f) {
-            memCoolProgress = 1.0f;
-            memCoolTimer->stop();
-            coolingState = false;
-            update();
-            // setCardState(CardState::Normal); //发送信号以后自然会设置，此处没必要
-            emit cooldownFinished();
-        }
-        update(); // 触发重绘
+Card::Card(int number) : coolTime(0),heartCost(0),cardIndex(number) {
+    artwork.load(":/others/Image/card.png");
+    setFixedSize(artwork.size()*1.21);
+    setFocusPolicy(Qt::NoFocus);
+    memCoolTimer=new QTimer(this);
+    memCoolTimer->setInterval(100);
+    connect(memCoolTimer,&QTimer::timeout,this,[this] {
+        setCoolProgress(memCoolProgress+100.0f/qMax(1,coolTime));
+        if(memCoolProgress>=1) emit cooldownFinished();
     });
-
-    connect(this, &Card::checkHeartEnough, this, [=](){
-        if(getCardState() == CardState::Normal){
-            if(curRestHeart < heartCost) {
-                setEnabled(false);
-                setCardState(CardState::Unable);
-                memHeartIsEnough = false;
-                updateLackingEffect(); //更新爱心不足效果
-            }
-        }
-        else if(getCardState() == CardState::Unable){
-            if(curRestHeart >= heartCost) {
-                setEnabled(true);
-                setCardState(CardState::Normal);
-                memHeartIsEnough = true;
-                updateNormalEffect(); //更新正常效果
-            }
-        }
-    }); //每次收集爱心以后检查爱心是否足够
-
-    connect(this, &Card::cooldownFinished, this, [=](){
-        coolingState = false;
-        if(curRestHeart < heartCost) {
-            memHeartIsEnough = false;
-        }
-        else {
-            memHeartIsEnough = true;
-        }
-        if(memHeartIsEnough){
-            setCardState(CardState::Normal);
-            setEnabled(true);
-            updateNormalEffect(); //更新正常效果
-        }
-        else{
-            setEnabled(false);
-            setCardState(CardState::Unable);
-            updateLackingEffect(); //更新未激活效果
-        }
+    connect(this,&Card::checkHeartEnough,this,&Card::refreshAvailability);
+    connect(this,&Card::cooldownFinished,this,[this] {
+        memCoolTimer->stop(); coolingState=false; memCoolProgress=1;
+        refreshAvailability();
     });
-
-
-    connect(this, &Card::clicked, [this]() {
-        AudioManager::instance().play("click");
-        emit cardSelected(this);
+    connect(this,&QPushButton::clicked,this,[this] {
+        AudioManager::instance().play("click"); emit cardSelected(this);
     });
-
 }
-
-void Card::paintEvent(QPaintEvent *) {
-    // QIcon caps raster artwork at its source size. Draw the frame into the
-    // actual card bounds so it grows with the icons, cost labels and card bar.
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::SmoothPixmapTransform);
-    painter.drawPixmap(rect(),artwork);
+void Card::refreshAvailability() {
+    memHeartIsEnough=curRestHeart>=heartCost;
+    cardState=coolingState ? CardState::Cooling : memHeartIsEnough ? CardState::Normal : CardState::Unable;
+    setEnabled(cardState==CardState::Normal); update();
 }
-
-void Card::mousePressEvent(QMouseEvent *e)
-{
-    // 只在正常状态下处理点击
-    if (cardGameState == GameState::Normal) {
-        QPushButton::mousePressEvent(e);
-    }
-}
-
-void Card::updateCoolingEffect(){
-    // 创建半透明效果
-    QGraphicsOpacityEffect* effect = new QGraphicsOpacityEffect(this);
-    effect->setOpacity(0.5); // 半透明
-    setGraphicsEffect(effect);
-}
-
-void Card::updateNormalEffect(){
-    QGraphicsOpacityEffect* effect = new QGraphicsOpacityEffect(this);
-    effect->setOpacity(1.0); // 不透明
-    setGraphicsEffect(effect);
-}
-
-void Card::updateLackingEffect(){
-    // 创建半透明效果
-    QGraphicsOpacityEffect* effect = new QGraphicsOpacityEffect(this);
-    effect->setOpacity(0.93); // 几乎不透明
-    setGraphicsEffect(effect);
-}
-
-void Card::setCoolProgress(float progress){
-    memCoolProgress = progress;
-}
-
-void Card::startCooldown(){
-    if (coolingState) return;
-
-    coolingState = true;
-    memCoolProgress = 0.0f; //冷却进度从0开始
-
-    // 启动冷却计时器
-    memCoolTimer->start();
-
-    // 禁用按钮
-    setEnabled(false);
-
-    //设置冷却状态
-    setCardState(CardState::Cooling);
-
-    // 更新冷却效果
-    updateCoolingEffect();
-}
-
-void Card::gamePaused(){
-    if(memCoolTimer){
-        if(memCoolTimer->isActive()){
-            memCoolTimer->stop();
+void Card::paintEvent(QPaintEvent*) {
+    // Paint the entire face together so cost, heart, plant and curtain agree.
+    QPixmap face(artwork.size()); face.fill(Qt::transparent);
+    QPainter content(&face);
+    content.setRenderHint(QPainter::Antialiasing);
+    content.setRenderHint(QPainter::SmoothPixmapTransform);
+    content.drawPixmap(0,0,artwork);
+    const auto& plant=GameCatalog::plants().at(cardIndex);
+    const QPixmap unit(plant.image);
+    const QRectF portrait(5,13,face.width()-10,face.height()*.55);
+    QSizeF unitSize=unit.size(); unitSize.scale(portrait.size(),Qt::KeepAspectRatio);
+    content.drawPixmap(QRectF(portrait.center()-QPointF(unitSize.width()/2,unitSize.height()/2),unitSize),unit,unit.rect());
+    QFont font("Arial"); font.setPixelSize(11); font.setBold(true); content.setFont(font);
+    content.setPen(QColor("#26372a"));
+    content.drawText(QRectF(3,face.height()*.76,face.width()*.56,face.height()*.22),Qt::AlignCenter,QString::number(heartCost));
+    content.end();
+    if(coolingState || !memHeartIsEnough) {
+        // The original heart is raster art: recolor its red pixels exactly.
+        QImage pixels=face.toImage().convertToFormat(QImage::Format_ARGB32);
+        for(int y=pixels.height()*2/3;y<pixels.height();++y) for(int x=pixels.width()/2;x<pixels.width();++x) {
+            const QColor color=pixels.pixelColor(x,y);
+            if(color.red()>color.green()*1.4 && color.red()>color.blue()*1.4)
+                pixels.setPixelColor(x,y,QColor(145,145,145,color.alpha()));
         }
+        face=QPixmap::fromImage(pixels);
     }
+    QPainter painter(this); painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    painter.drawPixmap(rect(),face);
+    if(coolingState) {
+        painter.fillRect(rect(),QColor(0,0,0,125));
+        const qreal edge=height()*(1-memCoolProgress);
+        painter.fillRect(QRectF(0,0,width(),edge),QColor(0,0,0,130));
+        painter.setPen(QPen(QColor(255,237,173,180),2));
+        painter.drawLine(QPointF(0,edge),QPointF(width(),edge));
+    } else if(!memHeartIsEnough) painter.fillRect(rect(),QColor(0,0,0,85));
 }
-
-void Card::gameContinued(){
-    if(memCoolTimer){
-        if(!memCoolTimer->isActive() && isCooling()){
-            memCoolTimer->start();
-        }
-    }
+void Card::mousePressEvent(QMouseEvent *event) {
+    if(cardGameState==GameState::Normal) QPushButton::mousePressEvent(event);
 }
+void Card::setCoolProgress(float progress) { memCoolProgress=qBound(0.0f,progress,1.0f); update(); }
+void Card::startCooldown() {
+    if(coolingState) return;
+    coolingState=true; memCoolProgress=0; refreshAvailability(); memCoolTimer->start();
+}
+void Card::gamePaused() { memCoolTimer->stop(); }
+void Card::gameContinued() { if(coolingState && !memCoolTimer->isActive()) memCoolTimer->start(); }

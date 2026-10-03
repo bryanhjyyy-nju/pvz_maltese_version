@@ -46,6 +46,35 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void cardCooldownAndAffordability() {
+        Card card(1); card.heartCost=50; card.coolTime=5000;
+        card.setFixedSize(160,225); card.show(); Card::setGameState(GameState::Normal);
+        auto capture=[&](const QString& name) {
+            const auto pixels=card.grab().toImage(); const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+            if(!folder.isEmpty()) pixels.save(folder+"/card-"+name+".png"); return pixels;
+        };
+        Card::setCurRestHeart(50); emit card.cooldownFinished();
+        QVERIFY(card.isEnabled()); const auto ready=capture("ready");
+        const QPoint heart(125,188); QVERIFY(ready.pixelColor(heart).red()>ready.pixelColor(heart).green()*1.5);
+        Card::setCurRestHeart(0); emit card.checkHeartEnough();
+        QVERIFY(!card.isEnabled()); QCOMPARE(card.getCardState(),CardState::Unable);
+        const auto lacking=capture("lacking");
+        const auto gray=lacking.pixelColor(heart); QVERIFY(qAbs(gray.red()-gray.green())<5);
+        card.startCooldown(); card.gamePaused();
+        Card::setCurRestHeart(100); emit card.checkHeartEnough();
+        QVERIFY(!card.isEnabled()); QCOMPARE(card.getCardState(),CardState::Cooling);
+        const auto cooling=capture("cooling");
+        QVERIFY(cooling.pixelColor(heart).value()<lacking.pixelColor(heart).value());
+        card.setCoolProgress(.5); const auto half=capture("half");
+        const QPoint lower(30,160),upper(30,35);
+        QVERIFY(half.pixelColor(lower).value()>cooling.pixelColor(lower).value());
+        QCOMPARE(half.pixelColor(upper),cooling.pixelColor(upper));
+        emit card.cooldownFinished(); QVERIFY(card.isEnabled());
+        QCOMPARE(capture("ready-again").pixelColor(heart),ready.pixelColor(heart));
+        Card::setCurRestHeart(0); emit card.checkHeartEnough();
+        QCOMPARE(card.getCardState(),CardState::Unable);
+        QSignalSpy selected(&card,&Card::cardSelected); QTest::mouseClick(&card,Qt::LeftButton); QCOMPARE(selected.count(),0);
+    }
     void progressionAndSaveManagement() {
         QTemporaryDir dir; const auto path=dir.filePath("fresh.json");
         GameWindow root(nullptr,path,false); root.show(); root.showLevels();
@@ -752,17 +781,13 @@ private slots:
         const auto cards=play->findChildren<Card*>();
         root.resize(GameWindow::logicalSize()); QTest::qWait(25);
         const QSize base=cards[1]->size();
-        const auto *icon=play->findChild<QLabel*>("cardUnitIcon1");
-        const auto *cost=play->findChild<QLabel*>("cardCost1");
-        const QSize baseIcon=icon->pixmap(Qt::ReturnByValue).size();
-        const int baseFont=cost->font().pixelSize()>0 ? cost->font().pixelSize() : QFontInfo(cost->font()).pixelSize();
+        QVERIFY(!play->findChild<QLabel*>("cardUnitIcon1"));
+        QVERIFY(!play->findChild<QLabel*>("cardCost1"));
         for(const auto& size : {QSize(1280,720),QSize(1920,1080),QSize(2560,1440)}) {
             root.resize(size); QTest::qWait(25);
             const qreal scale=play->canvasScale();
             QCOMPARE(cards[1]->width(),qRound(base.width()*scale));
             QCOMPARE(cards[1]->height(),qRound(base.height()*scale));
-            QCOMPARE(icon->pixmap(Qt::ReturnByValue).width(),qRound(baseIcon.width()*scale));
-            QCOMPARE(cost->font().pixelSize(),qRound(baseFont*scale));
             QCOMPARE(play->findChild<QGraphicsView*>()->transform().m11(),scale);
             if(!folder.isEmpty()) QVERIFY(root.grab().save(folder+QString("/cards-%1.png").arg(size.width())));
         }

@@ -48,14 +48,12 @@ public:
 
 private:
     QPixmap artwork;
+    void refreshAvailability();
     void paintEvent(QPaintEvent *event) override;
-    void updateCoolingEffect(); //更新冷却效果
-    void updateNormalEffect(); //更新正常效果
-    void updateLackingEffect(); //更新为爱心不足效果
 
     const int cardIndex;    // 记录第几章卡牌
     bool coolingState = false; //记录是否正在冷却
-    bool memHeartIsEnough = false; //判断爱心是否足够
+    bool memHeartIsEnough = true; //判断爱心是否足够
     float memCoolProgress = 0.0f; // 冷却进度 (0.0-1.0)
     QTimer *memCoolTimer = nullptr; //冷却计时器
     CardState cardState = CardState::Normal;
