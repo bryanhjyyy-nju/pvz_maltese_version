@@ -1,8 +1,7 @@
 #pragma once
 #include <QGraphicsObject>
-#include <QPixmap>
 
-// Dirt covers the original lawn artwork until each new lane is unrolled.
+// Gold paving covers unavailable cells; new lanes shed their bricks in order.
 class Lawn : public QGraphicsObject {
     Q_OBJECT
     Q_PROPERTY(qreal revealProgress READ revealProgress WRITE setRevealProgress)
@@ -13,8 +12,8 @@ public:
     qreal revealProgress() const { return progress; }
     void setRevealProgress(qreal value);
     qreal rowReveal(int row) const;
+    qreal brickFallProgress(int row,int column) const;
 private:
     int level;
     qreal progress=1;
-    QPixmap soil;
 };

@@ -47,6 +47,22 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void goldPavingFallsInOrder() {
+        Lawn first(1); first.setRevealProgress(0);
+        for(int row=0;row<5;++row) for(int col=0;col<9;++col) QCOMPARE(first.brickFallProgress(row,col),0.0);
+        first.setRevealProgress(.5);
+        for(int col=0;col<9;++col) QCOMPARE(first.brickFallProgress(2,col),col<4 ? 1.0 : col==4 ? .5 : 0.0);
+        QCOMPARE(first.brickFallProgress(0,0),0.0);
+        Lawn third(3); third.setRevealProgress(.5);
+        for(int row=1;row<=3;++row) for(int col=0;col<9;++col) QCOMPARE(third.brickFallProgress(row,col),1.0);
+        for(int row : {0,4}) {
+            QCOMPARE(third.brickFallProgress(row,0),1.0);
+            QCOMPARE(third.brickFallProgress(row,4),.5);
+            QCOMPARE(third.brickFallProgress(row,8),0.0);
+        }
+        third.setRevealProgress(1);
+        for(int row=0;row<5;++row) for(int col=0;col<9;++col) QCOMPARE(third.brickFallProgress(row,col),1.0);
+    }
     void firstLevelHasNoShovelOrDefeatedCounter() {
         for(int level : {1,2}) {
             PlayScene play(level,nullptr,false); play.show();
