@@ -8,7 +8,7 @@ namespace GameCatalog {
 constexpr int LevelCount = 10;
 constexpr int BulletDamage = 30;
 constexpr int HeartValue = 25;
-constexpr int GuitarShotIntervalMs = 4000;
+constexpr int GuitarShotIntervalMs = 2000;
 struct Plant {
     QString id, name, image, description;
     int health, cost, cooldownMs, actionIntervalMs;

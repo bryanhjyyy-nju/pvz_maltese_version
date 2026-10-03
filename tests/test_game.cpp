@@ -421,6 +421,7 @@ private slots:
         auto *timer=enemy->findChild<QTimer*>("guitarRangedTimer");
         QVERIFY(timer); QVERIFY(timer->isActive());
         QCOMPARE(timer->interval(),GameCatalog::GuitarShotIntervalMs);
+        QCOMPARE(timer->interval(),2000);
         QVERIFY(!scene->plantAhead(2,enemy->x()));
         timer->start(80);
         QTRY_COMPARE_WITH_TIMEOUT(scene->findChildren<EnemyProjectile*>().size(),1,300);
