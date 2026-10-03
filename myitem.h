@@ -32,6 +32,9 @@ public:
     void setItPos(int r, int c); //设置所在行，所在列
     int getItRow() const { return itRow; }
     int getHp() const { return hp; } //返回血量的函数
+    void setHealthVisible(bool visible);
+    bool isHealthVisible() const;
+    QString healthText() const;
     virtual void startMoving();
     virtual void stopMoving();
     // qreal getMyScale() const{ return myScale; } //返回缩放比例
@@ -44,8 +47,13 @@ protected:
     bool memIsMoving = false;
     QPropertyAnimation *movingAnim = nullptr; //设置移动动画
     void setupGifAnimation(const QString& gifPath, qreal scale = 1.0); //加载动画
+    void applyDamage(int damage);
+    void updateHealthLabel();
+private:
+    class QGraphicsSimpleTextItem *healthLabel = nullptr;
 
 signals:
+    void healthChanged(int health);
 };
 
 #endif // MYITEM_H

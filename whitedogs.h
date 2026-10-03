@@ -13,7 +13,7 @@ public:
 
     int HeartCost(){ return heartCost; }
 
-    void cutHp(int atk){ hp -= atk; }
+    void cutHp(int atk){ applyDamage(atk); }
 
     void setTimer(QTimer *timer){ whiteDogTimer = timer; }
 

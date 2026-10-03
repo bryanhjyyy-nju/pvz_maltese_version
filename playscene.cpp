@@ -343,17 +343,29 @@ void PlayScene::buildPauseBtn() {
     sound->setFocusPolicy(Qt::NoFocus);
     sound->setGeometry(20,340,170,44);
     connect(sound,&QPushButton::clicked,this,&PlayScene::showAudioSettings);
-    auto *help = new QLabel("点击铲子 / R：拾取或放下\nEsc：取消选择\n空格：暂停 / 继续\n\n退出后可继续本关",this);
-    help->setGeometry(20,405,250,180);
+    auto *help = new QLabel(this);
+    auto updateHelp = [help](bool plants,bool enemies) {
+        help->setText(QString("点击铲子 / R：拿起或放下\nEsc：取消选择\n空格：暂停 / 继续\nH：植物血量 %1\nJ：金毛血量 %2\n退出后可继续本关")
+            .arg(plants ? "开" : "关").arg(enemies ? "开" : "关"));
+    };
+    updateHelp(false,false);
+    help->setGeometry(20,405,250,235);
     help->setStyleSheet("color:#26392e; font-size:16px; background:rgba(255,253,245,225); border-radius:10px; padding:12px;");
     const auto& level = GameCatalog::level(levelIndex);
     auto *wave = new QLabel(QString("准备防守！\n共 %1 波进攻").arg(level.waves),this);
     wave->setObjectName("waveStatus");
-    wave->setGeometry(20,610,250,85);
+    wave->setGeometry(20,655,250,85);
     wave->setStyleSheet("background:#ffe3a0; border:3px solid #8d6435; border-radius:16px; padding:12px; color:#65452d; font: bold 18px 'Microsoft YaHei';");
     connect(myGameScene,&MyGameScene::waveStarted,this,[wave](int current,int total) {
         wave->setText(QString("第 %1 / %2 波\n守住你的草坪！").arg(current).arg(total));
     });
+    connect(myGameScene,&MyGameScene::healthVisibilityChanged,this,updateHelp);
+    auto *plantHp = new QShortcut(QKeySequence(Qt::Key_H),this);
+    plantHp->setAutoRepeat(false);
+    connect(plantHp,&QShortcut::activated,myGameScene,&MyGameScene::togglePlantHealth);
+    auto *enemyHp = new QShortcut(QKeySequence(Qt::Key_J),this);
+    enemyHp->setAutoRepeat(false);
+    connect(enemyHp,&QShortcut::activated,myGameScene,&MyGameScene::toggleEnemyHealth);
 }
 
 void PlayScene::togglePauseMenu() {

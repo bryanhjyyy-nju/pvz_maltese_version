@@ -27,6 +27,10 @@ public:
     void setChosenNum(int cardNum);
     void cancelSelection();
     void toggleShovel();
+    void togglePlantHealth();
+    void toggleEnemyHealth();
+    bool plantHealthVisible() const { return showPlantHealth; }
+    bool enemyHealthVisible() const { return showEnemyHealth; }
     int totalEnemies() const { return m_totalZombiesForLevel; }
     int wavesStarted() const { return nextWave; }
     int getChosenNum() const { return chosenNum; }
@@ -83,11 +87,14 @@ private:
     int m_zombiesSpawned = 0;       // 已生成的僵尸数
     int m_zombiesKilled = 0;        // 已消灭的僵尸数
     bool m_isGameOver = false;      // 标记游戏是否已结束
+    bool showPlantHealth = false;
+    bool showEnemyHealth = false;
 
     QGraphicsPixmapItem *shovel = nullptr; //铲子
     void mouseMoveEvent(QGraphicsSceneMouseEvent * event) override;
 
 signals:
+    void healthVisibilityChanged(bool plants, bool enemies);
     void waveStarted(int wave, int total);
     void plantFinished();
     void heartCollected();

@@ -89,7 +89,7 @@ void YellowDogs::shootNote() {
 void YellowDogs::getAttacked(int attack) {
     if(removed || attack<=0) return;
     AudioManager::instance().play("hit");
-    hp -= attack;
+    applyDamage(attack);
     hitAnimation->stop();
     hitAnimation->setStartValue(1.0); hitAnimation->setEndValue(0.0); hitAnimation->start();
     new CombatEffect(battleScene,sceneBoundingRect().center(),CombatEffect::Hit);
@@ -99,6 +99,7 @@ void YellowDogs::getAttacked(int attack) {
 void YellowDogs::removeItself() {
     if(removed) return;
     removed=true;
+    setHealthVisible(false);
     stopMoving(); tempBackAnim->stop(); hitAnimation->stop(); biteAnimation->stop();
     for(auto *timer : findChildren<QTimer*>()) timer->stop();
     if(movie) movie->setPaused(true);

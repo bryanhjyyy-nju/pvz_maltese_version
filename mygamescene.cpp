@@ -239,6 +239,7 @@ void MyGameScene::setAYellowDog(int r,int typeNum){
     zombie->setParent(this);
     this->zombieMap[r].append(zombie);
     this->addItem(zombie);
+    zombie->setHealthVisible(showEnemyHealth);
     connect(zombie, &YellowDogs::arrivedYourHome, this, &MyGameScene::gameLose);
     connect(zombie,&YellowDogs::dying,this,[this,r](YellowDogs *zb) {
         zombieMap[r].removeOne(zb);
@@ -346,6 +347,7 @@ void MyGameScene::placePlant(int row, int col) {
     dogMap[row * 9 + col] = myDog;
 
     myDog->setItPos(row, col);//设置当前植物的所在行和列
+    myDog->setHealthVisible(showPlantHealth);
 
     connect(myDog,&WhiteDogs::pleaseRemoveMe, this, &MyGameScene::removeWhite);
 
@@ -368,4 +370,16 @@ WhiteDogs *MyGameScene::plantAhead(int row, qreal x) const {
         if(plant && plant->getHp()>0 && plant->x()<x && (!nearest || plant->x()>nearest->x())) nearest=plant;
     }
     return nearest;
+}
+
+void MyGameScene::togglePlantHealth() {
+    showPlantHealth=!showPlantHealth;
+    for(auto *plant : dogMap) if(plant) plant->setHealthVisible(showPlantHealth);
+    emit healthVisibilityChanged(showPlantHealth,showEnemyHealth);
+}
+void MyGameScene::toggleEnemyHealth() {
+    showEnemyHealth=!showEnemyHealth;
+    for(auto *enemy : findChildren<YellowDogs*>())
+        enemy->setHealthVisible(showEnemyHealth && !enemy->isDying());
+    emit healthVisibilityChanged(showPlantHealth,showEnemyHealth);
 }

@@ -17,7 +17,7 @@ public:
     bool checkCollision();
     void startAttacking(WhiteDogs *tar);
     void getAttacked(int atk);
-    void cutHp(int atk){ hp -= atk; } //减少血量
+    void cutHp(int atk){ applyDamage(atk); } //减少血量
     void removeItself();
     bool isDying() const { return removed; }
     int typeIndex() const { return enemyType; }

@@ -230,6 +230,51 @@ private slots:
         QCOMPARE(picker.play->levelIndex,2);
         picker.play->close();
     }
+    void independentLiveHealthOverlays() {
+        PlayScene play(8);
+        play.show();
+        auto *scene=play.findChild<MyGameScene*>();
+        auto *view=play.findChild<QGraphicsView*>();
+        view->setFocus(); QTest::qWait(40);
+        QTest::keyClick(view,Qt::Key_H);
+        QVERIFY(scene->plantHealthVisible()); QVERIFY(!scene->enemyHealthVisible());
+        scene->setChosenNum(1); Card::setGameState(GameState::PrePlace);
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,490)));
+        auto *plant=scene->plantAhead(2,1000);
+        QVERIFY(plant); QVERIFY(plant->isHealthVisible());
+        QCOMPARE(plant->healthText(),QString::number(plant->getHp()));
+        scene->setAYellowDog(2,1);
+        auto *enemy=static_cast<YellowDogs*>(scene->getZombieMap(2).back());
+        QVERIFY(!enemy->isHealthVisible());
+        QTest::keyClick(view,Qt::Key_J);
+        QVERIFY(enemy->isHealthVisible()); QVERIFY(plant->isHealthVisible());
+        enemy->stopMoving(); enemy->setPos(800,420);
+        enemy->getAttacked(30);
+        QCOMPARE(enemy->healthText(),QString("450"));
+        enemy->startAttacking(plant);
+        QCOMPARE(plant->healthText(),QString("440"));
+        play.gamePaused();
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(!folder.isEmpty()) QVERIFY(play.grab().save(folder+"/health.png"));
+        QTest::keyClick(view,Qt::Key_H);
+        QVERIFY(!plant->isHealthVisible()); QVERIFY(enemy->isHealthVisible());
+        QCOMPARE(Card::currentState(),GameState::Paused);
+        QTest::keyClick(view,Qt::Key_J);
+        QVERIFY(!enemy->isHealthVisible());
+        QTest::keyClick(view,Qt::Key_J);
+        play.gameContinued();
+        enemy->getAttacked(10000);
+        QVERIFY(!enemy->isHealthVisible());
+        scene->toggleEnemyHealth(); scene->toggleEnemyHealth();
+        QVERIFY(!enemy->isHealthVisible());
+        scene->setAYellowDog(1);
+        QVERIFY(scene->getZombieMap(1).back()->isHealthVisible());
+        QTest::keyClick(view,Qt::Key_H);
+        scene->setChosenNum(1); Card::setGameState(GameState::PrePlace);
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(561,490)));
+        QCOMPARE(scene->findChildren<WhiteDogs*>().size(),2);
+        for(auto *unit : scene->findChildren<WhiteDogs*>()) QVERIFY(unit->isHealthVisible());
+    }
     void cartoonMenuButtons() {
         MainScene menu;
         menu.show();
