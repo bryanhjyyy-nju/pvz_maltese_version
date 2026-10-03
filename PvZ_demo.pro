@@ -66,3 +66,6 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES += \
     res.qrc
+
+SOURCES += gamecatalog.cpp
+HEADERS += gamecatalog.h

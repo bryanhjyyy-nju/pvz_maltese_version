@@ -1,11 +1,13 @@
+#include "gamecatalog.h"
 #include "singingwhite.h"
 #include "whitedogs.h"
 #include <QDebug>
 
 SingingWhite::SingingWhite(int r, int c,MyGameScene *myScene):WhiteDogs(":/white/Image/singingWhite.gif")
 {
-    hp = 500;
-    heartCost = 100;
+    const auto& stats = GameCatalog::plants().at(0);
+    hp = stats.health;
+    heartCost = stats.cost;
     isZombieOnYourLawn = false;
     setItPos(r,c);
     whiteDogTimer = new QTimer(this);
@@ -13,7 +15,7 @@ SingingWhite::SingingWhite(int r, int c,MyGameScene *myScene):WhiteDogs(":/white
     connect(whiteDogTimer,&QTimer::timeout,this,[=](){
         emit bulletShot(r,c);
     });
-    whiteDogTimer->setInterval(1600);
+    whiteDogTimer->setInterval(stats.actionIntervalMs);
     connect(myScene->getGameTimer(), &QTimer::timeout, this,[=](){
         if(!isZombieOnYourLawn){
             if(isInFrontOfMe(myScene->getZombieMap(r))){

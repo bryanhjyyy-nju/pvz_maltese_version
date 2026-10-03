@@ -1,9 +1,11 @@
+#include "gamecatalog.h"
 #include "dblsingwhite.h"
 
 DblSingWhite::DblSingWhite(int r, int c,MyGameScene *myScene) : WhiteDogs(":/white/Image/dblSingWhite.gif",0.35)
 {
-    hp = 500;
-    heartCost = 200;
+    const auto& stats = GameCatalog::plants().at(6);
+    hp = stats.health;
+    heartCost = stats.cost;
     isZombieOnYourLawn = false;
     setItPos(r,c);
     whiteDogTimer = new QTimer(this);
@@ -11,7 +13,7 @@ DblSingWhite::DblSingWhite(int r, int c,MyGameScene *myScene) : WhiteDogs(":/whi
     connect(whiteDogTimer,&QTimer::timeout,this,[=](){
         emit bulletShot(r,c);
     });
-    whiteDogTimer->setInterval(800);
+    whiteDogTimer->setInterval(stats.actionIntervalMs);
     connect(myScene->getGameTimer(), &QTimer::timeout, this,[=](){
         if(!isZombieOnYourLawn){
             if(isInFrontOfMe(myScene->getZombieMap(r))){

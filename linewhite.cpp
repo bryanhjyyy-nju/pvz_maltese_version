@@ -1,9 +1,11 @@
+#include "gamecatalog.h"
 #include "linewhite.h"
 
 LineWhite::LineWhite(int row, int col, MyGameScene *myScene, QPointF cPos):WhiteDogs(":/white/Image/lineWhite.gif",0.45)
 {
-    hp = 10000;
-    heartCost = 0;
+    const auto& stats = GameCatalog::plants().at(3);
+    hp = stats.health;
+    heartCost = stats.cost;
     speed = 100;
     setItPos(row, col);
     WhiteDogs *tempPtr = this;

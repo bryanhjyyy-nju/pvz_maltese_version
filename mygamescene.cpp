@@ -1,3 +1,4 @@
+#include "gamecatalog.h"
  //mygamescene.cpp
 #include "mygamescene.h"
 #include <QDebug>
@@ -28,21 +29,8 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
     m_zombiesSpawned = 0;
     m_zombiesKilled = 0;
 
-    // 根据关卡设置总僵尸数
-    switch(gameLevelNum) {
-        case 1: m_totalZombiesForLevel =3; break;
-        case 2: m_totalZombiesForLevel = 6; break;
-        case 3: m_totalZombiesForLevel = 10; break;
-        case 4: m_totalZombiesForLevel = 17; break;
-        case 5: m_totalZombiesForLevel = 20; break;
-        case 6: m_totalZombiesForLevel = 25; break;
-        case 7: m_totalZombiesForLevel = 30; break;
-        case 8: m_totalZombiesForLevel = 35; break;
-        case 9: m_totalZombiesForLevel = 40; break;
-        case 10: m_totalZombiesForLevel = 50; break;
-        default: m_totalZombiesForLevel = 3; break;
-    }
-    // qDebug() << m_totalZombiesForLevel;
+    const auto level = GameCatalog::level(n);
+    m_totalZombiesForLevel = level.enemies;
     QFont font;
     font.setBold(true);
     font.setFamily("黑体");
@@ -125,88 +113,13 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
     //插入小金毛
     memYellowDogsTimer = new QTimer(this);
 
-    // --- 根据关卡等级定义生成参数 ---
-    int minInterval, maxInterval; // 每波僵尸生成的最小/最大时间间隔 (毫秒) (写到成员变量内部去了)
-    int minRow, maxRow;           // 允许生成的最小/最大行号
-    double toughZombieChance = 0.0;     // 生成种类1(高血量)僵尸的概率 (0.0 to 1.0)
-    int zombiesPerWave = 1;       // 每波僵尸的基础数量
-    double multiSpawnChance = 0.0;// 每波额外生成一个僵尸的概率
-    double multimulti = 0.0; // 每波可能额外生成另一个僵尸
-    double quickZombieChance = 0.0;     // 生成种类2(高移速)僵尸的概率（0.0 to 1.0）
-
-    switch(gameLevelNum){
-        case 1:
-            minRow = 2; maxRow = 2; // 仅在中间行
-            minInterval = 18000; maxInterval = 22000; // 间隔长
-            break;
-        case 2:
-            minRow = 1; maxRow = 3; // 中间三行
-            minInterval = 16000; maxInterval = 20000;
-            break;
-        case 3:
-            minRow = 1; maxRow = 3;
-            minInterval = 14000; maxInterval = 18000; // 间隔缩短
-            multiSpawnChance = 0.10;
-            break;
-        case 4:
-            minRow = 0; maxRow = 4; // 全部行
-            minInterval = 4000; maxInterval = 16000;
-            toughZombieChance = 0.15;
-            break;
-        case 5:
-            minRow = 0; maxRow = 4;
-            minInterval = 5000; maxInterval = 14000;
-            toughZombieChance = 0.15; // 15% 概率出现种类1
-            break;
-        case 6:
-            minRow = 0; maxRow = 4;
-            minInterval = 7000; maxInterval = 13000;
-            toughZombieChance = 0.25; // 25% 概率
-            break;
-        case 7:
-            minRow = 0; maxRow = 4;
-            minInterval = 13000; maxInterval = 18000;
-            toughZombieChance = 0.35; // 35% 概率
-            quickZombieChance = 0.05; // 35% * 5% 概率生成一个冲刺小狗
-            zombiesPerWave = 2; //每波僵尸至少 2 个
-            multiSpawnChance = 0.05; // 5% 概率额外生成一个
-            break;
-        case 8:
-            minRow = 0; maxRow = 4;
-            minInterval = 5000; maxInterval = 15000;
-            toughZombieChance = 0.75; // 75% 概率
-            multiSpawnChance = 0.15; // 15% 概率额外生成一个
-            break;
-        case 9:
-            minRow = 0; maxRow = 4;
-            minInterval = 10000; maxInterval = 16000;
-            toughZombieChance = 0.60; // 60% 概率
-            quickZombieChance = 0.30; // 60% * 30% 概率生成一个冲刺小狗
-            multiSpawnChance = 0.40; // 40% 概率额外生成一个
-            multimulti = 0.05; // 5% 概率额外生成两个
-            break;
-        case 10:
-            minRow = 0; maxRow = 4;
-            minInterval = 7500; maxInterval = 23500; // 间隔很短
-            toughZombieChance = 0.65; // 65% 概率
-            quickZombieChance = 0.35; // 35% 概率生成一个冲刺小狗
-            zombiesPerWave = 2; // 每波至少2个
-            multiSpawnChance = 0.30; // 30% 概率生成第3个
-            multimulti = 0.15; //可能额外多生成两个
-            break;
-        default: // 处理无效关卡号，难度同第一关
-            minRow = 2; maxRow = 2;
-            minInterval = 18000; maxInterval = 22000;
-            break;
-    }
-
     connect(memYellowDogsTimer, &QTimer::timeout, this, [=](){
         // 计算本波要生成的僵尸数量
-        int spawnCount = zombiesPerWave;
-        if (QRandomGenerator::global()->generateDouble() < multiSpawnChance) {
+        int spawnCount = level.perWave;
+        if (QRandomGenerator::global()->generateDouble() < level.extraChance) {
             spawnCount++;
         }
-        if (QRandomGenerator::global()->generateDouble() < multimulti) {
+        if (QRandomGenerator::global()->generateDouble() < level.extraTwoChance) {
             spawnCount += 2;
         }
 
@@ -215,12 +128,12 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
         for (int i = 0; i < spawnCount; ++i) {
             // 1. 在允许的范围内随机选择一行
             // QRandomGenerator::bounded(N) 生成 [0, N-1] 的整数
-            int row = QRandomGenerator::global()->bounded(maxRow - minRow + 1) + minRow;
+            int row = QRandomGenerator::global()->bounded(level.maxRow - level.minRow + 1) + level.minRow;
 
             // 2. 根据概率选择僵尸种类
             int type = 0; // 默认为种类0
-            if (QRandomGenerator::global()->generateDouble() < toughZombieChance) {
-                if(QRandomGenerator::global()->generateDouble() < quickZombieChance){
+            if (QRandomGenerator::global()->generateDouble() < level.toughChance) {
+                if(QRandomGenerator::global()->generateDouble() < level.quickChance){
                     type = 2; //种类2(高移速)
                 }
                 else{
@@ -232,14 +145,14 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
             setAYellowDog(row, type);
             // // 判断是否应当给游戏加速
             // if (!beFaster && m_zombiesSpawned >= 21 &&  gameLevelNum == 9){
-            //     minInterval = 9000;
-            //     maxInterval = 12000;
+            //     level.minInterval = 9000;
+            //     level.maxInterval = 12000;
             //     beFaster = true;
             // }
         }
 
         // 4. 为下一波僵尸设置一个新的随机时间间隔
-        int nextInterval = QRandomGenerator::global()->bounded(minInterval, maxInterval + 1);
+        int nextInterval = QRandomGenerator::global()->bounded(level.minInterval, level.maxInterval + 1);
         memYellowDogsTimer->setInterval(nextInterval);
     });
 
@@ -266,7 +179,7 @@ bool MyGameScene::initMapOccupied(int cols, int rows){
 
 MyGameScene::~MyGameScene(){
     if(mapOccupied) {
-        delete mapOccupied;
+        delete[] mapOccupied;
         mapOccupied = NULL;
     }
 }
@@ -334,7 +247,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
         //转换成坐标网格系统
         if(mapGrid->turnPosToMap(event->scenePos(),col,row)){
             //检查是否被占用
-            if(!mapOccupied[row * 9 + col]){
+            if(!mapOccupied[row * 9 + col] && restHeart >= GameCatalog::plants().at(chosenNum).cost){
                 //计算中心的坐标
                 QPointF centerLoc = mapGrid->cellCenter(col,row);
                 //创建植物并定位
@@ -497,8 +410,9 @@ void MyGameScene::setAYellowDog(int r,int typeNum){
 }
 
 void MyGameScene::removeWhite(int r,int c){
+    if (!dogMap[9 * r + c]) return;
     removeItem(dogMap[9 * r + c]);
-    delete dogMap[9 * r + c];
+    dogMap[9 * r + c]->deleteLater();
     dogMap[9 * r + c] = nullptr;
     mapOccupied[9 * r + c] = false;
 }

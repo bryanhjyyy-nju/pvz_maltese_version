@@ -1,4 +1,5 @@
 #include "playscene.h"
+#include "gamecatalog.h"
 #include <QPainter>
 #include "mypushbutton.h"
 #include <QTimer>
@@ -182,13 +183,14 @@ void PlayScene::setCardBar(){
 //设置卡牌在槽中
 void PlayScene::setCardsInBar(){
     for(int i = 0; i < (levelIndex < 8 ? levelIndex : 8); i++){
+        const auto& plant = GameCatalog::plants().at(i);
         //设置卡牌
         Card *card = new Card(i);
         card->setParent(this);
         card->move(470 + i * (card->width() + 5.5), 10);
-        card->whiteType = this->whiteTypes[i];
-        card->coolTime = this->coolTimes[i];
-        card->heartCost = this->heartCosts[i];
+        card->whiteType = plant.id;
+        card->coolTime = plant.cooldownMs;
+        card->heartCost = plant.cost;
         connect(this, &PlayScene::gameLose, card, &Card::gamePaused);
         connect(this, &PlayScene::gameWin, card, &Card::gamePaused);
 
@@ -200,11 +202,11 @@ void PlayScene::setCardsInBar(){
         whiteIcon->setParent(this);
 
         QPixmap pix;
-        pix.load(whiteImages[i]);
-        pix = pix.scaled(sizes[i], sizes[i]);
+        pix.load(plant.image);
+        pix = pix.scaled(plant.iconSize, plant.iconSize);
         whiteIcon->setFixedSize(card->width(),card->height());
         whiteIcon->setPixmap(pix);
-        whiteIcon->move(470 + i * (card->width() + 5.5) + Xs[i], Ys[i]);
+        whiteIcon->move(470 + i * (card->width() + 5.5) + plant.iconX, plant.iconY);
         //鼠标能够穿透
         whiteIcon->setAttribute(Qt::WA_TransparentForMouseEvents);
 
@@ -212,7 +214,7 @@ void PlayScene::setCardsInBar(){
         QLabel *label = new QLabel;
         label->setParent(this);
         label->setFixedSize(card->width(),card->height());
-        label->setText(QString::number(this->heartCosts[i]));
+        label->setText(QString::number(plant.cost));
 
         //设置字体颜色和大小
         QFont font;
@@ -259,9 +261,10 @@ void PlayScene::handleCardSelected(Card *card){
 
 void PlayScene::startShow(int num){
     QPixmap pix;
-    pix.load(whiteImages[num]);
-    pix = pix.scaled(sizes[num] * 2, sizes[num] * 2);
-    preImageLabel->setFixedSize(sizes[num] * 2, sizes[num] * 2);
+    const auto& plant = GameCatalog::plants().at(num);
+    pix.load(plant.image);
+    pix = pix.scaled(plant.iconSize * 2, plant.iconSize * 2);
+    preImageLabel->setFixedSize(plant.iconSize * 2, plant.iconSize * 2);
     preImageLabel->setPixmap(pix);
     // preImageLabel->move(100 - preImageLabel->width() / 2, 100 - preImageLabel->height() / 2);
     // preImageLabel->setVisible(true);

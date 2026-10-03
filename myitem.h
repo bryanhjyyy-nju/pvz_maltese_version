@@ -42,7 +42,7 @@ protected:
     int itCol = 0; //所在列
     qreal speed = 0.0; //设置速度
     bool memIsMoving = false;
-    QPropertyAnimation *movingAnim; //设置移动动画
+    QPropertyAnimation *movingAnim = nullptr; //设置移动动画
     void setupGifAnimation(const QString& gifPath, qreal scale = 1.0); //加载动画
 
 signals:

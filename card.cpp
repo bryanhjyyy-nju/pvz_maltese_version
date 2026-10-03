@@ -82,7 +82,7 @@ Card::Card(int cardNum):whiteType("") ,coolTime(0) ,heartCost(0),cardIndex(cardN
             updateNormalEffect(); //更新正常效果
         }
         else{
-            // setEnabled(false);
+            setEnabled(false);
             setCardState(CardState::Unable);
             updateLackingEffect(); //更新未激活效果
         }

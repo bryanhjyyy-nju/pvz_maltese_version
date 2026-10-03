@@ -31,7 +31,7 @@ MyPushButton::MyPushButton(QString firstImg, QString secondImg, float times){
 
 void MyPushButton::zoom1(){
     //创建动态对象
-    QPropertyAnimation *animation = new QPropertyAnimation(this,"geometry");
+    QPropertyAnimation *animation = new QPropertyAnimation(this,"geometry", this);
 
     //设置动画时间间隔
     animation->setDuration(200);
@@ -46,12 +46,12 @@ void MyPushButton::zoom1(){
     animation->setEasingCurve(QEasingCurve::OutBounce);
 
     //执行动画
-    animation->start();
+    animation->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
 void MyPushButton::zoom2(){
     //创建动态对象
-    QPropertyAnimation *animation = new QPropertyAnimation(this,"geometry");
+    QPropertyAnimation *animation = new QPropertyAnimation(this,"geometry", this);
 
     //设置动画时间间隔
     animation->setDuration(200);
@@ -66,5 +66,5 @@ void MyPushButton::zoom2(){
     animation->setEasingCurve(QEasingCurve::OutBounce);
 
     //执行动画
-    animation->start();
+    animation->start(QAbstractAnimation::DeleteWhenStopped);
 }

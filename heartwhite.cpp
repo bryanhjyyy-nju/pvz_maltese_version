@@ -1,17 +1,19 @@
+#include "gamecatalog.h"
   #include "heartwhite.h"
 
 
 HeartWhite::HeartWhite(MyGameScene *myScene):WhiteDogs(":/white/Image/heartWhite.gif", 1.2)
 {
-    hp = 500;
-    heartCost = 50;
+    const auto& stats = GameCatalog::plants().at(1);
+    hp = stats.health;
+    heartCost = stats.cost;
 
     whiteDogTimer = new QTimer(this);
     connect(whiteDogTimer,&QTimer::timeout,this,[this](){
         emit heartGenerated(this->pos());
     });
 
-    whiteDogTimer->start(12000); //每 4s 产一个阳光
+    whiteDogTimer->start(stats.actionIntervalMs);
 
     connect(this, &HeartWhite::heartGenerated, myScene, [=](){
         myScene->generateWhiteHeart(this->pos());

@@ -58,7 +58,7 @@ void MyItem::setItPos(int r, int c){
 }
 
 void MyItem::startMoving(){
-    if (!memIsMoving){
+    if (movingAnim && !memIsMoving){
         if(movingAnim->state() == movingAnim->Stopped){
             memIsMoving = true;
             movingAnim->start();

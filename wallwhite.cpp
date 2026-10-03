@@ -1,8 +1,10 @@
+#include "gamecatalog.h"
 #include "wallwhite.h"
 #include "whitedogs.h"
 
 WallWhite::WallWhite():WhiteDogs(":/white/Image/wallWhite.gif", 0.5)
 {
-    hp = 3000;
-    heartCost = 50;
+    const auto& stats = GameCatalog::plants().at(2);
+    hp = stats.health;
+    heartCost = stats.cost;
 }

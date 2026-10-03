@@ -1,9 +1,11 @@
+#include "gamecatalog.h"
 #include "allheartwhite.h"
 
 AllHeartWhite::AllHeartWhite(MyGameScene *myScene) :WhiteDogs(":/white/Image/allHeartWhite.gif")
 {
-    hp = 500;
-    heartCost = 125;
+    const auto& stats = GameCatalog::plants().at(5);
+    hp = stats.health;
+    heartCost = stats.cost;
 
 
     whiteDogTimer = new QTimer(this);
@@ -11,7 +13,7 @@ AllHeartWhite::AllHeartWhite(MyGameScene *myScene) :WhiteDogs(":/white/Image/all
         emit heartGenerated(this->pos());
     });
 
-    whiteDogTimer->start(6000); //每 6s 产一个阳光
+    whiteDogTimer->start(stats.actionIntervalMs);
 
     connect(this, &AllHeartWhite::heartGenerated, myScene, [=](){
         myScene->generateWhiteHeart(this->pos());

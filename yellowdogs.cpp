@@ -1,3 +1,4 @@
+#include "gamecatalog.h"
 #include "yellowdogs.h"
 #include <QDebug>
 #include <QRandomGenerator>
@@ -50,7 +51,7 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog
             //攻击逻辑
             stopMoving();
             targetWhiteDog->cutHp(atkPower);
-            if(targetWhiteDog->getAtkType() == 1){ getAttacked(atkPower * 0.5); } //跳舞小狗反弹80%伤害
+            if(targetWhiteDog->getAtkType() == 1){ getAttacked(atkPower * 0.5); } //跳舞小狗反弹50%伤害
             else if(targetWhiteDog->getAtkType() == 2){
                 tempBackAnim->setEndValue(pos() + QPointF(100, 0));
                 tempBackAnim->start();
@@ -68,24 +69,11 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog
 }
 
 void YellowDogs::initArgues(int typeNum){
-    if(typeNum == 1){
-        hp = 800;
-        speed = 15 + QRandomGenerator::global()->bounded(8);
-        atkPower = 60;
-        setupGifAnimation(":/yellow/Image/guitarYellow.gif",0.4);
-    }
-    else if(typeNum == 2){
-        hp = 400;
-        speed = 40 + QRandomGenerator::global()->bounded(10);
-        atkPower = 80;
-        setupGifAnimation(":/yellow/Image/dashYellow.gif",0.5);
-    }
-    else {
-        hp = 300;
-        speed = 25 + QRandomGenerator::global()->bounded(8);
-        atkPower = 50;
-        setupGifAnimation(":/yellow/Image/forkYellow.gif",0.55);
-    }
+    const auto& stats = GameCatalog::enemies().at(qBound(0, typeNum, 2));
+    hp = stats.health;
+    speed = stats.minSpeed + QRandomGenerator::global()->bounded(stats.speedRange);
+    atkPower = stats.attack;
+    setupGifAnimation(stats.image, stats.scale);
 }
 
 bool YellowDogs::checkCollision(){

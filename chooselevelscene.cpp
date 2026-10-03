@@ -87,7 +87,8 @@ void ChooseLevelScene::buildLevelBtn(){
             //监听游戏界面的返回信号
             connect(play,&PlayScene::playSceneBack,this,[=](){
                 //todo 实现存档功能
-                delete play;
+                play->hide();
+                play->deleteLater();
                 play = NULL;
                 this->show();
             });

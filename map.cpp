@@ -40,12 +40,12 @@ void Map::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidg
 //将坐标为位置转化成网格索引
 bool Map::turnPosToMap(const QPointF& mousePos,int& col,int& row) const{
     QPointF relativePos = mousePos - mapOriginLoc;
-    col = relativePos.x() / mapCellSize.width();
-    row = relativePos.y() / mapCellSize.height();
+    col = std::floor(relativePos.x() / mapCellSize.width());
+    row = std::floor(relativePos.y() / mapCellSize.height());
     return (col >= 0 && col < mapCols && row >= 0 && row < mapRows);
 }
 
 //获取网格中心坐标
 QPointF Map::cellCenter(int col, int row) const{
-    return mapOriginLoc + QPointF(col * mapCellSize.width() + mapCellSize.width()/2, row * mapCellSize.height() + mapCellSize.width() / 2);
+    return mapOriginLoc + QPointF(col * mapCellSize.width() + mapCellSize.width()/2, row * mapCellSize.height() + mapCellSize.height() / 2);
 }

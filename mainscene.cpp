@@ -98,7 +98,7 @@ void MainScene::buildQuitBtn(){
 
 void MainScene::setGif(int w,int h,int x,int y){
     //设置动画
-    QMovie *movie = new QMovie(":/others/Image/startDogs.gif");
+    QMovie *movie = new QMovie(":/others/Image/startDogs.gif", QByteArray(), this);
     QLabel *label = new QLabel(this);
     label->setMovie(movie);
     label->setFixedSize(QSize(w,h));
@@ -109,5 +109,6 @@ void MainScene::setGif(int w,int h,int x,int y){
 
 MainScene::~MainScene()
 {
+    delete chooseScene;
     delete ui;
 }
