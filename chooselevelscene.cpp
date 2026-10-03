@@ -1,4 +1,5 @@
 #include "chooselevelscene.h"
+#include <QMessageBox>
 #include <QPainter>
 #include "mypushbutton.h"
 #include <QDebug>
@@ -23,6 +24,14 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent)
 
     //每一关对应的按钮
     buildLevelBtn();
+    continueButton = new QPushButton(this);
+    continueButton->setObjectName("continueGame");
+    continueButton->setGeometry(620, 785, 400, 48);
+    connect(continueButton, &QPushButton::clicked, this, &ChooseLevelScene::continueGame);
+    progressLabel = new QLabel(this);
+    progressLabel->setGeometry(280, 840, 1100, 45);
+    progressLabel->setAlignment(Qt::AlignCenter);
+    refreshProgress();
 }
 
 void ChooseLevelScene::paintEvent(QPaintEvent *){
@@ -79,19 +88,7 @@ void ChooseLevelScene::buildLevelBtn(){
         connect(levelBtn,&MyPushButton::clicked,this,[=](){
             // qDebug() << i + 1;
 
-            //进入游戏场景
-            this->hide();
-            play = new PlayScene(i + 1);
-            play->show();
-
-            //监听游戏界面的返回信号
-            connect(play,&PlayScene::playSceneBack,this,[=](){
-                //todo 实现存档功能
-                play->hide();
-                play->deleteLater();
-                play = NULL;
-                this->show();
-            });
+            startLevel(i + 1);
         });
 
         //显示文字：第 i 关
@@ -114,4 +111,40 @@ void ChooseLevelScene::buildLevelBtn(){
         //使得鼠标能够穿透label
         label->setAttribute(Qt::WA_TransparentForMouseEvents);
     }
+}
+
+void ChooseLevelScene::refreshProgress() {
+    progress.load();
+    continueButton->setEnabled(progress.hasProgress());
+    continueButton->setText(QString("继续游戏 · 第 %1 关").arg(progress.resumeLevel()));
+    progressLabel->setText(progress.error().isEmpty()
+        ? QString("最高通过：%1 / 10 关 · 自动记录关卡进度；继续游戏会从该关开局。%2")
+            .arg(progress.highestCompleted()).arg(progress.highestCompleted() == 10 ? "  已全部通关！" : "")
+        : progress.error());
+}
+
+void ChooseLevelScene::continueGame() {
+    refreshProgress();
+    if(progress.hasProgress()) startLevel(progress.resumeLevel());
+}
+
+void ChooseLevelScene::startLevel(int level) {
+    if(play) return;
+    if(!progress.startLevel(level))
+        QMessageBox::warning(this, "存档未写入", progress.error());
+    play = new PlayScene(level);
+    connect(play, &PlayScene::gameWin, this, [this, level] {
+        if(!progress.completeLevel(level))
+            QMessageBox::warning(play, "存档未写入", progress.error());
+    });
+    connect(play, &PlayScene::playSceneBack, this, [this] {
+        if(!play) return;
+        play->hide();
+        play->deleteLater();
+        play = nullptr;
+        refreshProgress();
+        show();
+    });
+    hide();
+    play->show();
 }

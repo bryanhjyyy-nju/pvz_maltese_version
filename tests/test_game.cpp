@@ -1,5 +1,8 @@
 #include <QtTest>
 #include "map.h"
+#include "progressstore.h"
+#include <QTemporaryDir>
+#include <QFile>
 #include "gamecatalog.h"
 #include "mygamescene.h"
 #include "singingwhite.h"
@@ -8,6 +11,36 @@
 class GameTests : public QObject {
     Q_OBJECT
 private slots:
+    void progressRoundTrip() {
+        QTemporaryDir dir;
+        const auto path = dir.filePath("save/progress.json");
+        ProgressStore store(path);
+        QVERIFY(!store.hasProgress());
+        QVERIFY(store.startLevel(3));
+        QCOMPARE(ProgressStore(path).resumeLevel(),3);
+        QVERIFY(store.completeLevel(3));
+        QCOMPARE(ProgressStore(path).resumeLevel(),4);
+        QVERIFY(store.completeLevel(10));
+        QCOMPARE(ProgressStore(path).resumeLevel(),10);
+        QVERIFY(store.startLevel(1));
+        QCOMPARE(ProgressStore(path).highestCompleted(),10);
+        QVERIFY(!store.startLevel(11));
+        QCOMPARE(ProgressStore(path).resumeLevel(),1);
+        QFile file(path); QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("broken json"); file.close();
+        ProgressStore broken(path);
+        QVERIFY(!broken.hasProgress()); QVERIFY(!broken.error().isEmpty());
+        QCOMPARE(broken.resumeLevel(),1);
+        QVERIFY(broken.startLevel(2));
+        QCOMPARE(ProgressStore(path).resumeLevel(),2);
+    }
+    void progressWriteFailure() {
+        QTemporaryDir dir;
+        ProgressStore store(dir.path()); // A directory cannot be replaced by a file.
+        QVERIFY(!store.startLevel(2));
+        QVERIFY(!store.error().isEmpty());
+        QVERIFY(!store.hasProgress());
+    }
     void gridBoundaries() {
         Map map(9,5,QSize(121,145),QPointF(380,130));
         int col, row;

@@ -289,3 +289,8 @@ void PlayScene::gamePaused(){
 void PlayScene::gameContinued(){
     Card::setGameState(GameState::Normal);
 }
+
+void PlayScene::closeEvent(QCloseEvent *event) {
+    Q_UNUSED(event);
+    emit playSceneBack();
+}

@@ -30,6 +30,14 @@ MainScene::MainScene(QWidget *parent)
     //添加退出游戏按钮
     buildQuitBtn();
 
+    auto *resume = new QPushButton("继续上次关卡", this);
+    resume->setObjectName("resumeGame");
+    resume->setGeometry(620, 730, 190, 48);
+    connect(resume, &QPushButton::clicked, this, [this] {
+        hide();
+        chooseScene->show();
+        chooseScene->continueGame();
+    });
     //插入两个动画
     setGif(400,400,this->width() * 0.05,this->height() * 0.45);
     setGif(400,400,this->width() * 0.7,this->height() * 0.45);

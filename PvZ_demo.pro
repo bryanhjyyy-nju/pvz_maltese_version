@@ -69,3 +69,6 @@ RESOURCES += \
 
 SOURCES += gamecatalog.cpp
 HEADERS += gamecatalog.h
+
+SOURCES += progressstore.cpp
+HEADERS += progressstore.h

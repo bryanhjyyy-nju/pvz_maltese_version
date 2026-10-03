@@ -24,6 +24,9 @@ public:
     void gamePaused();
     void gameContinued();
 
+protected:
+    void closeEvent(QCloseEvent *event) override;
+
 private:
     QVector<Card *> myCards;
 

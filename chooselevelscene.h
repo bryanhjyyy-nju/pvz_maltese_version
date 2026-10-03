@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 #include "playscene.h"
+#include "progressstore.h"
+#include <QPushButton>
 
 class ChooseLevelScene : public QMainWindow
 {
@@ -13,9 +15,15 @@ public:
     //重写绘图事件
     void paintEvent(QPaintEvent *) override;
 
-    PlayScene *play = NULL;
+    PlayScene *play = nullptr;
+    void startLevel(int level);
+    void refreshProgress();
+    void continueGame();
 
 private:
+    ProgressStore progress;
+    QPushButton *continueButton = nullptr;
+    QLabel *progressLabel = nullptr;
     void buildBackBtn();
     void buildLevelBtn();
 
