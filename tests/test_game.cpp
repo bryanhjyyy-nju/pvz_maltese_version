@@ -1011,6 +1011,16 @@ private slots:
         QVERIFY(!root.isVisible()); QVERIFY(!root.playPage()->findChild<LevelTutorial*>()->isVisible());
         for(auto *timer : root.playPage()->findChildren<QTimer*>()) QVERIFY(!timer->isActive());
     }
+    void openingAdvancesAutomaticallyInRealTime() {
+        QTemporaryDir dir;
+        GameWindow root(nullptr,dir.filePath("progress.json")); root.show(); root.startLevel(3);
+        auto *play=root.playPage(); auto *scene=play->findChild<MyGameScene*>();
+        QVERIFY(!scene->gameplayStarted());
+        QTRY_VERIFY_WITH_TIMEOUT(scene->gameplayStarted(),10000);
+        QCOMPARE(play->findChild<LevelOpening*>()->stage(),LevelOpening::Stage::Complete);
+        for(int row=0;row<5;++row) QCOMPARE(scene->lawn()->rowReveal(row),1.0);
+        QCOMPARE(scene->wavesStarted(),0);
+    }
     void enemyLimit() {
         MyGameScene scene(1);
         for(int i=0;i<8;++i) scene.setAYellowDog(2);
