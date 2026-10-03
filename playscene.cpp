@@ -155,24 +155,13 @@ PlayScene::PlayScene(int levelNum,QWidget *parent) :
 }
 
 
-void PlayScene::buildBackBtn(){
-    //返回按钮
-    MyPushButton *backBtn = new MyPushButton(":/others/Image/backBtn.png");
-    backBtn->setParent(this);
-    backBtn->move(this->width() - backBtn->width() * 1.2,backBtn->width() * 0.2);
-
-    connect(backBtn,&MyPushButton::clicked,this,[=](){
-        //点击动画
-        backBtn->zoom1();
-        backBtn->zoom2();
-
-        //延时返回
-        QTimer::singleShot(300,this,[=](){
-            emit this->playSceneBack();
-        });
-    });
-
-    connect(myGameScene, &MyGameScene::pleaseRemovePreImage, this, &PlayScene::stopShow);
+void PlayScene::buildBackBtn() {
+    auto *back=new QPushButton("返回选关",this);
+    GameUi::styleButton(back,"gold");
+    back->setObjectName("backToLevels");
+    back->setGeometry(1440,25,180,50);
+    connect(back,&QPushButton::clicked,this,&PlayScene::playSceneBack);
+    connect(myGameScene,&MyGameScene::pleaseRemovePreImage,this,&PlayScene::stopShow);
 }
 
 void PlayScene::setLevelText(){
@@ -210,6 +199,7 @@ void PlayScene::setCardsInBar(){
         //设置卡牌
         Card *card = new Card(i);
         card->setParent(this);
+        card->setObjectName(QString("plantCard%1").arg(i));
         card->move(470 + i * (card->width() + 5.5), 10);
         card->whiteType = plant.id;
         card->coolTime = plant.cooldownMs;
@@ -223,6 +213,7 @@ void PlayScene::setCardsInBar(){
         //设置卡牌图标
         QLabel *whiteIcon = new QLabel;
         whiteIcon->setParent(this);
+        whiteIcon->setObjectName(QString("cardUnitIcon%1").arg(i));
 
         QPixmap pix;
         pix.load(plant.image);
@@ -236,6 +227,7 @@ void PlayScene::setCardsInBar(){
         //设置阳光消耗数字显示
         QLabel *label = new QLabel;
         label->setParent(this);
+        label->setObjectName(QString("cardCost%1").arg(i));
         label->setFixedSize(card->width(),card->height());
         label->setText(QString::number(plant.cost));
 

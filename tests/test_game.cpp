@@ -640,6 +640,66 @@ private slots:
         QTest::keyClick(&root,Qt::Key_F11);
         QTRY_COMPARE(root.geometry(),geometry);
     }
+    void levelButtonsAndCardArtworkScale() {
+        QTemporaryDir dir;
+        GameWindow root(nullptr,dir.filePath("progress.json"));
+        root.show(); root.showLevels();
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        for(const auto& size : {QSize(1650,900),QSize(1280,720),QSize(1920,1080),QSize(2560,1440)}) {
+            root.resize(size); QTest::qWait(25);
+            auto *page=root.levelPage();
+            for(int level=1;level<=10;++level) {
+                auto *button=page->findChild<QPushButton*>(QString("level%1").arg(level));
+                QVERIFY(button); QVERIFY(button->icon().isNull());
+                QCOMPARE(button->width(),button->height());
+                QCOMPARE(button->width(),qRound(180*page->canvasScale()));
+                QVERIFY(page->rect().contains(button->geometry()));
+            }
+            if(!folder.isEmpty()) QVERIFY(root.grab().save(folder+QString("/levels-%1.png").arg(size.width())));
+        }
+        QTest::mouseClick(root.levelPage()->findChild<QPushButton*>("level8"),Qt::LeftButton);
+        QVERIFY(root.playPage()); QCOMPARE(root.playPage()->levelIndex,8);
+        auto *play=root.playPage();
+        const auto cards=play->findChildren<Card*>();
+        root.resize(GameWindow::logicalSize()); QTest::qWait(25);
+        const QSize base=cards[1]->size();
+        const auto *icon=play->findChild<QLabel*>("cardUnitIcon1");
+        const auto *cost=play->findChild<QLabel*>("cardCost1");
+        const QSize baseIcon=icon->pixmap(Qt::ReturnByValue).size();
+        const int baseFont=cost->font().pixelSize()>0 ? cost->font().pixelSize() : QFontInfo(cost->font()).pixelSize();
+        for(const auto& size : {QSize(1280,720),QSize(1920,1080),QSize(2560,1440)}) {
+            root.resize(size); QTest::qWait(25);
+            const qreal scale=play->canvasScale();
+            QCOMPARE(cards[1]->width(),qRound(base.width()*scale));
+            QCOMPARE(cards[1]->height(),qRound(base.height()*scale));
+            QCOMPARE(icon->pixmap(Qt::ReturnByValue).width(),qRound(baseIcon.width()*scale));
+            QCOMPARE(cost->font().pixelSize(),qRound(baseFont*scale));
+            QCOMPARE(play->findChild<QGraphicsView*>()->transform().m11(),scale);
+            if(!folder.isEmpty()) QVERIFY(root.grab().save(folder+QString("/cards-%1.png").arg(size.width())));
+        }
+        // Check frame pixels near the enlarged edge. A source-sized QIcon
+        // centered in a larger button leaves these points without artwork.
+        Card frame(1);
+        frame.setFixedSize(base*2); frame.show(); QTest::qWait(20);
+        const QImage actual=frame.grab().toImage();
+        const QImage source=QImage(":/others/Image/card.png");
+        int samples=0;
+        for(const auto& fraction : {QPointF(.1,.15),QPointF(.9,.15),QPointF(.1,.5),QPointF(.9,.5),QPointF(.5,.9)}) {
+            const auto expected=source.pixelColor(qRound((source.width()-1)*fraction.x()),qRound((source.height()-1)*fraction.y()));
+            if(expected.alpha()<250) continue;
+            const auto pixel=actual.pixelColor(qRound((actual.width()-1)*fraction.x()),qRound((actual.height()-1)*fraction.y()));
+            QVERIFY(qAbs(pixel.red()-expected.red())<25);
+            QVERIFY(qAbs(pixel.green()-expected.green())<25);
+            QVERIFY(qAbs(pixel.blue()-expected.blue())<25);
+            ++samples;
+        }
+        QVERIFY(samples>=3);
+        QTest::mouseClick(play->findChild<QPushButton*>("backToLevels"),Qt::LeftButton);
+        QVERIFY(!root.playPage()); QVERIFY(root.levelPage()->isVisible());
+        root.resize(GameWindow::logicalSize()); QTest::qWait(25);
+        root.setFullScreenEnabled(true); QTest::qWait(50);
+        if(!folder.isEmpty()) QVERIFY(root.grab().save(folder+"/levels-fullscreen.png"));
+    }
     void closeExitsApplication_data() {
         QTest::addColumn<int>("page");
         QTest::newRow("home") << 0;

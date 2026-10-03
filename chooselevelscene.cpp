@@ -68,58 +68,25 @@ void ChooseLevelScene::paintEvent(QPaintEvent *){
 
 }
 
-void ChooseLevelScene::buildBackBtn(){
-    //返回按钮
-    MyPushButton *backBtn = new MyPushButton(":others/Image/backBtn.png");
-    backBtn->setParent(this);
-    backBtn->move(this->width() - backBtn->width() * 1.2,backBtn->width() * 0.2);
-
-    connect(backBtn,&MyPushButton::clicked,this,[=](){
-        //点击动画
-        backBtn->zoom1();
-        backBtn->zoom2();
-
-        //延时返回
-        QTimer::singleShot(300,this,[=](){
-            emit backRequested();
-        });
-    });
+void ChooseLevelScene::buildBackBtn() {
+    auto *back=new QPushButton("返回首页",this);
+    GameUi::styleButton(back,"gold");
+    back->setObjectName("backToMenu");
+    back->setGeometry(1440,25,180,50);
+    connect(back,&QPushButton::clicked,this,&ChooseLevelScene::backRequested);
 }
 
-void ChooseLevelScene::buildLevelBtn(){
-    //创建关卡按钮十个
-    for(int i = 0; i < 10; i++){
-        MyPushButton *levelBtn = new MyPushButton(":others/Image/levelIcon.png");
-        levelBtn->setParent(this);
-        levelBtn->move(300 * (i % 5) + 120, 200 + i / 5 * 300);
-
-
-        //监听每个按钮的点击事件
-        connect(levelBtn,&MyPushButton::clicked,this,[=](){
-            // qDebug() << i + 1;
-
-            emit levelRequested(i+1);
+void ChooseLevelScene::buildLevelBtn() {
+    for(int level=1;level<=10;++level) {
+        auto *button=new QPushButton(QString("%1\n关卡").arg(level),this);
+        button->setObjectName(QString("level%1").arg(level));
+        GameUi::styleButton(button,"level");
+        const int index=level-1;
+        button->setGeometry(120+300*(index%5),200+300*(index/5),180,180);
+        connect(button,&QPushButton::clicked,this,[this,level] {
+            AudioManager::instance().play("click");
+            emit levelRequested(level);
         });
-
-        //显示文字：第 i 关
-        QLabel *label = new QLabel;
-        label->setParent(this);
-        label->setFixedSize(levelBtn->width(),levelBtn->height());
-        label->setText(QString::number(i + 1));
-
-        //设置字体颜色和大小
-        QFont font;
-        font.setFamily("Arial");
-        font.setPointSize(45);
-        font.setBold(true);
-        label->setFont(font);
-        label->setStyleSheet("color: pink;");
-
-        label->move(300 * (i % 5) + 120, 200 + i / 5 * 300);
-        label->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-
-        //使得鼠标能够穿透label
-        label->setAttribute(Qt::WA_TransparentForMouseEvents);
     }
 }
 

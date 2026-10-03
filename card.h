@@ -2,6 +2,7 @@
 #define CARD_H
 
 #include <QPushButton>
+#include <QPixmap>
 #include "gamestate.h"
 #include "cardstate.h"
 class Card : public QPushButton
@@ -46,6 +47,8 @@ public:
     void gameContinued();
 
 private:
+    QPixmap artwork;
+    void paintEvent(QPaintEvent *event) override;
     void updateCoolingEffect(); //更新冷却效果
     void updateNormalEffect(); //更新正常效果
     void updateLackingEffect(); //更新为爱心不足效果
