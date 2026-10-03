@@ -2,6 +2,7 @@
 #include <QApplication>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QPushButton>
 #include <QFormLayout>
 #include <QLabel>
 #include <QSettings>
@@ -73,6 +74,7 @@ void AudioManager::showSettings(QWidget *parent) {
     addSlider("游戏音效",m_effectsVolume,false);
     layout.addRow(new QLabel("拖到最左侧即可静音；设置会自动保存。",&dialog));
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close,&dialog);
+    buttons->button(QDialogButtonBox::Close)->setText("关闭");
     connect(buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
     layout.addRow(buttons);
     dialog.exec();

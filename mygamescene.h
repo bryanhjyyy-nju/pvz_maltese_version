@@ -8,6 +8,8 @@
 #include "whitedogs.h"
 #include <QTimer>
 #include <QGraphicsPixmapItem>
+#include <array>
+#include "gamepause.h"
 
 class MyGameScene : public QGraphicsScene
 {
@@ -15,20 +17,17 @@ class MyGameScene : public QGraphicsScene
 public:
     explicit MyGameScene(int n = 1,QMainWindow *parent = nullptr);
 
-    ~MyGameScene();
+    ~MyGameScene() override = default;
 
     friend class YellowDogs;
     friend class LineWhite;
 
-    //地图网格占用情况初始化
-    bool initMapOccupied(int cols, int rows);
 
-    //设置选择的卡牌序号
     void setChosenNum(int cardNum);
     void cancelSelection();
-    int getChosenNum(){ return chosenNum; }
+    int getChosenNum() const { return chosenNum; }
 
-    int getRestHeart(){ return restHeart; } // 得到剩余爱心的数值
+    int getRestHeart() const { return restHeart; } // 得到剩余爱心的数值
 
     void cutHeart(int amont){ restHeart -= amont; } //剩余爱心的数值减去消耗爱心数值
     void addHeart(int amont){ restHeart += amont; } //剩余爱心的数量加上收集到爱心的数量
@@ -38,46 +37,42 @@ public:
     void generateWhiteHeart(QPointF whitePos); //从小白中产出爱心
     void setAYellowDog(int r, int typeNum = 0); //在第r行产生一只小金毛
     void generateBullet(int r, int c); //产生子弹
-    QTimer * getGameTimer(){ return memGameTimer; } //获取gameTimer
-    // int getZombieNum(int r){ return zombieMap[r]; } //获取第 r 行的僵尸数量
-    const QVector<MyItem *> &getZombieMap(int r){ return zombieMap[r]; }
+    QTimer *getGameTimer() const { return memGameTimer; } //获取gameTimer
+    const QVector<MyItem *>& getZombieMap(int row) const { return zombieMap.at(row); }
 private:
     int gameLevelNum = 0;
 
-    Map *mapGrid = NULL;  //添加地图网咯
-    bool *mapOccupied = NULL; //添加占用状态表
-    WhiteDogs *dogMap[45] = {nullptr};
+    Map *mapGrid = nullptr;  //添加地图网咯
+    std::array<WhiteDogs*,45> dogMap{};
     void mousePressEvent(QGraphicsSceneMouseEvent * event) override;
-    // void mouseReleaseEvent(QGraphicsSceneMouseEvent * event) override;
     void keyPressEvent(QKeyEvent *event) override;
 
     int chosenNum = 0;
     int restHeart = 50; // 剩余阳光初始化为50
-    // int zombieMap[5] = {0};
     QVector<QVector<MyItem *>> zombieMap;
-    QVector<QGraphicsPixmapItem *> bullets;
-    QVector<QGraphicsPixmapItem *> hearts;
+    GamePause terminalActivity;
+    void setupBoard();
+    void setupTimers();
+    void spawnWave();
+    WhiteDogs *createPlant(int row, int col, const QPointF& center);
+    void placePlant(int row, int col);
+    void addHeartItem(class Heart *heart);
+    void finishGame(bool won);
 
 
     QTimer *memSkyHeartTimer; //天空中的爱心生成计时器
     QTimer *memYellowDogsTimer; //小金毛计时器
     QTimer *memGameTimer; //游戏总的计时器
     QTimer *memLongGameTimer; //0.5秒更新一次的计时器
-    // QTimer *memWaveTimer; //一大波僵尸持续时长计时器
 
     void checkWinCondition(); // 检查胜利条件的私有函数
-    void stopAllTimers();     // 停止所有计时器的辅助函数
 
     int m_totalZombiesForLevel = 0; // 本关卡总僵尸数
     int m_zombiesSpawned = 0;       // 已生成的僵尸数
     int m_zombiesKilled = 0;        // 已消灭的僵尸数
     bool m_isGameOver = false;      // 标记游戏是否已结束
-    // bool beFaster = false; // 加快游戏进度
-    // bool m_isZombieWave = false;    // 标记是否正在经历大波僵尸
-    // int minInterval = 1000;
-    // int maxInterval = 1000; // 每波僵尸生成的最小/最大时间间隔 (毫秒)
 
-    QGraphicsPixmapItem * shovel; //铲子
+    QGraphicsPixmapItem *shovel = nullptr; //铲子
     void mouseMoveEvent(QGraphicsSceneMouseEvent * event) override;
 
 signals:
@@ -92,12 +87,9 @@ signals:
     void allowTracking();
     void banTracking();
     void changeRestZombieNumber();
-    // void gameRestart();
-    // void gamePause();
 
 
 public slots:
-    // void generatedHeartFromWhite(QPointF dogPos);
     void winTheGame();   // 游戏胜利的槽函数
     void loseTheGame();  // 游戏失败的槽函数
 };

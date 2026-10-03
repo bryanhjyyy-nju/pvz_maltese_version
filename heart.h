@@ -6,6 +6,7 @@
 #include <QPropertyAnimation>
 #include <QTimer>
 #include "mygamescene.h"
+#include "gamecatalog.h"
 
 
 class Heart : public QObject,public QGraphicsPixmapItem
@@ -19,7 +20,7 @@ public:
     explicit Heart(QPointF startPos, QPointF endPos,MyGameScene *gameScene,QEasingCurve::Type type = QEasingCurve::Linear, QObject *parent = nullptr);
 
     QRectF boundingRect() const override;
-    int value() const { return 25; } //返回爱心数值
+    int value() const { return GameCatalog::HeartValue; } //返回爱心数值
 
     //开始下落
     void startFall();

@@ -10,7 +10,8 @@ class ChooseLevelScene : public QMainWindow
 {
     Q_OBJECT
 public:
-    explicit ChooseLevelScene(QWidget *parent = nullptr);
+    explicit ChooseLevelScene(QWidget *parent = nullptr, const QString& progressPath = {});
+    ~ChooseLevelScene() override;
 
     //重写绘图事件
     void paintEvent(QPaintEvent *) override;

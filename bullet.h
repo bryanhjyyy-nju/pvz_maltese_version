@@ -6,6 +6,7 @@
 #include <QTimer>
 #include <QPropertyAnimation>
 #include "yellowdogs.h"
+#include "gamecatalog.h"
 
 class Bullet : public QObject,public QGraphicsPixmapItem
 {
@@ -27,7 +28,7 @@ protected:
     YellowDogs *targetZombie = nullptr;
     int itRow = 0;
     int speed = 300;
-    int atkPower = 30;
+    int atkPower = GameCatalog::BulletDamage;
 
 signals:
     void i_hit_it(YellowDogs *zb);

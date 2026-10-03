@@ -306,6 +306,7 @@ void PlayScene::gameContinued() {
     paused = false;
     Card::setGameState(GameState::Normal);
     pauseButton->setText("暂停 [P]");
+    myGraphicsView->setFocus();
     AudioManager::instance().setPaused(false);
 }
 
@@ -318,20 +319,23 @@ void PlayScene::finishGame() {
 
 void PlayScene::buildPauseBtn() {
     pauseButton = new QPushButton("暂停 [P]",this);
+    pauseButton->setFocusPolicy(Qt::NoFocus);
     pauseButton->setGeometry(20,220,170,44);
     auto toggle = [this] { if(paused) gameContinued(); else gamePaused(); };
     connect(pauseButton,&QPushButton::clicked,this,toggle);
     auto *shortcut = new QShortcut(QKeySequence(Qt::Key_P),this);
     connect(shortcut,&QShortcut::activated,this,toggle);
     auto *almanac = new QPushButton("植物 / 僵尸图鉴",this);
+    almanac->setFocusPolicy(Qt::NoFocus);
     almanac->setGeometry(20,280,170,44);
     connect(almanac,&QPushButton::clicked,this,&PlayScene::showAlmanac);
     auto *sound = new QPushButton("声音设置",this);
+    sound->setFocusPolicy(Qt::NoFocus);
     sound->setGeometry(20,340,170,44);
     connect(sound,&QPushButton::clicked,this,&PlayScene::showAudioSettings);
     auto *help = new QLabel("R：切换铲子\nEsc：取消选择\nP：暂停 / 继续\n\n退出后可继续本关",this);
-    help->setGeometry(20,405,240,180);
-    help->setStyleSheet("color:#26392e; font-size:16px;");
+    help->setGeometry(20,405,250,180);
+    help->setStyleSheet("color:#26392e; font-size:16px; background:rgba(255,253,245,225); border-radius:10px; padding:12px;");
 }
 
 void PlayScene::showAlmanac() {

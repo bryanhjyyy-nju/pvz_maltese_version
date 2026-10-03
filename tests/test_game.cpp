@@ -100,6 +100,28 @@ private slots:
         play.gamePaused();
         QVERIFY(play.grab().save(folder+"/battle.png"));
     }
+    void continueFlow() {
+        QTemporaryDir dir;
+        const auto path = dir.filePath("progress.json");
+        ChooseLevelScene picker(nullptr,path);
+        picker.startLevel(1);
+        QVERIFY(picker.play);
+        QCOMPARE(ProgressStore(path).resumeLevel(),1);
+        picker.play->gameWin();
+        QCOMPARE(ProgressStore(path).resumeLevel(),2);
+        picker.play->playSceneBack();
+        QVERIFY(!picker.play);
+        picker.continueGame();
+        QVERIFY(picker.play);
+        QCOMPARE(picker.play->levelIndex,2);
+        picker.play->gameLose();
+        picker.play->close();
+        QVERIFY(!picker.play);
+        QCOMPARE(ProgressStore(path).resumeLevel(),2);
+        picker.continueGame();
+        QCOMPARE(picker.play->levelIndex,2);
+        picker.play->close();
+    }
     void progressRoundTrip() {
         QTemporaryDir dir;
         const auto path = dir.filePath("save/progress.json");
@@ -149,6 +171,44 @@ private slots:
             YellowDogs enemy(2,&scene,i);
             QCOMPARE(enemy.getHp(),GameCatalog::enemies()[i].health);
         }
+    }
+    void allLevelsFinish_data() {
+        QTest::addColumn<int>("level");
+        for(int i=1;i<=10;++i) QTest::newRow(qPrintable(QString::number(i))) << i;
+    }
+    void allLevelsFinish() {
+        QFETCH(int,level);
+        MyGameScene scene(level);
+        QSignalSpy wins(&scene,&MyGameScene::gameWin);
+        const auto& config = GameCatalog::level(level);
+        for(int i=0;i<config.enemies;++i) scene.setAYellowDog(i%5,i%3);
+        for(int row=0;row<5;++row) {
+            const auto enemies = scene.getZombieMap(row);
+            for(auto *enemy : enemies) {
+                auto *target = static_cast<YellowDogs*>(enemy);
+                target->getAttacked(10000);
+                target->getAttacked(10000); // Duplicate damage must not count another kill.
+            }
+        }
+        QCOMPARE(wins.count(),1);
+        for(auto *timer : scene.findChildren<QTimer*>()) QVERIFY(!timer->isActive());
+        scene.setAYellowDog(2);
+        QVERIFY(scene.getZombieMap(2).isEmpty());
+    }
+    void loseStopsActivity() {
+        PlayScene play(1);
+        auto *scene = play.findChild<MyGameScene*>();
+        scene->setAYellowDog(2);
+        auto *enemy = static_cast<YellowDogs*>(scene->getZombieMap(2).front());
+        QSignalSpy loses(&play,&PlayScene::gameLose);
+        enemy->stopMoving();
+        enemy->setPos(0,enemy->pos().y());
+        QTRY_COMPARE_WITH_TIMEOUT(loses.count(),1,800);
+        QCOMPARE(Card::currentState(),GameState::GameOver);
+        const auto pos = enemy->pos();
+        play.gameContinued();
+        QTest::qWait(100);
+        QCOMPARE(enemy->pos(),pos);
     }
     void enemyLimit() {
         MyGameScene scene(1);

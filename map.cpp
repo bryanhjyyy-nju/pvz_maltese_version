@@ -18,7 +18,7 @@ QRectF Map::boundingRect() const
     return QRectF(mapOriginLoc, QSizeF(mapCols * mapCellSize.width(), mapRows * mapCellSize.height()));
 }
 
-void Map::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
+void Map::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *) {
 
     painter->setPen(Qt::NoPen);
 

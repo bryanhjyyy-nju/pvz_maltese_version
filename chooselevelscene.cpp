@@ -9,8 +9,8 @@
 #include <QLabel>
 #include "playscene.h"
 
-ChooseLevelScene::ChooseLevelScene(QWidget *parent)
-    : QMainWindow{parent}
+ChooseLevelScene::ChooseLevelScene(QWidget *parent, const QString& progressPath)
+    : QMainWindow{parent}, progress(progressPath)
 {
     //设置固定大小
     setFixedSize(1650,900);
@@ -156,4 +156,8 @@ void ChooseLevelScene::startLevel(int level) {
     });
     hide();
     play->show();
+}
+
+ChooseLevelScene::~ChooseLevelScene() {
+    delete play;
 }

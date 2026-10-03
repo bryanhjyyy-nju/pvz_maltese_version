@@ -67,17 +67,16 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 RESOURCES += \
     res.qrc
 
-SOURCES += gamecatalog.cpp
-HEADERS += gamecatalog.h
+SOURCES += \
+    almanacdialog.cpp \
+    audiomanager.cpp \
+    gamecatalog.cpp \
+    gamepause.cpp \
+    progressstore.cpp
 
-SOURCES += progressstore.cpp
-HEADERS += progressstore.h
-
-SOURCES += almanacdialog.cpp
-HEADERS += almanacdialog.h
-
-SOURCES += audiomanager.cpp
-HEADERS += audiomanager.h
-
-SOURCES += gamepause.cpp
-HEADERS += gamepause.h
+HEADERS += \
+    almanacdialog.h \
+    audiomanager.h \
+    gamecatalog.h \
+    gamepause.h \
+    progressstore.h

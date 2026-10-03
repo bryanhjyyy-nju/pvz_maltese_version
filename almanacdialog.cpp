@@ -1,6 +1,7 @@
 #include "almanacdialog.h"
 #include "gamecatalog.h"
 #include <QDialogButtonBox>
+#include <QPushButton>
 #include <QGridLayout>
 #include <QLabel>
 #include <QMovie>
@@ -56,6 +57,7 @@ AlmanacDialog::AlmanacDialog(QWidget *parent) : QDialog(parent) {
     hint->setWordWrap(true);
     layout->addWidget(hint);
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close,this);
+    buttons->button(QDialogButtonBox::Close)->setText("关闭");
     connect(buttons,&QDialogButtonBox::rejected,this,&QDialog::reject);
     layout->addWidget(buttons);
 }

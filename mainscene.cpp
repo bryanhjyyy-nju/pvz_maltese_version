@@ -34,14 +34,14 @@ MainScene::MainScene(QWidget *parent)
 
     auto *resume = new QPushButton("继续上次关卡", this);
     resume->setObjectName("resumeGame");
-    resume->setGeometry(620, 730, 190, 48);
+    resume->setGeometry(620, 795, 190, 48);
     connect(resume, &QPushButton::clicked, this, [this] {
         hide();
         chooseScene->show();
         chooseScene->continueGame();
     });
     auto *almanac = new QPushButton("植物 / 僵尸图鉴", this);
-    almanac->setGeometry(830, 730, 210, 48);
+    almanac->setGeometry(830, 795, 210, 48);
     connect(almanac, &QPushButton::clicked, this, [this] {
         AlmanacDialog dialog(this);
         dialog.exec();
