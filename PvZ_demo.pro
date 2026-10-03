@@ -1,4 +1,6 @@
 QT       += core gui multimedia
+SOURCES += lawn.cpp
+HEADERS += lawn.h
 SOURCES += gameui.cpp pausedialog.cpp
 HEADERS += gameui.h pausedialog.h
 SOURCES += combateffect.cpp enemyprojectile.cpp

@@ -11,6 +11,7 @@
 #include <array>
 #include "gamepause.h"
 #include "waveplanner.h"
+class Lawn;
 
 class MyGameScene : public QGraphicsScene
 {
@@ -34,6 +35,7 @@ public:
     int totalEnemies() const { return m_totalZombiesForLevel; }
     int wavesStarted() const { return nextWave; }
     int getChosenNum() const { return chosenNum; }
+    Lawn *lawn() const { return grass; }
 
     int getRestHeart() const { return restHeart; } // 得到剩余爱心的数值
 
@@ -52,6 +54,7 @@ private:
     int gameLevelNum = 0;
 
     Map *mapGrid = nullptr;  //添加地图网咯
+    Lawn *grass=nullptr;
     std::array<WhiteDogs*,45> dogMap{};
     void mousePressEvent(QGraphicsSceneMouseEvent * event) override;
     void keyPressEvent(QKeyEvent *event) override;

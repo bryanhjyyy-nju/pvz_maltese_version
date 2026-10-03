@@ -24,12 +24,14 @@ public:
 
     //获取网格中心坐标
     QPointF cellCenter(int col, int row) const;
+    void setPlantableRows(int first,int last) { firstPlantable=first; lastPlantable=last; }
 
 private:
     int mapCols; //地图上总列数
     int mapRows; //地图上总行数
     QSize mapCellSize; //地图上每一格的大小
     QPointF mapOriginLoc; //网格左上角的坐标
+    int firstPlantable=0,lastPlantable=4;
 signals:
 };
 

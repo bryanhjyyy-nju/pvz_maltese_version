@@ -42,7 +42,8 @@ bool Map::turnPosToMap(const QPointF& mousePos,int& col,int& row) const{
     QPointF relativePos = mousePos - mapOriginLoc;
     col = std::floor(relativePos.x() / mapCellSize.width());
     row = std::floor(relativePos.y() / mapCellSize.height());
-    return (col >= 0 && col < mapCols && row >= 0 && row < mapRows);
+    return (col >= 0 && col < mapCols && row >= 0 && row < mapRows
+            && row>=firstPlantable && row<=lastPlantable);
 }
 
 //获取网格中心坐标

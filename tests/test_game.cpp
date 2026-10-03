@@ -26,6 +26,7 @@
 #include "gameartwork.h"
 #include <QRandomGenerator>
 #include <QFontInfo>
+#include "lawn.h"
 
 class GameTests : public QObject {
     Q_OBJECT
@@ -805,6 +806,42 @@ private slots:
         });
         QTest::mouseClick(menu->findChild<QPushButton*>("almanac"),Qt::LeftButton);
         QVERIFY(menu->isVisible()); QCOMPARE(Card::currentState(),GameState::Paused);
+    }
+    void earlyLanesRestrictPlanting_data() {
+        QTest::addColumn<int>("level"); QTest::addColumn<int>("first"); QTest::addColumn<int>("last");
+        QTest::newRow("one-lane") << 1 << 2 << 2;
+        QTest::newRow("three-lanes") << 2 << 1 << 3;
+        QTest::newRow("five-lanes") << 3 << 0 << 4;
+    }
+    void earlyLanesRestrictPlanting() {
+        QFETCH(int,level); QFETCH(int,first); QFETCH(int,last);
+        PlayScene play(level); play.show();
+        auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
+        scene->setChosenNum(0);
+        for(int row=0;row<5;++row) {
+            scene->addHeart(100); const int hearts=scene->getRestHeart();
+            const int before=scene->findChildren<WhiteDogs*>().size();
+            Card::setGameState(GameState::PrePlace);
+            QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,202+row*145)));
+            const bool allowed=row>=first && row<=last;
+            QCOMPARE(scene->findChildren<WhiteDogs*>().size(),before+int(allowed));
+            QCOMPARE(scene->getRestHeart(),hearts-(allowed ? 100 : 0));
+        }
+        auto *lawn=scene->lawn();
+        lawn->setRevealProgress(0);
+        if(level==1) QCOMPARE(lawn->rowReveal(2),0.0);
+        if(level==2) { QCOMPARE(lawn->rowReveal(2),1.0); QCOMPARE(lawn->rowReveal(1),0.0); }
+        if(level==3) {
+            for(int row=1;row<=3;++row) QCOMPARE(lawn->rowReveal(row),1.0);
+            QCOMPARE(lawn->rowReveal(0),0.0); QCOMPARE(lawn->rowReveal(4),0.0);
+        }
+        lawn->setRevealProgress(.5);
+        QCOMPARE(lawn->rowReveal(level==1 ? 2 : level==2 ? 1 : 0),.5);
+        lawn->setRevealProgress(1);
+        for(int row=0;row<5;++row) QCOMPARE(lawn->rowReveal(row),row>=first && row<=last ? 1.0 : 0.0);
+        play.gamePaused();
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(!folder.isEmpty()) QVERIFY(play.grab().save(folder+QString("/lawn-level%1.png").arg(level)));
     }
     void enemyLimit() {
         MyGameScene scene(1);

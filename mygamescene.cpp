@@ -21,6 +21,7 @@
 #include "bullet.h"
 #include <QPainter>
 #include <QKeyEvent>
+#include "lawn.h"
 
 MyGameScene::MyGameScene(int n,QObject *parent)
     : QGraphicsScene(parent)
@@ -64,6 +65,9 @@ void MyGameScene::setupBoard() {
     QGraphicsPixmapItem *backGroundItem = addPixmap(backgroundPixmap);
     backGroundItem->setPos(0, 0);
     backGroundItem->setScale(1);
+    grass=new Lawn(gameLevelNum);
+    grass->setParent(this);
+    addItem(grass);
 
     auto *shovelBar = new QGraphicsPixmapItem(GameArtwork::shovelSlot());
     shovelBar->setPos(GameArtwork::shovelSlotRect().topLeft());
@@ -77,6 +81,8 @@ void MyGameScene::setupBoard() {
     addItem(shovel);
 
     mapGrid = new Map(9, 5, QSize(121,145), QPointF(380,130));
+    const auto& level=GameCatalog::level(gameLevelNum);
+    mapGrid->setPlantableRows(level.minRow,level.maxRow);
     addItem(mapGrid);
 
 }
