@@ -17,24 +17,25 @@ const QVector<Plant>& plants() {
 }
 const QVector<Enemy>& enemies() {
     static const QVector<Enemy> values = {
-        {"叉子金毛", ":/yellow/Image/forkYellow.gif", "基础敌人，沿本排前进并攻击接触到的小白。",300,50,25,8,0.55},
-        {"吉他金毛", ":/yellow/Image/guitarYellow.gif", "第 4 关起出现。每 4 秒向本排前方 550 像素内的小白发射休止符，造成 15 伤害（近战的 1/4）；贴身时只啃食。",480,60,15,8,0.4},
-        {"冲刺金毛", ":/yellow/Image/dashYellow.gif", "移动快、近战伤害高；从第 7 关开始出现。",400,80,40,10,0.5}
+        {"叉子金毛", ":/yellow/Image/forkYellow.gif", "基础敌人，沿本排前进并攻击接触到的小白。",300,50,25,8,0.55,1},
+        {"吉他金毛", ":/yellow/Image/guitarYellow.gif", "第 4 关起出现。每 4 秒向本排前方 550 像素内的小白发射休止符，造成 15 伤害（近战的 1/4）；贴身时只啃食。",480,60,15,8,0.4,3},
+        {"冲刺金毛", ":/yellow/Image/dashYellow.gif", "移动快、近战伤害高；从第 7 关开始出现。",400,80,40,10,0.5,4}
     };
     return values;
 }
 const Level& level(int number) {
     static const Level values[] = {
-        {3,2,2,18000,22000,0,0,1,0,0},
-        {6,1,3,16000,20000,0,0,1,0,0},
-        {10,1,3,14000,18000,0,0,1,.10,0},
-        {17,0,4,4000,16000,.15,0,1,0,0},
-        {20,0,4,5000,14000,.15,0,1,0,0},
-        {25,0,4,7000,13000,.25,0,1,0,0},
-        {30,0,4,13000,18000,.35,.05,2,.05,0},
-        {35,0,4,5000,15000,.75,0,1,.15,0},
-        {40,0,4,10000,16000,.60,.30,1,.40,.05},
-        {50,0,4,7500,23500,.65,.35,2,.30,.15}
+        // waves, weight/wave, rows, interval, max type, opening time, hearts
+        {3,1,2,2,18000,22000,0,15000,50},
+        {3,2,1,3,22000,26000,0,18000,50},
+        {5,2,1,3,20000,24000,0,18000,50},
+        {5,3,0,4,23000,28000,1,20000,75},
+        {6,3,0,4,22000,27000,1,20000,75},
+        {6,4,0,4,25000,30000,1,22000,75},
+        {6,4,0,4,25000,30000,2,22000,100},
+        {7,4,0,4,25000,30000,2,25000,100},
+        {7,5,0,4,27000,32000,2,25000,100},
+        {8,5,0,4,27000,32000,2,28000,100}
     };
     return values[qBound(1,number,LevelCount)-1];
 }
@@ -45,7 +46,7 @@ QString plantDetails(int index) {
 }
 QString enemyDetails(int index) {
     const auto& e = enemies().at(index);
-    return QString("%1\n生命：%2  |  攻击：%3 / 0.5 秒\n移速：%4–%5 像素/秒\n%6")
-        .arg(e.name).arg(e.health).arg(e.attack).arg(e.minSpeed).arg(e.minSpeed+e.speedRange-1).arg(e.description);
+    return QString("%1\n生命：%2  |  近战：%3 / 0.5 秒\n移速：%4–%5 像素/秒  |  权重：%6\n%7")
+        .arg(e.name).arg(e.health).arg(e.attack).arg(e.minSpeed).arg(e.minSpeed+e.speedRange-1).arg(e.weight).arg(e.description);
 }
 }

@@ -18,12 +18,11 @@ struct Enemy {
     QString name, image, description;
     int health, attack, minSpeed, speedRange;
     double scale;
+    int weight;
 };
 struct Level {
-    int enemies, minRow, maxRow, minInterval, maxInterval;
-    double toughChance, quickChance;
-    int perWave;
-    double extraChance, extraTwoChance;
+    int waves, waveWeight, minRow, maxRow, minInterval, maxInterval;
+    int maxEnemyType, initialDelayMs, startingHearts;
 };
 const QVector<Plant>& plants();
 const QVector<Enemy>& enemies();

@@ -345,6 +345,14 @@ void PlayScene::buildPauseBtn() {
     auto *help = new QLabel("点击铲子 / R：拾取或放下\nEsc：取消选择\n空格：暂停 / 继续\n\n退出后可继续本关",this);
     help->setGeometry(20,405,250,180);
     help->setStyleSheet("color:#26392e; font-size:16px; background:rgba(255,253,245,225); border-radius:10px; padding:12px;");
+    const auto& level = GameCatalog::level(levelIndex);
+    auto *wave = new QLabel(QString("准备防守！\n共 %1 波进攻").arg(level.waves),this);
+    wave->setObjectName("waveStatus");
+    wave->setGeometry(20,610,250,85);
+    wave->setStyleSheet("background:#ffe3a0; border:3px solid #8d6435; border-radius:16px; padding:12px; color:#65452d; font: bold 18px 'Microsoft YaHei';");
+    connect(myGameScene,&MyGameScene::waveStarted,this,[wave](int current,int total) {
+        wave->setText(QString("第 %1 / %2 波\n守住你的草坪！").arg(current).arg(total));
+    });
 }
 
 void PlayScene::togglePauseMenu() {

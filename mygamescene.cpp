@@ -30,7 +30,9 @@ MyGameScene::MyGameScene(int n,QMainWindow *parent)
     m_zombiesKilled = 0;
 
     const auto level = GameCatalog::level(gameLevelNum);
-    m_totalZombiesForLevel = level.enemies;
+    wavePlan = WavePlanner::create(gameLevelNum,*QRandomGenerator::global());
+    m_totalZombiesForLevel = WavePlanner::enemyCount(wavePlan);
+    restHeart = level.startingHearts;
     setupBoard();
     setupTimers();
     connect(this, &MyGameScene::gameWin, this, &MyGameScene::winTheGame);
@@ -92,53 +94,53 @@ void MyGameScene::setupTimers() {
     memLongGameTimer->start(500);
 
     memSkyHeartTimer = new QTimer(this);
-    connect(memSkyHeartTimer, &QTimer::timeout, this, &MyGameScene::generateSkyHeart);
     connect(memSkyHeartTimer,&QTimer::timeout,this,[this] {
         generateSkyHeart();
-        memSkyHeartTimer->setInterval(6000+QRandomGenerator::global()->bounded(3000));
+        memSkyHeartTimer->setInterval(3500+QRandomGenerator::global()->bounded(1000));
     });
-    memSkyHeartTimer->start(6000+QRandomGenerator::global()->bounded(3000));
+    memSkyHeartTimer->start(3500+QRandomGenerator::global()->bounded(1000));
 
     memYellowDogsTimer = new QTimer(this);
+    memYellowDogsTimer->setObjectName("waveTimer");
 
     connect(memYellowDogsTimer, &QTimer::timeout, this, &MyGameScene::spawnWave);
 
-    if(gameLevelNum == 10){
-        memYellowDogsTimer->start(20000);
-    }
-    else{
-        memYellowDogsTimer->start(15000); // 第一波僵尸在15秒后开始生成
-    }
+    waveStaggerTimer = new QTimer(this);
+    waveStaggerTimer->setObjectName("waveStaggerTimer");
+    connect(waveStaggerTimer,&QTimer::timeout,this,&MyGameScene::spawnNextInWave);
+    memYellowDogsTimer->start(GameCatalog::level(gameLevelNum).initialDelayMs);
 }
 
 void MyGameScene::spawnWave() {
+    if(m_isGameOver || nextWave >= wavePlan.size()) { memYellowDogsTimer->stop(); return; }
+    pendingWave = wavePlan[nextWave++];
+    pendingIndex = 0;
+    waveRowCounts.fill(0);
+    emit waveStarted(nextWave,wavePlan.size());
+    spawnNextInWave();
+    if(pendingIndex < pendingWave.size()) waveStaggerTimer->start(900);
     const auto& level = GameCatalog::level(gameLevelNum);
-    int spawnCount = level.perWave;
-    if (QRandomGenerator::global()->generateDouble() < level.extraChance) {
-        spawnCount++;
+    if(nextWave == wavePlan.size()) memYellowDogsTimer->stop();
+    else memYellowDogsTimer->setInterval(QRandomGenerator::global()->bounded(level.minInterval,level.maxInterval+1));
+}
+
+void MyGameScene::spawnNextInWave() {
+    if(m_isGameOver || pendingIndex >= pendingWave.size()) { waveStaggerTimer->stop(); return; }
+    const auto& level = GameCatalog::level(gameLevelNum);
+    // Spread a wave across the least occupied lanes instead of stacking strong enemies.
+    QVector<int> rows;
+    int smallest = 100000;
+    for(int row=level.minRow;row<=level.maxRow;++row) {
+        int occupancy=waveRowCounts[row]*3;
+        for(auto *item : zombieMap[row])
+            occupancy+=GameCatalog::enemies()[static_cast<YellowDogs*>(item)->typeIndex()].weight;
+        if(occupancy<smallest) { smallest=occupancy; rows.clear(); }
+        if(occupancy==smallest) rows.append(row);
     }
-    if (QRandomGenerator::global()->generateDouble() < level.extraTwoChance) {
-        spawnCount += 2;
-    }
-
-    for (int i = 0; i < spawnCount; ++i) {
-        int row = QRandomGenerator::global()->bounded(level.maxRow - level.minRow + 1) + level.minRow;
-
-        int type = 0; // 默认为种类0
-        if (QRandomGenerator::global()->generateDouble() < level.toughChance) {
-            if(QRandomGenerator::global()->generateDouble() < level.quickChance){
-                type = 2; //种类2(高移速)
-            }
-            else{
-                type = 1; // 种类1(高血量)
-            }
-        }
-
-        setAYellowDog(row, type);
-    }
-
-    int nextInterval = QRandomGenerator::global()->bounded(level.minInterval, level.maxInterval + 1);
-    memYellowDogsTimer->setInterval(nextInterval);
+    int row=rows[QRandomGenerator::global()->bounded(rows.size())];
+    ++waveRowCounts[row];
+    setAYellowDog(row,pendingWave[pendingIndex++]);
+    if(pendingIndex >= pendingWave.size()) waveStaggerTimer->stop();
 }
 
 void MyGameScene::generateSkyHeart(){

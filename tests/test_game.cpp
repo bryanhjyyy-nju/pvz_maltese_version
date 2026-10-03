@@ -19,6 +19,8 @@
 #include "pausedialog.h"
 #include <QPushButton>
 #include "enemyprojectile.h"
+#include "waveplanner.h"
+#include <QRandomGenerator>
 
 class GameTests : public QObject {
     Q_OBJECT
@@ -69,7 +71,7 @@ private slots:
         scene->setChosenNum(1);
         Card::setGameState(GameState::PrePlace);
         QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,490)));
-        QCOMPARE(scene->getRestHeart(),0);
+        QCOMPARE(scene->getRestHeart(),GameCatalog::level(8).startingHearts-50);
         auto plants = scene->findChildren<WhiteDogs*>();
         QCOMPARE(plants.size(),1);
         scene->setAYellowDog(2);
@@ -226,6 +228,51 @@ private slots:
             QCOMPARE(enemy.getHp(),GameCatalog::enemies()[i].health);
         }
     }
+    void fixedWaveBudgetsAndRarity() {
+        int counts[3] = {};
+        for(int level=1;level<=10;++level) {
+            const auto& stats=GameCatalog::level(level);
+            for(int seed=1;seed<=500;++seed) {
+                QRandomGenerator random(seed);
+                const auto plan=WavePlanner::create(level,random);
+                QCOMPARE(plan.size(),stats.waves);
+                for(const auto& wave : plan) {
+                    int sum=0;
+                    for(int type : wave) {
+                        QVERIFY(type<=stats.maxEnemyType);
+                        sum+=GameCatalog::enemies()[type].weight;
+                        if(level==10) ++counts[type];
+                    }
+                    QCOMPARE(sum,stats.waveWeight);
+                }
+            }
+        }
+        QVERIFY(counts[0]>counts[1]*5);
+        QVERIFY(counts[1]>counts[2]*2);
+        QCOMPARE(GameCatalog::level(8).waves*GameCatalog::level(8).waveWeight,28);
+        QCOMPARE(GameCatalog::level(9).waves*GameCatalog::level(9).waveWeight,35);
+        QCOMPARE(GameCatalog::level(10).waves*GameCatalog::level(10).waveWeight,40);
+    }
+    void waveScheduling() {
+        MyGameScene scene(10);
+        auto *waveTimer=scene.findChild<QTimer*>("waveTimer");
+        auto *stagger=scene.findChild<QTimer*>("waveStaggerTimer");
+        QVERIFY(waveTimer); QVERIFY(stagger);
+        QSignalSpy started(&scene,&MyGameScene::waveStarted);
+        int previous=0;
+        for(int i=0;i<GameCatalog::level(10).waves;++i) {
+            QMetaObject::invokeMethod(waveTimer,"timeout",Qt::DirectConnection);
+            while(stagger->isActive()) QMetaObject::invokeMethod(stagger,"timeout",Qt::DirectConnection);
+            const auto enemies=scene.findChildren<YellowDogs*>();
+            int sum=0;
+            for(int j=previous;j<enemies.size();++j) sum+=GameCatalog::enemies()[enemies[j]->typeIndex()].weight;
+            QCOMPARE(sum,GameCatalog::level(10).waveWeight);
+            previous=enemies.size();
+        }
+        QCOMPARE(started.count(),GameCatalog::level(10).waves);
+        QCOMPARE(previous,scene.totalEnemies());
+        QVERIFY(!waveTimer->isActive()); QVERIFY(!stagger->isActive());
+    }
     void allLevelsFinish_data() {
         QTest::addColumn<int>("level");
         for(int i=1;i<=10;++i) QTest::newRow(qPrintable(QString::number(i))) << i;
@@ -234,8 +281,7 @@ private slots:
         QFETCH(int,level);
         MyGameScene scene(level);
         QSignalSpy wins(&scene,&MyGameScene::gameWin);
-        const auto& config = GameCatalog::level(level);
-        for(int i=0;i<config.enemies;++i) scene.setAYellowDog(i%5,i%3);
+        for(int i=0;i<scene.totalEnemies();++i) scene.setAYellowDog(i%5,i%3);
         for(int row=0;row<5;++row) {
             const auto enemies = scene.getZombieMap(row);
             for(auto *enemy : enemies) {

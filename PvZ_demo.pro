@@ -3,6 +3,8 @@ SOURCES += gameui.cpp pausedialog.cpp
 HEADERS += gameui.h pausedialog.h
 SOURCES += combateffect.cpp enemyprojectile.cpp
 HEADERS += combateffect.h enemyprojectile.h
+SOURCES += waveplanner.cpp
+HEADERS += waveplanner.h
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 

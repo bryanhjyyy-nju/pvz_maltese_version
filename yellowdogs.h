@@ -20,6 +20,7 @@ public:
     void cutHp(int atk){ hp -= atk; } //减少血量
     void removeItself();
     bool isDying() const { return removed; }
+    int typeIndex() const { return enemyType; }
     qreal hitFlash() const { return m_hitFlash; }
     qreal biteProgress() const { return m_biteProgress; }
     qreal deathProgress() const { return m_deathProgress; }

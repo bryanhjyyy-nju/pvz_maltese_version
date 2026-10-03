@@ -10,6 +10,7 @@
 #include <QGraphicsPixmapItem>
 #include <array>
 #include "gamepause.h"
+#include "waveplanner.h"
 
 class MyGameScene : public QGraphicsScene
 {
@@ -26,6 +27,8 @@ public:
     void setChosenNum(int cardNum);
     void cancelSelection();
     void toggleShovel();
+    int totalEnemies() const { return m_totalZombiesForLevel; }
+    int wavesStarted() const { return nextWave; }
     int getChosenNum() const { return chosenNum; }
 
     int getRestHeart() const { return restHeart; } // 得到剩余爱心的数值
@@ -56,6 +59,13 @@ private:
     void setupBoard();
     void setupTimers();
     void spawnWave();
+    void spawnNextInWave();
+    WavePlanner::Plan wavePlan;
+    QVector<int> pendingWave;
+    int nextWave = 0;
+    int pendingIndex = 0;
+    std::array<int,5> waveRowCounts{};
+    QTimer *waveStaggerTimer = nullptr;
     WhiteDogs *createPlant(int row, int col, const QPointF& center);
     void placePlant(int row, int col);
     void addHeartItem(class Heart *heart);
@@ -78,6 +88,7 @@ private:
     void mouseMoveEvent(QGraphicsSceneMouseEvent * event) override;
 
 signals:
+    void waveStarted(int wave, int total);
     void plantFinished();
     void heartCollected();
     void sceneClicked();
