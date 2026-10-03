@@ -196,6 +196,7 @@ void MyGameScene::generateSkyHeart(){
 
     //创建爱心添加到场景
     Heart *heart = new Heart(startPos, endPos, this);
+    heart->setParent(this);
     this->addItem(heart);
     hearts.append(heart);
 
@@ -219,6 +220,7 @@ void MyGameScene::generateWhiteHeart(QPointF whitePos){
     QPointF startPos = whitePos + QPointF(0, 0);
     QPointF endPos = whitePos + QPointF(QRandomGenerator::global()->bounded(100) - 50, QRandomGenerator::global()->bounded(80));
     Heart *heart = new Heart(startPos,endPos,this,QEasingCurve::OutBounce);
+    heart->setParent(this);
     this->addItem(heart);
     hearts.append(heart);
     connect(heart, &Heart::collected,this,[=](){
@@ -237,6 +239,7 @@ void MyGameScene::generateBullet(int r,int c){
     // qDebug() << "generated!";
     AudioManager::instance().play("shoot");
     Bullet *blt = new Bullet(r, c, memGameTimer);
+    blt->setParent(this);
     this->addItem(blt);
     bullets.append(blt);
     connect(blt, &Bullet::hasDisappeared, this,[=](){
@@ -296,6 +299,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
                 emit pleaseRemovePreImage();
 
                 myDog->setPos(centerLoc - QPointF(myDog->pixmap().width() / 2.0, myDog->pixmap().height() / 2.0));
+                myDog->setParent(this);
                 addItem(myDog);
 
                 dogMap[row * 9 + col] = myDog;
@@ -366,10 +370,7 @@ void MyGameScene::mouseMoveEvent(QGraphicsSceneMouseEvent * event){
 void MyGameScene::keyPressEvent(QKeyEvent *event){
     if(event->key() == Qt::Key_Escape && (Card::currentState() == GameState::PrePlace
                                           || Card::currentState() == GameState::Shoveling)) {
-        Card::setGameState(GameState::Normal);
-        emit pleaseRemovePreImage();
-        emit banTracking();
-        shovel->setPos(1200,0);
+        cancelSelection();
         return;
     }
     if(event->key() == Qt::Key_R && Card::currentState() == GameState::Normal){
@@ -395,6 +396,7 @@ void MyGameScene::setAYellowDog(int r,int typeNum){
     // qDebug() << m_zombiesSpawned;
 
     YellowDogs *zombie = new YellowDogs(r,this,typeNum);
+    zombie->setParent(this);
     this->zombieMap[r].append(zombie);
     this->addItem(zombie);
     connect(zombie, &YellowDogs::arrivedYourHome, this, &MyGameScene::gameLose);
@@ -525,4 +527,11 @@ void MyGameScene::loseTheGame()
     loseText->setZValue(32);
 
     addItem(loseText);
+}
+
+void MyGameScene::cancelSelection() {
+    Card::setGameState(GameState::Normal);
+    emit pleaseRemovePreImage();
+    emit banTracking();
+    shovel->setPos(1200,0);
 }

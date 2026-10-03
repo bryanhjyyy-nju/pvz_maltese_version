@@ -78,3 +78,6 @@ HEADERS += almanacdialog.h
 
 SOURCES += audiomanager.cpp
 HEADERS += audiomanager.h
+
+SOURCES += gamepause.cpp
+HEADERS += gamepause.h

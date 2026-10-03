@@ -15,7 +15,7 @@ public:
     void startAttacking(WhiteDogs *tar);
     void getAttacked(int atk);
     void cutHp(int atk){ hp -= atk; } //减少血量
-    void removeItself(){ emit pleaseRemoveMe(this); }; //移除自己
+    void removeItself(){ if(!removed) { removed = true; emit pleaseRemoveMe(this); } } //移除自己
 
     void initArgues(int typeNum); //初始化血量和速度和图像
 
@@ -26,6 +26,7 @@ public:
     virtual void stopMoving() override;
 
 protected:
+    bool removed = false;
     WhiteDogs *targetWhiteDog;
     int atkPower = 10;
     bool m_isGamePaused = false;

@@ -98,6 +98,7 @@ bool YellowDogs::checkCollision(){
 }
 
 void YellowDogs::getAttacked(int atk){
+    if(removed) return;
     AudioManager::instance().play("hit");
     cutHp(atk);
     emit isAttacked();

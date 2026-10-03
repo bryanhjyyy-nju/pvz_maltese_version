@@ -8,6 +8,7 @@
 #include "mygamescene.h"
 #include "card.h"
 #include <QLabel>
+#include "gamepause.h"
 
 
 class PlayScene : public QMainWindow
@@ -28,6 +29,13 @@ protected:
     void closeEvent(QCloseEvent *event) override;
 
 private:
+    GamePause pausedActivity;
+    bool paused = false;
+    bool finished = false;
+    QPushButton *pauseButton = nullptr;
+    void showAlmanac();
+    void showAudioSettings();
+    void finishGame();
     QVector<Card *> myCards;
 
     void buildBackBtn();

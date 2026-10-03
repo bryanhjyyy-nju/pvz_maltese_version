@@ -1,6 +1,13 @@
 #include <QtTest>
 #include "audiomanager.h"
 #include <QSettings>
+#include "playscene.h"
+#include "almanacdialog.h"
+#include "mainscene.h"
+#include "gamepause.h"
+#include <QTabWidget>
+#include <QGraphicsView>
+#include <QPointer>
 #include "map.h"
 #include "progressstore.h"
 #include <QTemporaryDir>
@@ -30,6 +37,68 @@ private slots:
             QTRY_VERIFY_WITH_TIMEOUT(sound->status() != QSoundEffect::Loading,5000);
             QCOMPARE(sound->status(),QSoundEffect::Ready);
         }
+    }
+    void pausePreservesActivity() {
+        QObject root;
+        QTimer running(&root), idle(&root);
+        running.setInterval(400);
+        QSignalSpy ticks(&running,&QTimer::timeout);
+        running.start();
+        QTest::qWait(100);
+        GamePause pause;
+        pause.pause(&root);
+        QTest::qWait(420);
+        QCOMPARE(ticks.count(),0);
+        pause.resume();
+        QTest::qWait(40);
+        pause.pause(&root); // Pause a partial resumed interval again.
+        pause.resume();
+        QTRY_COMPARE_WITH_TIMEOUT(ticks.count(),1,450);
+        QCOMPARE(running.interval(),400);
+        QVERIFY(!idle.isActive());
+    }
+    void battlefieldPauseAndPlacement() {
+        PlayScene play(8);
+        play.show();
+        auto *scene = play.findChild<MyGameScene*>();
+        auto *view = play.findChild<QGraphicsView*>();
+        QVERIFY(scene); QVERIFY(view);
+        scene->setChosenNum(1);
+        Card::setGameState(GameState::PrePlace);
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,490)));
+        QCOMPARE(scene->getRestHeart(),0);
+        auto plants = scene->findChildren<WhiteDogs*>();
+        QCOMPARE(plants.size(),1);
+        scene->setAYellowDog(2);
+        const auto *enemy = scene->getZombieMap(2).front();
+        play.gamePaused();
+        const auto position = enemy->pos();
+        for(auto *timer : scene->findChildren<QTimer*>()) QVERIFY(!timer->isActive());
+        QTest::qWait(180);
+        QCOMPARE(enemy->pos(),position);
+        play.gameContinued();
+        QTest::qWait(180);
+        QVERIFY(enemy->pos().x() < position.x());
+        QVERIFY(plants.front()->findChild<QTimer*>()->isActive());
+        play.gamePaused();
+    }
+    void renderScreens() {
+        const QString folder = qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(folder.isEmpty()) QSKIP("Set PVZ_CAPTURE_DIR to export UI review images.");
+        QDir().mkpath(folder);
+        AlmanacDialog almanac;
+        almanac.show(); QTest::qWait(100);
+        QVERIFY(almanac.grab().save(folder+"/plants.png"));
+        almanac.findChild<QTabWidget*>()->setCurrentIndex(1);
+        QTest::qWait(100);
+        QVERIFY(almanac.grab().save(folder+"/enemies.png"));
+        MainScene menu;
+        menu.show(); QTest::qWait(100);
+        QVERIFY(menu.grab().save(folder+"/menu.png"));
+        PlayScene play(8);
+        play.show(); QTest::qWait(100);
+        play.gamePaused();
+        QVERIFY(play.grab().save(folder+"/battle.png"));
     }
     void progressRoundTrip() {
         QTemporaryDir dir;

@@ -33,6 +33,8 @@ Bullet::Bullet(int r, int c, QTimer *gameTimer)
 
 
 void Bullet::disappear(){
+    if(!scene()) return;
+    memMovingAnim->stop();
     scene()->removeItem(this);
     // qDebug() << "removeBullet!";
     emit hasDisappeared();
