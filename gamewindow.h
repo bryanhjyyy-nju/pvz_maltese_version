@@ -11,7 +11,7 @@ class PlayScene;
 class GameWindow : public QMainWindow {
     Q_OBJECT
 public:
-    explicit GameWindow(QWidget *parent=nullptr,const QString& progressPath={});
+    explicit GameWindow(QWidget *parent=nullptr,const QString& progressPath={},bool playOpening=true);
     void showMenu();
     void showLevels();
     void startLevel(int level);
@@ -35,6 +35,7 @@ private:
     ProgressStore progress;
     QRect windowedGeometry;
     bool closing=false;
+    bool playOpening=true;
     void connectPage(GamePage *page);
     void discardBattle();
     void updateDisplayState();

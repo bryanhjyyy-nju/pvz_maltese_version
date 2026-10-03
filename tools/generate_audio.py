@@ -61,6 +61,21 @@ def texture(name, duration, frequency, noise, seed):
     save(name,buffer)
 
 
+def announcement(name, seed):
+    """A descending bass impact, noisy transient and short brass-like chord."""
+    rng = random.Random(seed)
+    duration = 1.3
+    buffer = [0.0] * int(duration * RATE)
+    for i in range(len(buffer)):
+        t = i / RATE
+        bass = math.sin(2 * math.pi * (80 * t - 18 * t * t)) * math.exp(-4 * t)
+        transient = rng.uniform(-1, 1) * math.exp(-24 * t)
+        buffer[i] = .55 * bass + .2 * transient
+    for pitch in ([48,55,60,64] if name == "readyImpact" else [43,50,55,59]):
+        note(buffer,.08,.95,pitch,.12)
+    save(name,buffer)
+
+
 if __name__ == "__main__":
     OUT.mkdir(exist_ok=True)
     music("menu",.45,0)
@@ -80,3 +95,5 @@ if __name__ == "__main__":
     texture("hit",.15,155,.5,12)
     texture("uproot",.32,80,.95,13)
     texture("plant",.19,95,.72,14)
+    announcement("readyImpact",15)
+    announcement("finalWave",16)

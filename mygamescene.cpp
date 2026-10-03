@@ -23,7 +23,7 @@
 #include <QKeyEvent>
 #include "lawn.h"
 
-MyGameScene::MyGameScene(int n,QObject *parent)
+MyGameScene::MyGameScene(int n,QObject *parent,bool deferStart)
     : QGraphicsScene(parent)
 {
     gameLevelNum = qBound(1,n,GameCatalog::LevelCount);
@@ -37,6 +37,8 @@ MyGameScene::MyGameScene(int n,QObject *parent)
     restHeart = level.startingHearts;
     setupBoard();
     setupTimers();
+    if(deferStart) inputMode=InputMode::Blocked;
+    else startGameplay();
     connect(this, &MyGameScene::gameWin, this, &MyGameScene::winTheGame);
     connect(this, &MyGameScene::gameLose, this, &MyGameScene::loseTheGame);
 }
@@ -89,16 +91,16 @@ void MyGameScene::setupBoard() {
 
 void MyGameScene::setupTimers() {
     memGameTimer = new QTimer(this);
-    memGameTimer->start(100);
+    memGameTimer->setInterval(100);
     memLongGameTimer = new QTimer(this);
-    memLongGameTimer->start(500);
+    memLongGameTimer->setInterval(500);
 
     memSkyHeartTimer = new QTimer(this);
     connect(memSkyHeartTimer,&QTimer::timeout,this,[this] {
         generateSkyHeart();
         memSkyHeartTimer->setInterval(3500+QRandomGenerator::global()->bounded(1000));
     });
-    memSkyHeartTimer->start(3500+QRandomGenerator::global()->bounded(1000));
+    memSkyHeartTimer->setInterval(3500+QRandomGenerator::global()->bounded(1000));
 
     memYellowDogsTimer = new QTimer(this);
     memYellowDogsTimer->setObjectName("waveTimer");
@@ -107,18 +109,33 @@ void MyGameScene::setupTimers() {
 
     waveStaggerTimer = new QTimer(this);
     waveStaggerTimer->setObjectName("waveStaggerTimer");
-    connect(waveStaggerTimer,&QTimer::timeout,this,&MyGameScene::spawnNextInWave);
-    memYellowDogsTimer->start(GameCatalog::level(gameLevelNum).initialDelayMs);
+    connect(waveStaggerTimer,&QTimer::timeout,this,[this] {
+        waveStaggerTimer->setInterval(900);
+        spawnNextInWave();
+    });
+    memYellowDogsTimer->setInterval(GameCatalog::level(gameLevelNum).initialDelayMs);
+}
+
+void MyGameScene::startGameplay() {
+    if(started || m_isGameOver) return;
+    started=true; inputMode=InputMode::Normal;
+    for(auto *timer : {memGameTimer,memLongGameTimer,memSkyHeartTimer,memYellowDogsTimer}) timer->start();
 }
 
 void MyGameScene::spawnWave() {
+    if(!started) return;
     if(m_isGameOver || nextWave >= wavePlan.size()) { memYellowDogsTimer->stop(); return; }
     pendingWave = wavePlan[nextWave++];
     pendingIndex = 0;
     waveRowCounts.fill(0);
     emit waveStarted(nextWave,wavePlan.size());
-    spawnNextInWave();
-    if(pendingIndex < pendingWave.size()) waveStaggerTimer->start(900);
+    if(nextWave==wavePlan.size()) {
+        emit finalWaveApproaching();
+        waveStaggerTimer->start(1800);
+    } else {
+        spawnNextInWave();
+        if(pendingIndex < pendingWave.size()) waveStaggerTimer->start(900);
+    }
     const auto& level = GameCatalog::level(gameLevelNum);
     if(nextWave == wavePlan.size()) memYellowDogsTimer->stop();
     else memYellowDogsTimer->setInterval(QRandomGenerator::global()->bounded(level.minInterval,level.maxInterval+1));
@@ -171,6 +188,7 @@ void MyGameScene::generateBullet(int r,int c){
 }
 
 void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
+    if(inputMode==InputMode::Blocked || Card::currentState()==GameState::Paused || Card::currentState()==GameState::GameOver) return;
     if(event->button() == Qt::RightButton) {
         if(Card::currentState() == GameState::PrePlace || Card::currentState() == GameState::Shoveling)
             cancelSelection();
@@ -182,7 +200,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
         toggleShovel();
         return;
     }
-    if (Card::currentState() == GameState::PrePlace){
+    if (Card::currentState() == GameState::PrePlace && (inputMode==InputMode::Normal || inputMode==InputMode::PlantPractice)){
         int col, row;
         if(mapGrid->turnPosToMap(event->scenePos(),col,row)){
             if(!dogMap[row * 9 + col] && restHeart >= GameCatalog::plants().at(chosenNum).cost){
@@ -192,7 +210,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
             QGraphicsScene::mousePressEvent(event);
         }
     }
-    else if(Card::currentState() == GameState::Normal){
+    else if(Card::currentState() == GameState::Normal && (inputMode==InputMode::Normal || inputMode==InputMode::HeartPractice)){
         Heart::curMousePos = event->scenePos();
         emit sceneClicked();
         QGraphicsScene::mousePressEvent(event);
@@ -230,6 +248,7 @@ void MyGameScene::keyPressEvent(QKeyEvent *event){
 }
 
 void MyGameScene::setAYellowDog(int r,int typeNum){
+    if(!started) return;
     if(m_isGameOver || r < 0 || r >= 5 || m_zombiesSpawned >= m_totalZombiesForLevel){
         memYellowDogsTimer->stop();
         return;
@@ -302,6 +321,7 @@ void MyGameScene::cancelSelection() {
 }
 
 void MyGameScene::toggleShovel() {
+    if(inputMode!=InputMode::Normal && inputMode!=InputMode::ShovelPractice) return;
     const auto state = Card::currentState();
     if(state == GameState::Paused || state == GameState::GameOver || m_isGameOver) return;
     if(state == GameState::Shoveling) { cancelSelection(); return; }

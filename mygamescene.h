@@ -17,7 +17,12 @@ class MyGameScene : public QGraphicsScene
 {
     Q_OBJECT
 public:
-    explicit MyGameScene(int n = 1,QObject *parent = nullptr);
+    explicit MyGameScene(int n = 1,QObject *parent = nullptr,bool deferStart=false);
+    enum class InputMode { Blocked,Normal,PlantPractice,HeartPractice,ShovelPractice };
+    Q_ENUM(InputMode)
+    void startGameplay();
+    bool gameplayStarted() const { return started; }
+    void setInputMode(InputMode mode) { inputMode=mode; }
 
     ~MyGameScene() override = default;
 
@@ -55,6 +60,8 @@ private:
 
     Map *mapGrid = nullptr;  //添加地图网咯
     Lawn *grass=nullptr;
+    bool started=false;
+    InputMode inputMode=InputMode::Normal;
     std::array<WhiteDogs*,45> dogMap{};
     void mousePressEvent(QGraphicsSceneMouseEvent * event) override;
     void keyPressEvent(QKeyEvent *event) override;
@@ -99,6 +106,7 @@ private:
 signals:
     void healthVisibilityChanged(bool plants, bool enemies);
     void waveStarted(int wave, int total);
+    void finalWaveApproaching();
     void plantFinished();
     void heartCollected();
     void sceneClicked();

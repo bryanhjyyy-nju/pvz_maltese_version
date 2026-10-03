@@ -11,9 +11,9 @@
 #include <QMessageBox>
 #include <QStackedWidget>
 
-GameWindow::GameWindow(QWidget *parent,const QString& progressPath)
+GameWindow::GameWindow(QWidget *parent,const QString& progressPath,bool openingEnabled)
     : QMainWindow(parent), pages(new QStackedWidget(this)),
-      home(new MainScene(pages)), levels(new ChooseLevelScene(pages)), progress(progressPath) {
+      home(new MainScene(pages)), levels(new ChooseLevelScene(pages)), progress(progressPath),playOpening(openingEnabled) {
     setCentralWidget(pages);
     resize(logicalSize());
     setMinimumSize(825,450);
@@ -64,7 +64,7 @@ void GameWindow::showLevels() {
 void GameWindow::startLevel(int level) {
     if(closing || battle || level<1 || level>10) return;
     if(!progress.startLevel(level)) QMessageBox::warning(this,"存档未写入",progress.error());
-    battle=new PlayScene(level,pages);
+    battle=new PlayScene(level,pages,playOpening);
     pages->addWidget(battle);
     connectPage(battle);
     connect(battle,&PlayScene::gameWin,this,[this,level] {

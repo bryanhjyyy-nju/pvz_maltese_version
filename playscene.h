@@ -20,7 +20,7 @@ public:
     const int levelIndex;
 
     //构造函数：第几关
-    PlayScene(int levelNum,QWidget *parent=nullptr);
+    PlayScene(int levelNum,QWidget *parent=nullptr,bool withOpening=true);
     void shutdown();
 
     void gamePaused();
@@ -33,6 +33,12 @@ private:
     GamePause pausedActivity;
     bool paused = false;
     bool finished = false;
+    bool openingActive=false;
+    qreal cameraOffset=0;
+    class LevelOpening *opening=nullptr;
+    class BattleBanner *banner=nullptr;
+    void beginGameplay();
+    void setBattleHudVisible(bool visible);
     QPushButton *pauseButton = nullptr;
     class PauseDialog *pauseMenu = nullptr;
     class QShortcut *pauseShortcut = nullptr;

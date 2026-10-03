@@ -13,11 +13,13 @@
 #include "mygamescene.h"
 #include <QMouseEvent>
 #include <QKeyEvent>
+#include "levelopening.h"
+#include "battlebanner.h"
 
-PlayScene::PlayScene(int levelNum,QWidget *parent) :
+PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening) :
     GamePage(parent),
     levelIndex(levelNum), //维护传进来的关卡号, 加载地图
-    myGameScene(new MyGameScene(levelNum,this)),
+    myGameScene(new MyGameScene(levelNum,this,withOpening)),
     myGraphicsView(new QGraphicsView(myGameScene, this))
 {
 
@@ -132,6 +134,19 @@ PlayScene::PlayScene(int levelNum,QWidget *parent) :
     });
     connect(this,&GamePage::canvasResized,this,&PlayScene::fitBattlefield);
     initializePage(QRect(20,760,250,44));
+    banner=new BattleBanner(this);
+    connect(myGameScene,&MyGameScene::finalWaveApproaching,this,[this] {
+        banner->announce("最后一波小金毛即将来袭！","finalWave");
+    });
+    if(withOpening) {
+        openingActive=true; Card::setGameState(GameState::Paused);
+        setBattleHudVisible(false); pauseShortcut->setEnabled(false);
+        myGraphicsView->setSceneRect(0,0,2100,900);
+        opening=new LevelOpening(levelIndex,myGameScene,banner,this);
+        connect(opening,&LevelOpening::cameraMoved,this,[this](qreal offset) { cameraOffset=offset; fitBattlefield(); });
+        connect(opening,&LevelOpening::finished,this,&PlayScene::beginGameplay);
+        opening->start();
+    }
 }
 
 
@@ -233,7 +248,7 @@ void PlayScene::setCardsInBar(){
         });
 
         //除爱心小狗外，其他小狗一开始就进入冷却
-        if(i != 1) {
+        if(i != 1 && myGameScene->gameplayStarted()) {
             card->startCooldown();
         }
 
@@ -342,7 +357,7 @@ void PlayScene::buildPauseBtn() {
 }
 
 void PlayScene::togglePauseMenu() {
-    if(finished) return;
+    if(finished || openingActive) return;
     if(paused) { gameContinued(); return; }
     gamePaused();
     AudioManager::instance().play("pause");
@@ -376,6 +391,8 @@ void PlayScene::showAudioSettings() {
 }
 
 void PlayScene::shutdown() {
+    if(opening) opening->stop();
+    if(banner) banner->stop();
     gamePaused();
     finished=true;
     myGameScene->disconnect(this);
@@ -390,12 +407,34 @@ void PlayScene::fitBattlefield() {
     myGraphicsView->setGeometry(rect());
     myGraphicsView->resetTransform();
     myGraphicsView->scale(canvasScale(),canvasScale());
-    myGraphicsView->centerOn(myGameScene->sceneRect().center());
+    myGraphicsView->centerOn(QPointF(825+cameraOffset,450));
+    if(banner) banner->setGeometry(rect());
     if(preImageLabel && Card::currentState()==GameState::PrePlace) {
         startShow(myGameScene->getChosenNum());
         const auto point=myGraphicsView->viewport()->mapTo(this,myGraphicsView->mapFromScene(previewScenePosition));
         preImageLabel->move(point-QPoint(preImageLabel->width()/2,preImageLabel->height()/2));
     }
+}
+
+void PlayScene::setBattleHudVisible(bool visible) {
+    for(auto *widget : findChildren<QWidget*>(QString(),Qt::FindDirectChildrenOnly)) {
+        if(widget->property("manualScale").toBool() || widget->isWindow()
+            || widget->objectName()=="backToLevels" || widget->objectName()=="fullScreenButton") continue;
+        widget->setVisible(visible);
+    }
+}
+void PlayScene::beginGameplay() {
+    if(finished) return;
+    openingActive=false; cameraOffset=0;
+    myGraphicsView->setSceneRect(0,0,1650,900); fitBattlefield();
+    setBattleHudVisible(true); pauseShortcut->setEnabled(true);
+    Card::setGameState(GameState::Normal);
+    for(int i=0;i<myCards.size();++i) {
+        if(i!=1) myCards[i]->startCooldown();
+        else emit myCards[i]->cooldownFinished();
+    }
+    myGameScene->startGameplay();
+    myGraphicsView->setFocus();
 }
 
 bool PlayScene::handleGameKey(QKeyEvent *event) {

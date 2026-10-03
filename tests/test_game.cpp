@@ -27,6 +27,8 @@
 #include <QRandomGenerator>
 #include <QFontInfo>
 #include "lawn.h"
+#include "levelopening.h"
+#include "battlebanner.h"
 
 class GameTests : public QObject {
     Q_OBJECT
@@ -44,7 +46,7 @@ private slots:
     void audioAssetsLoad() {
         auto& manager = AudioManager::instance();
         const auto sounds = manager.findChildren<QSoundEffect*>();
-        QCOMPARE(sounds.size(),18);
+        QCOMPARE(sounds.size(),20);
         for(auto *sound : sounds) {
             QTRY_VERIFY_WITH_TIMEOUT(sound->status() != QSoundEffect::Loading,5000);
             QCOMPARE(sound->status(),QSoundEffect::Ready);
@@ -70,7 +72,7 @@ private slots:
         QVERIFY(!idle.isActive());
     }
     void battlefieldPauseAndPlacement() {
-        PlayScene play(8);
+        PlayScene play(8,nullptr,false);
         play.show();
         auto *scene = play.findChild<MyGameScene*>();
         auto *view = play.findChild<QGraphicsView*>();
@@ -96,7 +98,7 @@ private slots:
     }
     void spacePauseMenu() {
         QTemporaryDir dir;
-        GameWindow picker(nullptr,dir.filePath("progress.json"));
+        GameWindow picker(nullptr,dir.filePath("progress.json"),false);
         picker.show();
         picker.startLevel(4);
         auto *view = picker.playPage()->findChild<QGraphicsView*>();
@@ -128,7 +130,7 @@ private slots:
         QCOMPARE(ProgressStore(dir.filePath("progress.json")).resumeLevel(),4);
     }
     void mouseShovel() {
-        PlayScene play(8);
+        PlayScene play(8,nullptr,false);
         play.show();
         auto *scene = play.findChild<MyGameScene*>();
         auto *view = play.findChild<QGraphicsView*>();
@@ -178,7 +180,7 @@ private slots:
         MainScene menu;
         menu.show(); QTest::qWait(100);
         QVERIFY(menu.grab().save(folder+"/menu.png"));
-        PlayScene play(8);
+        PlayScene play(8,nullptr,false);
         play.show(); QTest::qWait(100);
         play.gamePaused();
         QVERIFY(play.grab().save(folder+"/battle.png"));
@@ -216,7 +218,7 @@ private slots:
     void continueFlow() {
         QTemporaryDir dir;
         const auto path = dir.filePath("progress.json");
-        GameWindow picker(nullptr,path);
+        GameWindow picker(nullptr,path,false);
         picker.show();
         picker.startLevel(1);
         QVERIFY(picker.playPage());
@@ -237,7 +239,7 @@ private slots:
         picker.playPage()->playSceneBack();
     }
     void independentLiveHealthOverlays() {
-        PlayScene play(8);
+        PlayScene play(8,nullptr,false);
         play.show();
         auto *scene=play.findChild<MyGameScene*>();
         auto *view=play.findChild<QGraphicsView*>();
@@ -283,7 +285,7 @@ private slots:
     }
     void cartoonMenuButtons() {
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json"));
+        GameWindow root(nullptr,dir.filePath("progress.json"),false);
         root.show();
         auto *menu=root.homePage();
         QCOMPARE(root.windowTitle(),QString("小白大战小金毛"));
@@ -422,7 +424,7 @@ private slots:
         QVERIFY(scene.getZombieMap(2).isEmpty());
     }
     void loseStopsActivity() {
-        PlayScene play(1);
+        PlayScene play(1,nullptr,false);
         auto *scene = play.findChild<MyGameScene*>();
         scene->setAYellowDog(2);
         auto *enemy = static_cast<YellowDogs*>(scene->getZombieMap(2).front());
@@ -437,7 +439,7 @@ private slots:
         QCOMPARE(enemy->pos(),pos);
     }
     void meleeFeedback() {
-        PlayScene play(8);
+        PlayScene play(8,nullptr,false);
         play.show();
         auto *scene=play.findChild<MyGameScene*>();
         auto *view=play.findChild<QGraphicsView*>();
@@ -470,7 +472,7 @@ private slots:
         QVERIFY(scene->findChildren<EnemyProjectile*>().isEmpty());
     }
     void guitarTimerFiresForwardWithoutTarget() {
-        PlayScene play(8);
+        PlayScene play(8,nullptr,false);
         auto *scene=play.findChild<MyGameScene*>();
         scene->setAYellowDog(2,1);
         auto *enemy=static_cast<YellowDogs*>(scene->getZombieMap(2).front());
@@ -496,7 +498,7 @@ private slots:
         QVERIFY(timer->isActive());
     }
     void combatAnimationsAndRange() {
-        PlayScene play(8);
+        PlayScene play(8,nullptr,false);
         play.show();
         auto *scene = play.findChild<MyGameScene*>();
         auto *view = play.findChild<QGraphicsView*>();
@@ -538,7 +540,7 @@ private slots:
     }
     void fullScreenNavigationAndInput() {
         QTemporaryDir dir;
-        GameWindow menu(nullptr,dir.filePath("progress.json"));
+        GameWindow menu(nullptr,dir.filePath("progress.json"),false);
         menu.show(); QTest::qWait(40);
         QTest::keyClick(&menu,Qt::Key_F11);
         QTRY_VERIFY(menu.isFullScreen());
@@ -619,7 +621,7 @@ private slots:
     }
     void nativeMaximizeAndFullScreenButton() {
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json"));
+        GameWindow root(nullptr,dir.filePath("progress.json"),false);
         root.show(); QTest::qWait(40);
         QVERIFY(root.windowFlags().testFlag(Qt::WindowMaximizeButtonHint));
         QVERIFY(root.maximumWidth()>root.width());
@@ -644,7 +646,7 @@ private slots:
     }
     void levelButtonsAndCardArtworkScale() {
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json"));
+        GameWindow root(nullptr,dir.filePath("progress.json"),false);
         root.show(); root.showLevels();
         const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
         for(const auto& size : {QSize(1650,900),QSize(1280,720),QSize(1920,1080),QSize(2560,1440)}) {
@@ -704,7 +706,7 @@ private slots:
     }
     void returningStopsOldBattleAndResizingKeepsPreviewAligned() {
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json"));
+        GameWindow root(nullptr,dir.filePath("progress.json"),false);
         root.show(); root.startLevel(8); QTest::qWait(40);
         QPointer<PlayScene> old=root.playPage();
         auto *view=old->findChild<QGraphicsView*>();
@@ -746,7 +748,7 @@ private slots:
     void closeExitsApplication() {
         QFETCH(int,page);
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json"));
+        GameWindow root(nullptr,dir.filePath("progress.json"),false);
         root.show();
         const auto nativeId=root.winId();
         if(page==1) root.showLevels();
@@ -777,7 +779,7 @@ private slots:
     }
     void escapeOnlyLeavesFullScreen() {
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json"));
+        GameWindow root(nullptr,dir.filePath("progress.json"),false);
         root.show(); root.startLevel(8); QTest::qWait(40);
         auto *play=root.playPage();
         auto *view=play->findChild<QGraphicsView*>();
@@ -815,7 +817,7 @@ private slots:
     }
     void earlyLanesRestrictPlanting() {
         QFETCH(int,level); QFETCH(int,first); QFETCH(int,last);
-        PlayScene play(level); play.show();
+        PlayScene play(level,nullptr,false); play.show();
         auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
         scene->setChosenNum(0);
         for(int row=0;row<5;++row) {
@@ -842,6 +844,83 @@ private slots:
         play.gamePaused();
         const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
         if(!folder.isEmpty()) QVERIFY(play.grab().save(folder+QString("/lawn-level%1.png").arg(level)));
+    }
+    void openingSequence_data() {
+        QTest::addColumn<int>("level");
+        for(int level : {1,2,3,10}) QTest::newRow(qPrintable(QString::number(level))) << level;
+    }
+    void openingSequence() {
+        QFETCH(int,level);
+        QTemporaryDir dir;
+        GameWindow root(nullptr,dir.filePath("progress.json"));
+        root.show(); root.startLevel(level); QTest::qWait(30);
+        auto *play=root.playPage(); auto *scene=play->findChild<MyGameScene*>();
+        auto *view=play->findChild<QGraphicsView*>(); auto *opening=play->findChild<LevelOpening*>();
+        auto *timeline=opening->findChild<QVariantAnimation*>("openingTimeline");
+        QVERIFY(!scene->gameplayStarted()); QCOMPARE(scene->wavesStarted(),0);
+        for(auto *timer : scene->findChildren<QTimer*>()) QVERIFY(!timer->isActive());
+        for(auto *card : play->findChildren<Card*>()) QVERIFY(!card->findChild<QTimer*>()->isActive());
+        scene->setAYellowDog(2); QVERIFY(scene->findChildren<YellowDogs*>().isEmpty());
+        timeline->setCurrentTime(timeline->duration());
+        QCOMPARE(opening->stage(),LevelOpening::Stage::Preview);
+        QVERIFY(view->mapToScene(view->viewport()->rect().center()).x()>1200);
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+QString("/preview-level%1.png").arg(level)));
+        timeline->setCurrentTime(timeline->duration());
+        QCOMPARE(opening->stage(),LevelOpening::Stage::PanLeft);
+        timeline->setCurrentTime(timeline->duration());
+        QCOMPARE(opening->stage(),LevelOpening::Stage::Reveal);
+        if(level==3) for(int row=1;row<=3;++row) QCOMPARE(scene->lawn()->rowReveal(row),1.0);
+        timeline->setCurrentTime(timeline->duration()/2);
+        if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+QString("/unroll-level%1.png").arg(level)));
+        root.resize(1920,1080); QTest::qWait(20);
+        QCOMPARE(view->transform().m11(),play->canvasScale());
+        timeline->setCurrentTime(timeline->duration());
+        QCOMPARE(opening->stage(),LevelOpening::Stage::Ready);
+        QVERIFY(!scene->gameplayStarted());
+        auto *banner=play->findChild<BattleBanner*>(); QVERIFY(banner->isVisible());
+        auto *impact=banner->findChild<QVariantAnimation*>("bannerAnimation");
+        impact->setCurrentTime(450);
+        if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+QString("/ready-level%1.png").arg(level)));
+        impact->setCurrentTime(impact->duration());
+        QVERIFY(scene->gameplayStarted()); QCOMPARE(scene->wavesStarted(),0);
+        QVERIFY(scene->findChild<QTimer*>("waveTimer")->isActive());
+        QVERIFY(scene->findChild<QTimer*>("waveTimer")->remainingTime()>GameCatalog::level(level).initialDelayMs-100);
+    }
+    void previewUsesSharedProbabilities() {
+        QRandomGenerator random(10);
+        for(int level=1;level<=10;++level) {
+            const auto types=WavePlanner::previewTypes(level,random);
+            const int max=GameCatalog::level(level).maxEnemyType;
+            for(int type : types) QVERIFY(type>=0 && type<=max);
+            if(max==0) { QCOMPARE(types.size(),5); QCOMPARE(types.count(0),5); }
+            if(max==1) { QCOMPARE(types.count(0),10); QCOMPARE(types.count(1),2); }
+            if(max==2) { QCOMPARE(types.count(0),9); QCOMPARE(types.count(1),2); QCOMPARE(types.count(2),1); }
+        }
+    }
+    void finalWaveWarnsBeforeSpawning() {
+        PlayScene play(4,nullptr,false); play.show();
+        auto *scene=play.findChild<MyGameScene*>(); auto *wave=scene->findChild<QTimer*>("waveTimer");
+        auto *stagger=scene->findChild<QTimer*>("waveStaggerTimer");
+        QSignalSpy warning(scene,&MyGameScene::finalWaveApproaching);
+        for(int i=1;i<GameCatalog::level(4).waves;++i) {
+            QMetaObject::invokeMethod(wave,"timeout");
+            while(stagger->isActive()) QMetaObject::invokeMethod(stagger,"timeout");
+        }
+        QCOMPARE(warning.count(),0);
+        const int before=scene->findChildren<YellowDogs*>().size();
+        QMetaObject::invokeMethod(wave,"timeout");
+        QCOMPARE(warning.count(),1); QCOMPARE(scene->findChildren<YellowDogs*>().size(),before);
+        QCOMPARE(stagger->interval(),1800);
+        auto *banner=play.findChild<BattleBanner*>(); QVERIFY(banner->isVisible());
+        auto *impact=banner->findChild<QVariantAnimation*>("bannerAnimation"); impact->setCurrentTime(450);
+        play.gamePaused(); const int time=impact->currentTime(); QTest::qWait(80);
+        QCOMPARE(impact->currentTime(),time); QVERIFY(!stagger->isActive());
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(!folder.isEmpty()) QVERIFY(play.grab().save(folder+"/final-wave.png"));
+        play.gameContinued();
+        QTRY_VERIFY_WITH_TIMEOUT(scene->findChildren<YellowDogs*>().size()>before,2000);
+        QMetaObject::invokeMethod(wave,"timeout"); QCOMPARE(warning.count(),1);
     }
     void enemyLimit() {
         MyGameScene scene(1);

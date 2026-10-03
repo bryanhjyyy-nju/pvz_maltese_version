@@ -72,5 +72,7 @@
         <file>Media/uproot.wav</file>
         <file>Media/guitarShot.wav</file>
         <file>Media/guitarHit.wav</file>
+        <file>Media/readyImpact.wav</file>
+        <file>Media/finalWave.wav</file>
     </qresource>
 </RCC>
