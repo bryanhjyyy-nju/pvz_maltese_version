@@ -369,7 +369,7 @@ void MyGameScene::placePlant(int row, int col,bool charge) {
 
     dogMap[row * 9 + col] = myDog;
 
-    myDog->setItPos(row, col);//设置当前植物的所在行和列
+    myDog->setItPos(row, col);//设置当前小白的所在行和列
     myDog->setHealthVisible(showPlantHealth);
 
     connect(myDog,&WhiteDogs::pleaseRemoveMe, this, &MyGameScene::removeWhite);

@@ -280,7 +280,7 @@ void PlayScene::buildPauseBtn() {
     shortcut->setAutoRepeat(false);
     pauseShortcut = shortcut;
     connect(shortcut,&QShortcut::activated,this,toggle);
-    auto *almanac = new QPushButton("植物 / 僵尸图鉴",this);
+    auto *almanac = new QPushButton("小白 / 金毛图鉴",this);
     GameUi::styleButton(almanac,"gold");
     almanac->setFocusPolicy(Qt::NoFocus);
     almanac->setGeometry(20,280,170,44);
@@ -292,7 +292,7 @@ void PlayScene::buildPauseBtn() {
     connect(sound,&QPushButton::clicked,this,&PlayScene::showAudioSettings);
     auto *help = new QLabel(this);
     auto updateHelp = [help,this](bool plants,bool enemies) {
-        help->setText((levelIndex==1 ? "铲子：第二关解锁\n" : "点击铲子 / R：拿起或放下\n")+QString("右键：取消选择\nEsc：退出全屏\n空格：暂停 / 继续\nH：植物血量 %1\nJ：金毛血量 %2\nF11：全屏 / 窗口")
+        help->setText((levelIndex==1 ? "铲子：第二关解锁\n" : "点击铲子 / R：拿起或放下\n")+QString("右键：取消选择\nEsc：退出全屏\n空格：暂停 / 继续\nH：小白血量 %1\nJ：金毛血量 %2\nF11：全屏 / 窗口")
             .arg(plants ? "开" : "关").arg(enemies ? "开" : "关"));
     };
     updateHelp(false,false);

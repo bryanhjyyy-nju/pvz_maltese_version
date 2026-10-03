@@ -32,7 +32,7 @@ PauseDialog::PauseDialog(QWidget *parent) : QDialog(parent) {
         connect(button,&QPushButton::clicked,this,signal);
     };
     add("继续游戏  [空格]","resume","green",&PauseDialog::resumeRequested);
-    add("植物 / 僵尸图鉴","almanac","gold",&PauseDialog::almanacRequested);
+    add("小白 / 金毛图鉴","almanac","gold",&PauseDialog::almanacRequested);
     add("声音设置","audio","gold",&PauseDialog::audioRequested);
     add("返回主菜单","mainMenu","red",&PauseDialog::mainMenuRequested);
     auto *hint = new QLabel("已自动记录本关 · 下次可继续",panel);

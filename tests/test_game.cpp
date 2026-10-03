@@ -36,6 +36,20 @@
 class GameTests : public QObject {
     Q_OBJECT
     QTemporaryDir settingsDirectory;
+    void verifyGameTerms(QWidget *root) {
+        auto widgets=root->findChildren<QWidget*>(); widgets.prepend(root);
+        for(auto *widget : widgets) {
+            QStringList texts{widget->windowTitle(),widget->toolTip(),widget->whatsThis(),widget->accessibleName(),widget->accessibleDescription()};
+            if(auto *label=qobject_cast<QLabel*>(widget)) texts.append(label->text());
+            if(auto *button=qobject_cast<QAbstractButton*>(widget)) texts.append(button->text());
+            if(auto *tabs=qobject_cast<QTabWidget*>(widget))
+                for(int i=0;i<tabs->count();++i) texts.append(tabs->tabText(i));
+            for(const auto& text : texts) {
+                QVERIFY2(!text.contains("植物"),qPrintable(text));
+                QVERIFY2(!text.contains("僵尸"),qPrintable(text));
+            }
+        }
+    }
     QString unlockedPath(const QTemporaryDir& dir) {
         const auto path=dir.filePath("progress.json");
         ProgressStore store(path); store.unlockAll(); return path;
@@ -47,6 +61,19 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void gameTextUsesSmallWhiteAndGoldenDogs() {
+        MainScene home; ChooseLevelScene levels;
+        QCOMPARE(home.findChild<QPushButton*>("menuAlmanac")->text(),QString("小白 / 金毛图鉴"));
+        verifyGameTerms(&home); verifyGameTerms(&levels);
+        PlayScene play(2,nullptr,false); play.show(); play.showPauseMenu();
+        verifyGameTerms(&play);
+        AlmanacDialog almanac(&play); verifyGameTerms(&almanac);
+        QCOMPARE(almanac.windowTitle(),QString("草坪图鉴 · 小白与金毛"));
+        auto *tabs=almanac.findChild<QTabWidget*>();
+        QCOMPARE(tabs->tabText(0),QString("小白卡片")); QCOMPARE(tabs->tabText(1),QString("金毛卡片"));
+        PlayScene lesson(1); lesson.show(); completeOpening(&lesson);
+        verifyGameTerms(&lesson);
+    }
     void previewMatchesActualEnemySize() {
         PlayScene play(10); play.show();
         auto *scene=play.findChild<MyGameScene*>(); auto *opening=play.findChild<LevelOpening*>();
@@ -1246,6 +1273,7 @@ private slots:
         auto *scene=play->findChild<MyGameScene*>(); auto *view=play->findChild<QGraphicsView*>();
         auto *tutorial=play->findChild<LevelTutorial*>(); auto *card=play->findChild<Card*>();
         QCOMPARE(tutorial->step(),LevelTutorial::Step::Plant); QVERIFY(!scene->gameplayStarted());
+        verifyGameTerms(play);
         QCOMPARE(scene->getRestHeart(),100); QVERIFY(card->isEnabled());
         const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
         if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+"/tutorial-plant.png"));
@@ -1254,6 +1282,7 @@ private slots:
         QVERIFY(scene->findChildren<WhiteDogs*>().isEmpty()); QCOMPARE(scene->getRestHeart(),100);
         QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,490)));
         QCOMPARE(tutorial->step(),LevelTutorial::Step::Heart); QCOMPARE(scene->getRestHeart(),0);
+        verifyGameTerms(play);
         QVERIFY(card->isCooling()); QVERIFY(!card->findChild<QTimer*>()->isActive());
         auto *heart=scene->findChild<Heart*>("tutorialHeart"); QVERIFY(heart);
         QVERIFY(!heart->findChild<QTimer*>()->isActive());
@@ -1261,6 +1290,7 @@ private slots:
         QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(heart->sceneBoundingRect().center()));
         QTRY_COMPARE_WITH_TIMEOUT(tutorial->step(),LevelTutorial::Step::Controls,1200);
         QCOMPARE(scene->getRestHeart(),25); QVERIFY(!scene->gameplayStarted());
+        verifyGameTerms(play);
         auto *next=tutorial->findChild<QPushButton*>("finishTutorial"); QVERIFY(!next->isEnabled());
         if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+"/tutorial-controls.png"));
         view->setFocus(); QTest::qWait(30); QTest::keyClick(view,Qt::Key_Space); QTest::qWait(30);

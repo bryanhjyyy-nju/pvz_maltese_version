@@ -11,7 +11,7 @@ class Card : public QPushButton
     Q_PROPERTY(float coolProgress READ coolProgress WRITE setCoolProgress)
 
 public:
-    QString whiteType;  // 卡牌对应的植物类型
+    QString whiteType;  // 卡牌对应的小白类型
     int coolTime;       // 冷却时间（毫秒）
     int heartCost;      // 阳光消耗
     //实现构造函数
@@ -34,7 +34,7 @@ public:
     static void setGameState(GameState state){ cardGameState = state; }
     static GameState currentState(){ return cardGameState; }
 
-    // 设置当前选择的植物类型
+    // 设置当前选择的小白类型
     static void setSelectedWhite(const QString& sWhite){ cardSelectedWhite = sWhite; }
     static QString selectedWhite(){ return cardSelectedWhite; }
 

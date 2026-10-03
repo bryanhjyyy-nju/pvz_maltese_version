@@ -8,7 +8,7 @@ Bullet::Bullet(int r, int c, QTimer *gameTimer)
     pix.load(":/others/Image/note.png");
     setPixmap(pix);
     setPos(400 + c * 121,130 + 145 * (r + 0.2)); //设置起始位置
-    setZValue(7); //确保在植物上面
+    setZValue(7); //确保在小白上面
     connect(this, &Bullet::i_hit_it,this, &Bullet::disappear);
     connect(gameTimer,&QTimer::timeout, this, [=](){
         if(checkCollision()){

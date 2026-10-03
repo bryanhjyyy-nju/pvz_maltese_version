@@ -41,7 +41,7 @@ void LevelTutorial::enter(Step step) {
         instructions->setText("左键选择上方的歌唱小白卡片，再点中间草坪的空格子。已为练习准备 100 爱心。\n歌唱小白花费 100 爱心，同排前方有金毛时，每 1.6 秒发射音符，造成 30 点伤害。");
     } else if(step==Step::Heart) {
         title->setText("教程 2 / 3 · 点击草坪上的爱心");
-        instructions->setText("爱心是种植植物的资源。左键点击这颗示范爱心，即可增加 25 爱心。\n开战后天空会落下爱心；第二关解锁的爱心小白也会定时产出爱心。卡片下方显示种植花费。");
+        instructions->setText("爱心是种植小白的资源。左键点击这颗示范爱心，即可增加 25 爱心。\n开战后天空会落下爱心；第二关解锁的爱心小白也会定时产出爱心。卡片下方显示种植花费。");
     } else if(step==Step::Controls) {
         title->setText("教程 3 / 3 · 试试暂停与图鉴"); updateControlsLesson();
     } else {
@@ -51,7 +51,7 @@ void LevelTutorial::enter(Step step) {
     show(); raise(); emit stepChanged(step);
 }
 void LevelTutorial::updateControlsLesson() {
-    instructions->setText(QString("按空格或点击左侧暂停按钮，暂停所有战斗活动；按空格或点“继续游戏”恢复。\n点击左侧或暂停菜单中的图鉴，查看植物与金毛的生命、花费、攻击和技能，帮助安排防守。\n暂停：%1    图鉴：%2    两项都体验后，点击下方按钮开始。")
+    instructions->setText(QString("按空格或点击左侧暂停按钮，暂停所有战斗活动；按空格或点“继续游戏”恢复。\n点击左侧或暂停菜单中的图鉴，查看小白与金毛的生命、花费、攻击和技能，帮助安排防守。\n暂停：%1    图鉴：%2    两项都体验后，点击下方按钮开始。")
         .arg(usedPause ? "已体验 ✓" : "待体验").arg(viewedAlmanac ? "已查看 ✓" : "待查看"));
     next->setEnabled(usedPause && viewedAlmanac);
 }

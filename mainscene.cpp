@@ -22,7 +22,7 @@ MainScene::MainScene(QWidget *parent) : GamePage(parent) {
     connect(resumeButton,&QPushButton::clicked,this,&MainScene::continueRequested);
     auto *quit=button("退出游戏","quitGame",630);
     connect(quit,&QPushButton::clicked,this,&MainScene::quitRequested);
-    auto *almanac=button("植物 / 僵尸图鉴","menuAlmanac",730);
+    auto *almanac=button("小白 / 金毛图鉴","menuAlmanac",730);
     connect(almanac,&QPushButton::clicked,this,[this] { AlmanacDialog dialog(this); dialog.exec(); });
     endlessButton=button("开始无尽模式","endlessGame",330);
     connect(endlessButton,&QPushButton::clicked,this,&MainScene::endlessRequested);

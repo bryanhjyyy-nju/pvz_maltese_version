@@ -12,7 +12,7 @@
 #include <QVBoxLayout>
 
 AlmanacDialog::AlmanacDialog(QWidget *parent) : QDialog(parent) {
-    setWindowTitle("草坪图鉴 · 植物与僵尸");
+    setWindowTitle("草坪图鉴 · 小白与金毛");
     resize(1000, 720);
     setStyleSheet(GameUi::styleSheet()+"QScrollArea {border:0; background:#fff2d4;} QScrollArea > QWidget > QWidget {background:#fff2d4;}");
     auto *layout = new QVBoxLayout(this);
@@ -67,9 +67,9 @@ AlmanacDialog::AlmanacDialog(QWidget *parent) : QDialog(parent) {
         }
         grid->setRowStretch((count+1)/2,1);
         scroll->setWidget(page);
-        tabs->addTab(scroll,group == 0 ? "植物卡片 · 小白" : "僵尸卡片 · 金毛");
+        tabs->addTab(scroll,group == 0 ? "小白卡片" : "金毛卡片");
     }
-    auto *hint = new QLabel("关卡逐步开放植物卡片；点击爱心收集。点击铲子或按 R 切换，空格暂停，Esc 取消选择。",this);
+    auto *hint = new QLabel("关卡逐步开放小白卡片；点击爱心收集。点击铲子或按 R 切换，右键取消选择，空格暂停，Esc 退出全屏。",this);
     hint->setWordWrap(true);
     layout->addWidget(hint);
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close,this);

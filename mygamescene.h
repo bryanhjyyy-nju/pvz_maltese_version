@@ -99,9 +99,9 @@ private:
 
     void checkWinCondition(); // 检查胜利条件的私有函数
 
-    int m_totalZombiesForLevel = 0; // 本关卡总僵尸数
-    int m_zombiesSpawned = 0;       // 已生成的僵尸数
-    int m_zombiesKilled = 0;        // 已消灭的僵尸数
+    int m_totalZombiesForLevel = 0; // 本关卡总金毛数
+    int m_zombiesSpawned = 0;       // 已生成的金毛数
+    int m_zombiesKilled = 0;        // 已消灭的金毛数
     bool m_isGameOver = false;      // 标记游戏是否已结束
     bool showPlantHealth = false;
     bool showEnemyHealth = false;
