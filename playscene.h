@@ -43,6 +43,8 @@ private:
     class LevelOpening *opening=nullptr;
     class BattleBanner *banner=nullptr;
     class LevelTutorial *tutorial=nullptr;
+    class BattleResult *result=nullptr;
+    void showResult(bool won);
     void finishOpening();
     void beginGameplay();
     void setBattleHudVisible(bool visible);

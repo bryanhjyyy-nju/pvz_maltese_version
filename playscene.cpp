@@ -16,6 +16,7 @@
 #include "levelopening.h"
 #include "battlebanner.h"
 #include "leveltutorial.h"
+#include "battleresult.h"
 
 PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening,bool endless,int firstWave) :
     GamePage(parent),
@@ -59,16 +60,10 @@ PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening,bool endless,
     connect(this, &PlayScene::gameLose, this, &PlayScene::finishGame);
     connect(this, &PlayScene::gameWin, this, &PlayScene::finishGame);
     connect(this, &PlayScene::gameLose, this, [=](){
-        AudioManager::instance().play("lose");
-        QTimer::singleShot(3000,this,[=](){
-            emit this->playSceneBack();
-        });
+        showResult(false);
     });
     connect(this, &PlayScene::gameWin, this, [=](){
-        AudioManager::instance().play("win");
-        QTimer::singleShot(3000,this,[=](){
-            emit this->playSceneBack();
-        });
+        showResult(true);
     });
     //接收游戏胜利失败暂停信号
     connect(myGameScene, &MyGameScene::gameLose, this, &PlayScene::gameLose);
@@ -325,6 +320,7 @@ void PlayScene::togglePauseMenu() {
 void PlayScene::showPauseMenu() {
     if(finished) return;
     gamePaused();
+    AudioManager::instance().setPaused(true);
     if(!pauseMenu) {
         pauseMenu = new PauseDialog(this);
         connect(pauseMenu,&PauseDialog::resumeRequested,this,&PlayScene::gameContinued);
@@ -361,6 +357,7 @@ void PlayScene::showAudioSettings() {
 }
 
 void PlayScene::shutdown() {
+    if(result) result->stop();
     if(opening) opening->stop();
     if(banner) banner->stop();
     if(tutorial) tutorial->hide();
@@ -381,11 +378,23 @@ void PlayScene::fitBattlefield() {
     myGraphicsView->centerOn(QPointF(825+cameraOffset,450));
     if(banner) banner->setGeometry(rect());
     if(tutorial) tutorial->fitCanvas(canvasScale(),canvasOffset());
+    if(result) result->setGeometry(rect());
     if(preImageLabel && Card::currentState()==GameState::PrePlace) {
         startShow(myGameScene->getChosenNum());
         const auto point=myGraphicsView->viewport()->mapTo(this,myGraphicsView->mapFromScene(previewScenePosition));
         preImageLabel->move(point-QPoint(preImageLabel->width()/2,preImageLabel->height()/2));
     }
+}
+
+void PlayScene::showResult(bool won) {
+    if(result) return;
+    if(opening) opening->stop();
+    if(banner) banner->stop();
+    if(tutorial) tutorial->hide();
+    setBattleHudVisible(false);
+    pauseShortcut->setEnabled(false);
+    result=new BattleResult(won,levelIndex,myGameScene->defeatPosition(),this);
+    connect(result,&BattleResult::returnRequested,this,&PlayScene::playSceneBack);
 }
 
 void PlayScene::setBattleHudVisible(bool visible) {

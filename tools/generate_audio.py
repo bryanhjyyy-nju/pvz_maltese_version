@@ -76,6 +76,18 @@ def announcement(name, seed):
     save(name,buffer)
 
 
+def victory():
+    buffer = [0.0] * int(3.6 * RATE)
+    melody = [72, 72, 76, 79, 84, 79, 84, 88, 84]
+    for i, pitch in enumerate(melody):
+        duration = .55 if i < 8 else 1.35
+        note(buffer, i * .25, duration, pitch, .25)
+        note(buffer, i * .25, duration, pitch - 12, .12)
+    for pitch in [48, 55, 60, 64]:
+        note(buffer, 2.0, 1.5, pitch, .10)
+    save("win", buffer)
+
+
 if __name__ == "__main__":
     OUT.mkdir(exist_ok=True)
     music("menu",.45,0)
@@ -97,3 +109,4 @@ if __name__ == "__main__":
     texture("plant",.19,95,.72,14)
     announcement("readyImpact",15)
     announcement("finalWave",16)
+    victory()

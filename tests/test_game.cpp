@@ -31,6 +31,7 @@
 #include "battlebanner.h"
 #include "leveltutorial.h"
 #include "heart.h"
+#include "battleresult.h"
 
 class GameTests : public QObject {
     Q_OBJECT
@@ -46,6 +47,41 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void victoryRewardsAndDefeatSpotlight() {
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        for(int level : {1,7,8,10}) {
+            PlayScene play(level,nullptr,false); play.show();
+            play.gameWin(); auto *result=play.findChild<BattleResult*>(); QVERIFY(result && result->victory());
+            QCOMPARE(result->rewardPlant(),level<8 ? level : -1);
+            auto *animation=result->findChild<QVariantAnimation*>("resultAnimation");
+            animation->setCurrentTime(animation->duration());
+            if(!folder.isEmpty()) QVERIFY(play.grab().save(folder+QString("/victory-level%1.png").arg(level)));
+            QVERIFY(result->findChild<QPushButton*>("resultBack")->isVisible());
+            QSignalSpy back(&play,&PlayScene::playSceneBack);
+            QTest::mouseClick(result->findChild<QPushButton*>("resultBack"),Qt::LeftButton); QCOMPARE(back.count(),1);
+            for(auto *timer : play.findChild<MyGameScene*>()->findChildren<QTimer*>()) QVERIFY(!timer->isActive());
+        }
+        QTemporaryDir dir; const auto path=unlockedPath(dir);
+        GameWindow root(nullptr,path,false); root.show(); root.startLevel(8);
+        auto *play=root.playPage(); auto *scene=play->findChild<MyGameScene*>();
+        scene->setAYellowDog(2); auto *enemy=static_cast<YellowDogs*>(scene->getZombieMap(2).front());
+        enemy->stopMoving(); enemy->setPos(80,430);
+        auto *view=play->findChild<QGraphicsView*>();
+        const auto before=view->viewport()->grab().toImage(); emit enemy->arrivedYourHome();
+        auto *result=play->findChild<BattleResult*>(); QVERIFY(result && !result->victory());
+        auto *animation=result->findChild<QVariantAnimation*>("resultAnimation");
+        animation->setCurrentTime(qRound(animation->duration()*.38));
+        const auto spotlight=play->grab().toImage();
+        const auto center=view->viewport()->mapTo(play,view->mapFromScene(scene->defeatPosition()));
+        QCOMPARE(spotlight.pixelColor(center),before.pixelColor(view->mapFromScene(scene->defeatPosition())));
+        QCOMPARE(spotlight.pixelColor(QPoint(1000,400)),QColor(Qt::black));
+        if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+"/defeat-spotlight.png"));
+        QVERIFY(!ProgressStore(path).hasUnfinishedLevel());
+        animation->setCurrentTime(qRound(animation->duration()*.70));
+        if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+"/defeat-message.png"));
+        animation->setCurrentTime(animation->duration());
+        QVERIFY(!root.playPage()); QVERIFY(root.levelPage()->isVisible());
+    }
     void cardCooldownAndAffordability() {
         Card card(1); card.heartCost=50; card.coolTime=5000;
         card.setFixedSize(160,225); card.show(); Card::setGameState(GameState::Normal);

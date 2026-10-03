@@ -39,10 +39,19 @@ void AudioManager::play(const QString& name) {
     // Avoid restarting a sound on every simultaneous collision.
     if(!sound->isPlaying()) sound->play();
 }
-void AudioManager::setBattle(bool battle) { m_stopped=false; m_inBattle = battle; m_paused = false; updateMusic(); }
+void AudioManager::setBattle(bool battle) {
+    m_effects.value("win")->stop();
+    m_result=false; m_stopped=false; m_inBattle = battle; m_paused = false; updateMusic();
+}
+void AudioManager::stopMusic() { m_result=true; m_menu->stop(); m_battle->stop(); }
+void AudioManager::playVictory() {
+    auto *music=m_effects.value("win");
+    if(m_stopped || m_musicVolume==0 || music->status()!=QSoundEffect::Ready) return;
+    music->setVolume(m_musicVolume/100.0); music->play();
+}
 void AudioManager::setPaused(bool paused) { m_paused = paused; updateMusic(); }
 void AudioManager::updateMusic() {
-    if(m_stopped) return;
+    if(m_stopped || m_result) return;
     auto *active = m_inBattle ? m_battle : m_menu;
     auto *inactive = m_inBattle ? m_menu : m_battle;
     inactive->stop();
