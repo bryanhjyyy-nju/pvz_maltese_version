@@ -112,6 +112,7 @@ void GameWindow::connectBattle(bool endless) {
         refreshHome();
     });
     connect(battle,&PlayScene::playSceneBack,this,&GameWindow::showLevels);
+    connect(battle,&PlayScene::nextLevelRequested,this,&GameWindow::startLevel);
     connect(battle,&PlayScene::mainMenuRequested,this,&GameWindow::showMenu);
 }
 void GameWindow::startEndless() {

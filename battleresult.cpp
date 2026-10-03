@@ -28,7 +28,8 @@ BattleResult::BattleResult(bool victory,int number,const QPointF& losingEnemy,QW
         update();
     });
     connect(&timeline,&QVariantAnimation::finished,this,[this] {
-        if(won) back->show(); else emit returnRequested();
+        if(won) { back->show(); if(next) next->show(); }
+        else emit returnRequested();
     });
     AudioManager::instance().stopMusic();
     if(won) {
@@ -36,6 +37,13 @@ BattleResult::BattleResult(bool victory,int number,const QPointF& losingEnemy,QW
         back=new QPushButton("返回选关",this); back->setObjectName("resultBack");
         GameUi::styleButton(back,"sunshine"); back->hide();
         connect(back,&QPushButton::clicked,this,&BattleResult::returnRequested);
+        if(level<GameCatalog::LevelCount) {
+            next=new QPushButton("下一关",this); next->setObjectName("resultNext");
+            GameUi::styleButton(next,"sunshine"); next->hide();
+            connect(next,&QPushButton::clicked,this,[this] {
+                AudioManager::instance().play("click"); emit nextRequested();
+            });
+        }
     }
     setGeometry(parent->rect()); show(); raise(); timeline.start();
 }
@@ -44,8 +52,16 @@ void BattleResult::resizeEvent(QResizeEvent *event) {
     QWidget::resizeEvent(event);
     const qreal scale=qMin(width()/1650.0,height()/900.0);
     const QPointF offset((width()-1650*scale)/2,(height()-900*scale)/2);
-    if(back) { back->setGeometry(QRect(qRound(offset.x()+610*scale),qRound(offset.y()+805*scale),qRound(430*scale),qRound(65*scale)));
-        QFont font("Microsoft YaHei"); font.setPixelSize(qMax(12,qRound(24*scale))); font.setBold(true); back->setFont(font); }
+    for(auto *button : {back,next}) {
+        if(!button) continue;
+        const qreal x=next ? (button==back ? 375 : 845) : 610;
+        button->setGeometry(QRect(qRound(offset.x()+x*scale),qRound(offset.y()+805*scale),qRound(430*scale),qRound(65*scale)));
+        // The result overlay scales its controls outside GamePage's cache.
+        QString style=GameUi::styleSheet();
+        style+=QString("QPushButton[cartoon=\"true\"][color=\"sunshine\"] { font-size:%1px; border-radius:%2px; padding:%3px %4px; }")
+            .arg(qMax(12,qRound(30*scale))).arg(qRound(25*scale)).arg(qRound(8*scale)).arg(qRound(24*scale));
+        button->setStyleSheet(style);
+    }
 }
 void BattleResult::paintEvent(QPaintEvent*) {
     QPainter painter(this); painter.setRenderHint(QPainter::Antialiasing); painter.setRenderHint(QPainter::SmoothPixmapTransform);

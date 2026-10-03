@@ -47,6 +47,28 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void victoryNextLevelStartsUnlockedBattle() {
+        QTemporaryDir dir; const auto path=dir.filePath("progress.json");
+        GameWindow root(nullptr,path); root.show(); root.startLevel(1);
+        QPointer<PlayScene> first=root.playPage(); first->gameWin();
+        auto *result=first->findChild<BattleResult*>(); auto *next=result->findChild<QPushButton*>("resultNext");
+        QVERIFY(next); QVERIFY(!next->isVisible());
+        auto *timeline=result->findChild<QVariantAnimation*>("resultAnimation"); timeline->setCurrentTime(timeline->duration());
+        QVERIFY(next->isVisible());
+        for(const auto& size : {QSize(1280,720),QSize(1920,1080)}) {
+            root.resize(size); QTest::qWait(20);
+            QVERIFY(result->rect().contains(next->geometry()));
+            QVERIFY(!next->geometry().intersects(result->findChild<QPushButton*>("resultBack")->geometry()));
+        }
+        QTest::mouseClick(next,Qt::LeftButton);
+        auto *second=root.playPage(); QVERIFY(second && second!=first); QCOMPARE(second->levelIndex,2);
+        QVERIFY(second->findChild<LevelOpening*>()); QVERIFY(!second->findChild<MyGameScene*>()->gameplayStarted());
+        QCOMPARE(ProgressStore(path).resumeLevel(),2); QVERIFY(ProgressStore(path).hasUnfinishedLevel());
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete); QVERIFY(first.isNull());
+        root.close();
+        PlayScene last(10,nullptr,false); last.show(); last.gameWin();
+        QVERIFY(!last.findChild<QPushButton*>("resultNext"));
+    }
     void finalWaveTextAllowsPlantingAndShoveling() {
         PlayScene play(4,nullptr,false); play.show();
         auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();

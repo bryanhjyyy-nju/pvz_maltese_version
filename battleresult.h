@@ -12,6 +12,7 @@ public:
     int rewardPlant() const { return won && level<8 ? level : -1; }
 signals:
     void returnRequested();
+    void nextRequested();
 protected:
     void paintEvent(QPaintEvent*) override;
     void resizeEvent(QResizeEvent*) override;
@@ -22,5 +23,5 @@ private:
     qreal progress=0;
     bool sounded=false;
     QVariantAnimation timeline;
-    class QPushButton *back=nullptr;
+    class QPushButton *back=nullptr,*next=nullptr;
 };

@@ -73,6 +73,7 @@ private:
     void stopShow();
 
 signals:
+    void nextLevelRequested(int level);
     void mainMenuRequested();
     void playSceneBack();
     void signalToCard();

@@ -395,6 +395,7 @@ void PlayScene::showResult(bool won) {
     pauseShortcut->setEnabled(false);
     result=new BattleResult(won,levelIndex,myGameScene->defeatPosition(),this);
     connect(result,&BattleResult::returnRequested,this,&PlayScene::playSceneBack);
+    connect(result,&BattleResult::nextRequested,this,[this] { emit nextLevelRequested(levelIndex+1); });
 }
 
 void PlayScene::setBattleHudVisible(bool visible) {
