@@ -1,7 +1,6 @@
 #ifndef PLAYSCENE_H
 #define PLAYSCENE_H
 
-#include <QMainWindow>
 #include "gamepage.h"
 #include <QGraphicsScene>
 #include <QGraphicsView>
@@ -55,6 +54,7 @@ private:
     QLabel *restHeartLabel = NULL; //显示剩余阳光
 
     QLabel *preImageLabel = NULL;
+    QPointF previewScenePosition;
     void startShow(int num);
     void stopShow();
 
@@ -64,7 +64,6 @@ signals:
     void signalToCard();
     void gameLose();
     void gameWin();
-    // void gamePause();
 
 private slots:
     void handleCardSelected(Card* card);

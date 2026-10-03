@@ -5,19 +5,11 @@
 #include <QPainter>
 #include "gameartwork.h"
 #include <QPushButton>
-#include <QDebug>
 #include <QMovie>
 #include <QLabel>
-#include <QTimer>
 
 MainScene::MainScene(QWidget *parent) : GamePage(parent)
 {
-    //设置窗口图标
-    setWindowIcon(QIcon(":/white/Image/dogIcon.jpg"));
-
-    //设置窗口标题
-    setWindowTitle("小白大战小金毛");
-
     //添加开始按钮
     buildStartBtn();
 

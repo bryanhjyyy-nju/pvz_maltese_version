@@ -6,7 +6,6 @@
 #include <QShortcut>
 #include "gamecatalog.h"
 #include <QPainter>
-#include "mypushbutton.h"
 #include <QTimer>
 #include <QLabel>
 #include "card.h"
@@ -28,20 +27,6 @@ PlayScene::PlayScene(int levelNum,QWidget *parent) :
     Card::setGameState(GameState::Normal);
     Card::setSelectedWhite("");
 
-    //设置标题
-    QString titleStr = QString(" 第 %1 关").arg(levelNum);
-
-    //初始化游戏场景
-    //设置固定大小
-
-    //设置窗口图标
-    setWindowIcon(QIcon(":/white/Image/dogIcon.jpg"));
-
-    //设置窗口标题
-    setWindowTitle("PvZ_Demo" + titleStr);
-
-    //返回按钮
-    //之后会替换成暂停按钮
     buildBackBtn();
     buildPauseBtn();
 
@@ -62,8 +47,7 @@ PlayScene::PlayScene(int levelNum,QWidget *parent) :
     preImageLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
 
 
-    //加载植物
-    // 设置主窗口
+    // The view fills the page; overlays share its logical canvas transform.
     myGraphicsView->setProperty("manualScale",true);
     myGraphicsView->setGeometry(rect());
     myGraphicsView->lower();
@@ -85,7 +69,6 @@ PlayScene::PlayScene(int levelNum,QWidget *parent) :
     //接收游戏胜利失败暂停信号
     connect(myGameScene, &MyGameScene::gameLose, this, &PlayScene::gameLose);
     connect(myGameScene, &MyGameScene::gameWin, this, &PlayScene::gameWin);
-    // connect(myGameScene, &MyGameScene::gamePause, this, &PlayScene::gamePause);
 
 
 
@@ -116,7 +99,7 @@ PlayScene::PlayScene(int levelNum,QWidget *parent) :
     //使得鼠标能够穿透restHeartLabel
     restHeartLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
 
-    //Card类爱心初始化为50
+    // Starting resources come from the selected level's configuration.
     Card::setCurRestHeart(myGameScene->getRestHeart());
 
     //种植以后剩余爱心显示减少
@@ -142,6 +125,7 @@ PlayScene::PlayScene(int levelNum,QWidget *parent) :
     });
 
     connect(myGameScene, &MyGameScene::mouseMovedTo, this, [=](QPointF mousePos){
+        previewScenePosition=mousePos;
         const auto point=myGraphicsView->viewport()->mapTo(this,myGraphicsView->mapFromScene(mousePos));
         preImageLabel->move(point-QPoint(preImageLabel->width()/2,preImageLabel->height()/2));
         preImageLabel->setVisible(true);
@@ -282,21 +266,12 @@ void PlayScene::startShow(int num){
     pix = pix.scaled(size,size,Qt::KeepAspectRatio,Qt::SmoothTransformation);
     preImageLabel->setFixedSize(size,size);
     preImageLabel->setPixmap(pix);
-    // preImageLabel->move(100 - preImageLabel->width() / 2, 100 - preImageLabel->height() / 2);
-    // preImageLabel->setVisible(true);
 }
 
 void PlayScene::stopShow(){
     preImageLabel->setVisible(false);
     myGraphicsView->setMouseTracking(false);
 }
-
-// void PlayScene::mouseMoveEvent(QMouseEvent *event){
-//     if(imageFollowing){
-//         preImageLabel->move(event->pos().x(), event->pos().y());
-//     }
-//     QMainWindow::mouseMoveEvent(event);
-// }
 
 void PlayScene::gamePaused() {
     if(paused || finished) return;
@@ -322,6 +297,7 @@ void PlayScene::gameContinued() {
 }
 
 void PlayScene::finishGame() {
+    if(finished) return;
     if(pauseMenu) pauseMenu->hide();
     gamePaused();
     finished = true;
@@ -406,6 +382,7 @@ void PlayScene::showAudioSettings() {
 void PlayScene::shutdown() {
     gamePaused();
     finished=true;
+    myGameScene->disconnect(this);
     // Also stop activity created after the initial pause (e.g. deferred effects).
     pausedActivity.pause(this);
     if(pauseShortcut) pauseShortcut->setEnabled(false);
@@ -418,6 +395,11 @@ void PlayScene::fitBattlefield() {
     myGraphicsView->resetTransform();
     myGraphicsView->scale(canvasScale(),canvasScale());
     myGraphicsView->centerOn(myGameScene->sceneRect().center());
+    if(preImageLabel && Card::currentState()==GameState::PrePlace) {
+        startShow(myGameScene->getChosenNum());
+        const auto point=myGraphicsView->viewport()->mapTo(this,myGraphicsView->mapFromScene(previewScenePosition));
+        preImageLabel->move(point-QPoint(preImageLabel->width()/2,preImageLabel->height()/2));
+    }
 }
 
 bool PlayScene::handleGameKey(QKeyEvent *event) {

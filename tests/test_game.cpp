@@ -25,6 +25,7 @@
 #include "combateffect.h"
 #include "gameartwork.h"
 #include <QRandomGenerator>
+#include <QFontInfo>
 
 class GameTests : public QObject {
     Q_OBJECT
@@ -699,6 +700,40 @@ private slots:
         root.resize(GameWindow::logicalSize()); QTest::qWait(25);
         root.setFullScreenEnabled(true); QTest::qWait(50);
         if(!folder.isEmpty()) QVERIFY(root.grab().save(folder+"/levels-fullscreen.png"));
+    }
+    void returningStopsOldBattleAndResizingKeepsPreviewAligned() {
+        QTemporaryDir dir;
+        GameWindow root(nullptr,dir.filePath("progress.json"));
+        root.show(); root.startLevel(8); QTest::qWait(40);
+        QPointer<PlayScene> old=root.playPage();
+        auto *view=old->findChild<QGraphicsView*>();
+        QSignalSpy moves(old->findChild<MyGameScene*>(),&MyGameScene::mouseMovedTo);
+        QTest::mouseClick(old->findChildren<Card*>()[1],Qt::LeftButton);
+        const QPointF scenePoint(440,490);
+        auto point=view->mapFromScene(scenePoint);
+        QMouseEvent movement(QEvent::MouseMove,QPointF(point),Qt::NoButton,Qt::NoButton,Qt::NoModifier);
+        QApplication::sendEvent(view->viewport(),&movement);
+        auto *preview=old->findChild<QLabel*>("plantPreview");
+        QVERIFY(preview->isVisible());
+        root.resize(1920,1080); QTest::qWait(30);
+        QCOMPARE(preview->width(),qRound(GameCatalog::plants()[1].iconSize*2*old->canvasScale()));
+        // The platform may send a cursor move after resizing. The preview
+        // follows the most recent scene position in either case.
+        point=view->mapFromScene(moves.last().first().toPointF());
+        QVERIFY(QLineF(preview->geometry().center(),view->viewport()->mapTo(old,point)).length()<2);
+        old->playSceneBack();
+        QVERIFY(!root.playPage()); QVERIFY(root.levelPage()->isVisible());
+        for(auto *timer : old->findChildren<QTimer*>()) QVERIFY(!timer->isActive());
+        root.startLevel(3);
+        auto *current=root.playPage();
+        QVERIFY(current); QCOMPARE(current->levelIndex,3);
+        old->gameWin(); old->playSceneBack(); old->mainMenuRequested();
+        QCOMPARE(root.playPage(),current);
+        QCOMPARE(Card::currentState(),GameState::Normal);
+        QCOMPARE(ProgressStore(dir.filePath("progress.json")).resumeLevel(),3);
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        QVERIFY(old.isNull());
+        QCOMPARE(root.currentPage(),static_cast<GamePage*>(current));
     }
     void closeExitsApplication_data() {
         QTest::addColumn<int>("page");

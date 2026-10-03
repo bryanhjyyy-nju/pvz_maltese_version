@@ -2,22 +2,14 @@
 #include "chooselevelscene.h"
 #include "almanacdialog.h"
 #include "gameui.h"
-#include <QMessageBox>
 #include <QPainter>
-#include "mypushbutton.h"
+#include <QPushButton>
 #include <QDebug>
-#include <QTimer>
 #include <QLabel>
 #include "progressstore.h"
 
 ChooseLevelScene::ChooseLevelScene(QWidget *parent) : GamePage(parent)
 {
-
-    //设置窗口图标
-    setWindowIcon(QIcon(":/white/Image/dogIcon.jpg"));
-
-    //设置窗口标题
-    setWindowTitle("PvZ_Demo");
 
     //返回按钮
     buildBackBtn();
