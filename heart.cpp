@@ -9,7 +9,7 @@
 
 QPointF Heart::curMousePos = QPointF(0, 0);
 
-Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCurve::Type type, QObject *parent):QObject(parent), memEndPos(endPos)
+Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCurve::Type type, QObject *parent,bool tutorial):QObject(parent), memEndPos(endPos)
 {
     //设置阳光图片
     QPixmap pix;
@@ -56,7 +56,7 @@ Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCu
         deleteLater();
     });
 
-    startFall();
+    if(!tutorial) startFall();
 
     connect(gameScene,&MyGameScene::sceneClicked, this,[=](){
         if (this->x() < curMousePos.x()

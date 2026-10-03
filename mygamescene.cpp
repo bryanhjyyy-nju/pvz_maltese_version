@@ -66,6 +66,7 @@ void MyGameScene::setupBoard() {
     backgroundPixmap = backgroundPixmap.scaled((900.0 / backgroundPixmap.height()) * backgroundPixmap.width(),900);
     QGraphicsPixmapItem *backGroundItem = addPixmap(backgroundPixmap);
     backGroundItem->setPos(0, 0);
+    backGroundItem->setZValue(-20);
     backGroundItem->setScale(1);
     grass=new Lawn(gameLevelNum);
     grass->setParent(this);
@@ -284,6 +285,7 @@ void MyGameScene::removeWhite(int r,int c){
     removeItem(dogMap[9 * r + c]);
     dogMap[9 * r + c]->deleteLater();
     dogMap[9 * r + c] = nullptr;
+    emit plantRemoved(r,c);
 }
 
 void MyGameScene::checkWinCondition()
@@ -355,7 +357,7 @@ WhiteDogs *MyGameScene::createPlant(int row, int col, const QPointF& center) {
     }
 }
 
-void MyGameScene::placePlant(int row, int col) {
+void MyGameScene::placePlant(int row, int col,bool charge) {
     QPointF centerLoc = mapGrid->cellCenter(col,row);
     WhiteDogs *myDog = createPlant(row,col,centerLoc);
     if(!myDog) return;
@@ -372,15 +374,28 @@ void MyGameScene::placePlant(int row, int col) {
 
     connect(myDog,&WhiteDogs::pleaseRemoveMe, this, &MyGameScene::removeWhite);
 
-    cutHeart(myDog->HeartCost());
+    if(charge) cutHeart(myDog->HeartCost());
 
     Card::setGameState(GameState::Normal);
 
-    AudioManager::instance().play("plant");
-    new CombatEffect(this,centerLoc,CombatEffect::Plant);
-    emit plantFinished(); //发送种植完成信号
+    if(charge) {
+        AudioManager::instance().play("plant");
+        new CombatEffect(this,centerLoc,CombatEffect::Plant);
+        emit plantFinished();
+    } else myDog->setObjectName("shovelLessonPlant");
 
     if(chosenNum == 3){ myDog->startMoving(); }
+}
+
+void MyGameScene::addTutorialPlant(int row,int col) {
+    if(started || row<1 || row>3 || col<0 || col>=9 || dogMap[row*9+col]) return;
+    const int previous=chosenNum; chosenNum=0;
+    placePlant(row,col,false); chosenNum=previous;
+}
+void MyGameScene::generateTutorialHeart() {
+    if(started) return;
+    auto *heart=new Heart(QPointF(910,460),QPointF(910,460),this,QEasingCurve::Linear,nullptr,true);
+    heart->setObjectName("tutorialHeart"); addHeartItem(heart);
 }
 
 WhiteDogs *MyGameScene::plantAhead(int row, qreal x) const {

@@ -29,10 +29,18 @@
 #include "lawn.h"
 #include "levelopening.h"
 #include "battlebanner.h"
+#include "leveltutorial.h"
+#include "heart.h"
 
 class GameTests : public QObject {
     Q_OBJECT
     QTemporaryDir settingsDirectory;
+    void completeOpening(PlayScene *play) {
+        auto *timeline=play->findChild<LevelOpening*>()->findChild<QVariantAnimation*>("openingTimeline");
+        for(int stage=0;stage<4;++stage) timeline->setCurrentTime(timeline->duration());
+        auto *banner=play->findChild<BattleBanner*>()->findChild<QVariantAnimation*>("bannerAnimation");
+        banner->setCurrentTime(banner->duration());
+    }
 private slots:
     void initTestCase() {
         QApplication::setQuitOnLastWindowClosed(false);
@@ -883,6 +891,11 @@ private slots:
         impact->setCurrentTime(450);
         if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+QString("/ready-level%1.png").arg(level)));
         impact->setCurrentTime(impact->duration());
+        if(level<=2) {
+            QVERIFY(!scene->gameplayStarted());
+            QVERIFY(play->findChild<LevelTutorial*>()->isVisible());
+            return;
+        }
         QVERIFY(scene->gameplayStarted()); QCOMPARE(scene->wavesStarted(),0);
         QVERIFY(scene->findChild<QTimer*>("waveTimer")->isActive());
         QVERIFY(scene->findChild<QTimer*>("waveTimer")->remainingTime()>GameCatalog::level(level).initialDelayMs-100);
@@ -921,6 +934,82 @@ private slots:
         play.gameContinued();
         QTRY_VERIFY_WITH_TIMEOUT(scene->findChildren<YellowDogs*>().size()>before,2000);
         QMetaObject::invokeMethod(wave,"timeout"); QCOMPARE(warning.count(),1);
+    }
+    void firstLevelInteractiveTutorial() {
+        QTemporaryDir dir;
+        GameWindow root(nullptr,dir.filePath("progress.json")); root.show(); root.startLevel(1);
+        auto *play=root.playPage(); completeOpening(play); QTest::qWait(30);
+        auto *scene=play->findChild<MyGameScene*>(); auto *view=play->findChild<QGraphicsView*>();
+        auto *tutorial=play->findChild<LevelTutorial*>(); auto *card=play->findChild<Card*>();
+        QCOMPARE(tutorial->step(),LevelTutorial::Step::Plant); QVERIFY(!scene->gameplayStarted());
+        QCOMPARE(scene->getRestHeart(),100); QVERIFY(card->isEnabled());
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+"/tutorial-plant.png"));
+        QTest::mouseClick(card,Qt::LeftButton);
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,200)));
+        QVERIFY(scene->findChildren<WhiteDogs*>().isEmpty()); QCOMPARE(scene->getRestHeart(),100);
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,490)));
+        QCOMPARE(tutorial->step(),LevelTutorial::Step::Heart); QCOMPARE(scene->getRestHeart(),0);
+        QVERIFY(card->isCooling()); QVERIFY(!card->findChild<QTimer*>()->isActive());
+        auto *heart=scene->findChild<Heart*>("tutorialHeart"); QVERIFY(heart);
+        QVERIFY(!heart->findChild<QTimer*>()->isActive());
+        if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+"/tutorial-heart.png"));
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(heart->sceneBoundingRect().center()));
+        QTRY_COMPARE_WITH_TIMEOUT(tutorial->step(),LevelTutorial::Step::Controls,1200);
+        QCOMPARE(scene->getRestHeart(),25); QVERIFY(!scene->gameplayStarted());
+        auto *next=tutorial->findChild<QPushButton*>("finishTutorial"); QVERIFY(!next->isEnabled());
+        if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+"/tutorial-controls.png"));
+        view->setFocus(); QTest::qWait(30); QTest::keyClick(view,Qt::Key_Space); QTest::qWait(30);
+        auto *pause=play->findChild<PauseDialog*>(); QVERIFY(pause && pause->isVisible());
+        QTimer::singleShot(60,pause,[pause] { auto *dialog=pause->findChild<AlmanacDialog*>(); QVERIFY(dialog); dialog->reject(); });
+        QTest::mouseClick(pause->findChild<QPushButton*>("almanac"),Qt::LeftButton);
+        QVERIFY(next->isEnabled()); QVERIFY(!scene->gameplayStarted());
+        QTest::keyClick(pause,Qt::Key_Space);
+        QTest::mouseClick(next,Qt::LeftButton);
+        QVERIFY(scene->gameplayStarted()); QVERIFY(!tutorial->isVisible());
+        QCOMPARE(scene->findChildren<WhiteDogs*>().size(),1);
+        QCOMPARE(scene->wavesStarted(),0);
+        QVERIFY(scene->findChild<QTimer*>("waveTimer")->remainingTime()>14500);
+        QVERIFY(card->findChild<QTimer*>()->isActive());
+    }
+    void secondLevelRequiresThreeShovelRemovals() {
+        QTemporaryDir dir;
+        GameWindow root(nullptr,dir.filePath("progress.json")); root.show(); root.startLevel(2);
+        auto *play=root.playPage(); completeOpening(play); QTest::qWait(30);
+        auto *scene=play->findChild<MyGameScene*>(); auto *view=play->findChild<QGraphicsView*>();
+        auto *tutorial=play->findChild<LevelTutorial*>();
+        QCOMPARE(tutorial->step(),LevelTutorial::Step::Shovel); QCOMPARE(scene->getRestHeart(),50);
+        QCOMPARE(scene->findChildren<WhiteDogs*>().size(),3); QVERIFY(!scene->gameplayStarted());
+        for(auto *plant : scene->findChildren<WhiteDogs*>()) QVERIFY(scene->lawn()->zValue()<plant->zValue());
+        for(auto *timer : scene->findChildren<QTimer*>()) QVERIFY(!timer->isActive());
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+"/tutorial-shovel.png"));
+        root.setFullScreenEnabled(true); QTest::qWait(40);
+        QTest::keyClick(view,Qt::Key_Escape); QTest::qWait(40);
+        QCOMPARE(tutorial->step(),LevelTutorial::Step::Shovel);
+        for(int row=1;row<=3;++row) {
+            QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(1240,50)));
+            QCOMPARE(Card::currentState(),GameState::Shoveling);
+            QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(682,202+row*145)));
+            QCOMPARE(scene->getRestHeart(),50);
+            if(row<3) { QVERIFY(!scene->gameplayStarted()); QCOMPARE(tutorial->step(),LevelTutorial::Step::Shovel); }
+        }
+        QVERIFY(scene->gameplayStarted()); QCOMPARE(tutorial->step(),LevelTutorial::Step::Done);
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        QVERIFY(scene->findChildren<WhiteDogs*>().isEmpty());
+        QCOMPARE(scene->wavesStarted(),0); QCOMPARE(Card::currentState(),GameState::Normal);
+    }
+    void closingDuringOpeningAndTutorialStopsActivity() {
+        QTemporaryDir dir;
+        GameWindow root(nullptr,dir.filePath("progress.json")); root.show(); root.startLevel(2);
+        QPointer<PlayScene> old=root.playPage();
+        old->playSceneBack();
+        for(auto *animation : old->findChildren<QAbstractAnimation*>()) QVERIFY(animation->state()!=QAbstractAnimation::Running);
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete); QVERIFY(old.isNull());
+        root.startLevel(1); completeOpening(root.playPage());
+        root.close();
+        QVERIFY(!root.isVisible()); QVERIFY(!root.playPage()->findChild<LevelTutorial*>()->isVisible());
+        for(auto *timer : root.playPage()->findChildren<QTimer*>()) QVERIFY(!timer->isActive());
     }
     void enemyLimit() {
         MyGameScene scene(1);

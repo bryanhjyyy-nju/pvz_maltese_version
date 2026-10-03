@@ -4,7 +4,7 @@
 
 Lawn::Lawn(int number) : level(number),soil(1089,725) {
     setObjectName("lawn");
-    setZValue(1);
+    setZValue(-10);
     setAcceptedMouseButtons(Qt::NoButton);
     soil.fill(QColor("#b7a17c"));
     QPainter painter(&soil);

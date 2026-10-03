@@ -15,6 +15,7 @@
 #include <QKeyEvent>
 #include "levelopening.h"
 #include "battlebanner.h"
+#include "leveltutorial.h"
 
 PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening) :
     GamePage(parent),
@@ -109,6 +110,7 @@ PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening) :
         restHeartLabel->setText(QString::number(myGameScene->getRestHeart()));
         Card::setCurRestHeart(myGameScene->getRestHeart());
         myCards[myGameScene->getChosenNum()]->startCooldown();
+        if(openingActive) myCards[myGameScene->getChosenNum()]->gamePaused();
         emit signalToCard();
     });
 
@@ -144,7 +146,7 @@ PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening) :
         myGraphicsView->setSceneRect(0,0,2100,900);
         opening=new LevelOpening(levelIndex,myGameScene,banner,this);
         connect(opening,&LevelOpening::cameraMoved,this,[this](qreal offset) { cameraOffset=offset; fitBattlefield(); });
-        connect(opening,&LevelOpening::finished,this,&PlayScene::beginGameplay);
+        connect(opening,&LevelOpening::finished,this,&PlayScene::finishOpening);
         opening->start();
     }
 }
@@ -357,9 +359,10 @@ void PlayScene::buildPauseBtn() {
 }
 
 void PlayScene::togglePauseMenu() {
-    if(finished || openingActive) return;
+    if(finished || (openingActive && (!tutorial || tutorial->step()!=LevelTutorial::Step::Controls))) return;
     if(paused) { gameContinued(); return; }
     gamePaused();
+    if(tutorial) tutorial->notePauseUsed();
     AudioManager::instance().play("pause");
     if(!pauseMenu) {
         pauseMenu = new PauseDialog(this);
@@ -374,16 +377,17 @@ void PlayScene::togglePauseMenu() {
 }
 
 void PlayScene::showAlmanac() {
-    if(finished) return;
+    if(finished || (openingActive && !tutorial)) return;
     const bool wasPaused = paused;
     gamePaused();
     AlmanacDialog dialog(pauseMenu && pauseMenu->isVisible() ? static_cast<QWidget*>(pauseMenu) : this);
     dialog.exec();
+    if(tutorial) tutorial->noteAlmanacViewed();
     if(!wasPaused) gameContinued();
 }
 
 void PlayScene::showAudioSettings() {
-    if(finished) return;
+    if(finished || (openingActive && !tutorial)) return;
     const bool wasPaused = paused;
     gamePaused();
     AudioManager::instance().showSettings(pauseMenu && pauseMenu->isVisible() ? static_cast<QWidget*>(pauseMenu) : this);
@@ -393,6 +397,7 @@ void PlayScene::showAudioSettings() {
 void PlayScene::shutdown() {
     if(opening) opening->stop();
     if(banner) banner->stop();
+    if(tutorial) tutorial->hide();
     gamePaused();
     finished=true;
     myGameScene->disconnect(this);
@@ -409,6 +414,7 @@ void PlayScene::fitBattlefield() {
     myGraphicsView->scale(canvasScale(),canvasScale());
     myGraphicsView->centerOn(QPointF(825+cameraOffset,450));
     if(banner) banner->setGeometry(rect());
+    if(tutorial) tutorial->fitCanvas(canvasScale(),canvasOffset());
     if(preImageLabel && Card::currentState()==GameState::PrePlace) {
         startShow(myGameScene->getChosenNum());
         const auto point=myGraphicsView->viewport()->mapTo(this,myGraphicsView->mapFromScene(previewScenePosition));
@@ -430,11 +436,37 @@ void PlayScene::beginGameplay() {
     setBattleHudVisible(true); pauseShortcut->setEnabled(true);
     Card::setGameState(GameState::Normal);
     for(int i=0;i<myCards.size();++i) {
-        if(i!=1) myCards[i]->startCooldown();
+        if(myCards[i]->isCooling()) myCards[i]->gameContinued();
+        else if(i!=1) myCards[i]->startCooldown();
         else emit myCards[i]->cooldownFinished();
     }
     myGameScene->startGameplay();
     myGraphicsView->setFocus();
+}
+
+void PlayScene::finishOpening() {
+    if(finished) return;
+    if(levelIndex>2) { beginGameplay(); return; }
+    cameraOffset=0; myGraphicsView->setSceneRect(0,0,1650,900);
+    setBattleHudVisible(true);
+    tutorial=new LevelTutorial(levelIndex,myGameScene,this);
+    connect(tutorial,&LevelTutorial::stepChanged,this,[this](LevelTutorial::Step step) {
+        for(auto *card : myCards) card->setEnabled(false);
+        Card::setGameState(GameState::Normal);
+        const bool controls=step==LevelTutorial::Step::Controls;
+        pauseButton->setEnabled(controls); pauseShortcut->setEnabled(controls);
+        myGameScene->setInputMode(step==LevelTutorial::Step::Plant ? MyGameScene::InputMode::PlantPractice
+            : step==LevelTutorial::Step::Heart ? MyGameScene::InputMode::HeartPractice
+            : step==LevelTutorial::Step::Shovel ? MyGameScene::InputMode::ShovelPractice : MyGameScene::InputMode::Blocked);
+        restHeartLabel->setText(QString::number(myGameScene->getRestHeart()));
+        Card::setCurRestHeart(myGameScene->getRestHeart());
+        if(step==LevelTutorial::Step::Plant) emit myCards[0]->cooldownFinished();
+        fitBattlefield();
+    });
+    connect(tutorial,&LevelTutorial::finished,this,[this] {
+        pauseButton->setEnabled(true); beginGameplay();
+    });
+    tutorial->start(); fitBattlefield();
 }
 
 bool PlayScene::handleGameKey(QKeyEvent *event) {

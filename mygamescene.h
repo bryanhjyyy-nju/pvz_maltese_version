@@ -23,6 +23,8 @@ public:
     void startGameplay();
     bool gameplayStarted() const { return started; }
     void setInputMode(InputMode mode) { inputMode=mode; }
+    void addTutorialPlant(int row,int col);
+    void generateTutorialHeart();
 
     ~MyGameScene() override = default;
 
@@ -81,7 +83,7 @@ private:
     std::array<int,5> waveRowCounts{};
     QTimer *waveStaggerTimer = nullptr;
     WhiteDogs *createPlant(int row, int col, const QPointF& center);
-    void placePlant(int row, int col);
+    void placePlant(int row, int col,bool charge=true);
     void addHeartItem(class Heart *heart);
     void finishGame(bool won);
 
@@ -108,6 +110,7 @@ signals:
     void waveStarted(int wave, int total);
     void finalWaveApproaching();
     void plantFinished();
+    void plantRemoved(int row,int col);
     void heartCollected();
     void sceneClicked();
     void gameWin();

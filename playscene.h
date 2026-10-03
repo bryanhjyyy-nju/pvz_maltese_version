@@ -37,6 +37,8 @@ private:
     qreal cameraOffset=0;
     class LevelOpening *opening=nullptr;
     class BattleBanner *banner=nullptr;
+    class LevelTutorial *tutorial=nullptr;
+    void finishOpening();
     void beginGameplay();
     void setBattleHudVisible(bool visible);
     QPushButton *pauseButton = nullptr;

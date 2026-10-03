@@ -26,7 +26,7 @@ void BattleBanner::paintEvent(QPaintEvent*) {
     const qreal alpha=progress>.78 ? (1-progress)/.22 : 1;
     p.setOpacity(alpha);
     QRadialGradient flash(0,0,680); flash.setColorAt(0,QColor(255,229,128,190)); flash.setColorAt(1,Qt::transparent);
-    p.fillRect(QRectF(-780,-210,1560,420),flash);
+    p.fillRect(QRectF(-825,-450,1650,900),flash);
     const qreal impact=progress<.2 ? 1+.35*qPow(1-progress/.2,2) : 1;
     p.translate(progress<.2 ? qSin(progress*180)*6 : 0,0); p.scale(impact,impact);
     QFont font("华文琥珀"); font.setPixelSize(68); font.setWeight(QFont::Black);
