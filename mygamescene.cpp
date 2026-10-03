@@ -161,7 +161,7 @@ void MyGameScene::generateSkyHeart(){
 
     QPointF endPos(startX, 400 + QRandomGenerator::global()->bounded(300));
 
-    addHeartItem(new Heart(startPos, endPos, this));
+    addHeartItem(new Heart(startPos,endPos,this,QEasingCurve::Linear,nullptr,false,GameCatalog::SkyHeartFallDurationMs));
 }
 
 void MyGameScene::setChosenNum(int cardNum){

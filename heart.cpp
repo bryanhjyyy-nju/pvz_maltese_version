@@ -9,7 +9,7 @@
 
 QPointF Heart::curMousePos = QPointF(0, 0);
 
-Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCurve::Type type, QObject *parent,bool tutorial):QObject(parent), memEndPos(endPos)
+Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCurve::Type type, QObject *parent,bool tutorial,int fallDurationMs):QObject(parent), memEndPos(endPos)
 {
     //设置阳光图片
     QPixmap pix;
@@ -24,13 +24,15 @@ Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCu
 
     //创建下落动画
     memFallAnim = new QPropertyAnimation(this, "pos", this);
-    memFallAnim->setDuration(3000);
+    memFallAnim->setObjectName("heartFallAnimation");
+    memFallAnim->setDuration(qMax(1,fallDurationMs));
     memFallAnim->setStartValue(startPos);
     memFallAnim->setEndValue(endPos);
     memFallAnim->setEasingCurve(type);
 
     //创建收集动画
     memCollectAnim = new QPropertyAnimation(this, "pos", this);
+    memCollectAnim->setObjectName("heartCollectAnimation");
     memCollectAnim->setDuration(800);
     memCollectAnim->setEasingCurve(QEasingCurve::InQuad);
 
@@ -65,6 +67,8 @@ Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCu
             && this->y() + this->boundingRect().height() > curMousePos.y()
             && isCollectable){
             memDisappearTimer->stop();
+            // Collection owns the position immediately, even during a slow fall.
+            memFallAnim->stop();
             isCollectable = false;
             //收集动画
             memCollectAnim->setStartValue(pos());

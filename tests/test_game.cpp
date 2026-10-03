@@ -47,6 +47,27 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void skyHeartsFallSlowlyAndRemainCollectable() {
+        PlayScene play(3,nullptr,false); play.show();
+        auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
+        scene->generateSkyHeart(); auto *sky=scene->findChild<Heart*>(); QVERIFY(sky);
+        auto *fall=sky->findChild<QPropertyAnimation*>("heartFallAnimation");
+        QCOMPARE(fall->duration(),6000);
+        fall->setCurrentTime(3000);
+        const auto start=fall->startValue().toPointF(),end=fall->endValue().toPointF();
+        QVERIFY(QLineF(sky->pos(),(start+end)/2).length()<1);
+        play.gamePaused(); const auto position=sky->pos(); QTest::qWait(80); QCOMPARE(sky->pos(),position);
+        QCOMPARE(fall->state(),QAbstractAnimation::Paused); play.gameContinued();
+        const int hearts=scene->getRestHeart();
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(sky->sceneBoundingRect().center()));
+        QCOMPARE(fall->state(),QAbstractAnimation::Stopped);
+        auto *collect=sky->findChild<QPropertyAnimation*>("heartCollectAnimation");
+        QCOMPARE(collect->state(),QAbstractAnimation::Running); QCOMPARE(collect->duration(),800);
+        QTRY_COMPARE_WITH_TIMEOUT(scene->getRestHeart(),hearts+GameCatalog::HeartValue,1200);
+        scene->generateWhiteHeart(QPointF(700,450));
+        auto *plantHeart=scene->findChild<Heart*>(); QVERIFY(plantHeart);
+        QCOMPARE(plantHeart->findChild<QPropertyAnimation*>("heartFallAnimation")->duration(),3000);
+    }
     void victoryNextLevelStartsUnlockedBattle() {
         QTemporaryDir dir; const auto path=dir.filePath("progress.json");
         GameWindow root(nullptr,path); root.show(); root.startLevel(1);
