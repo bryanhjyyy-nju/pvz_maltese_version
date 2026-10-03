@@ -16,6 +16,8 @@ public:
     void showLevels();
     void startLevel(int level);
     void continueGame();
+    void startEndless();
+    void showSaveSettings();
     void setFullScreenEnabled(bool enabled);
     void toggleFullScreen();
     static QSize logicalSize() { return QSize(1650,900); }
@@ -39,4 +41,6 @@ private:
     void connectPage(GamePage *page);
     void discardBattle();
     void updateDisplayState();
+    void refreshHome();
+    void connectBattle(bool endless);
 };

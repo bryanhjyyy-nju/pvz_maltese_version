@@ -17,10 +17,11 @@
 #include "battlebanner.h"
 #include "leveltutorial.h"
 
-PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening) :
+PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening,bool endless,int firstWave) :
     GamePage(parent),
     levelIndex(levelNum), //维护传进来的关卡号, 加载地图
-    myGameScene(new MyGameScene(levelNum,this,withOpening)),
+    endlessMode(endless),
+    myGameScene(new MyGameScene(levelNum,this,withOpening,endless,firstWave)),
     myGraphicsView(new QGraphicsView(myGameScene, this))
 {
 
@@ -30,7 +31,7 @@ PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening) :
     Card::setGameState(GameState::Normal);
     Card::setSelectedWhite("");
 
-    buildBackBtn();
+    connect(myGameScene,&MyGameScene::pleaseRemovePreImage,this,&PlayScene::stopShow);
     buildPauseBtn();
 
     //设置关卡数文字
@@ -152,22 +153,13 @@ PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening) :
 }
 
 
-void PlayScene::buildBackBtn() {
-    auto *back=new QPushButton("返回选关",this);
-    GameUi::styleButton(back,"gold");
-    back->setObjectName("backToLevels");
-    back->setGeometry(1440,25,180,50);
-    connect(back,&QPushButton::clicked,this,&PlayScene::playSceneBack);
-    connect(myGameScene,&MyGameScene::pleaseRemovePreImage,this,&PlayScene::stopShow);
-}
-
 void PlayScene::setLevelText(){
     //定义字体
     QFont font;
     font.setFamily("华文新魏");
     font.setBold(true);
     font.setPointSize(20);
-    QString levStr = QString("Level: %1").arg(this->levelIndex);
+    QString levStr = endlessMode ? "无尽模式" : QString("第 %1 关").arg(levelIndex);
 
     //显示当前关卡数并设置字体
     QLabel * levNumLbl = new QLabel;
@@ -320,6 +312,7 @@ void PlayScene::finishGame() {
 
 void PlayScene::buildPauseBtn() {
     pauseButton = new QPushButton("暂停 [空格]",this);
+    pauseButton->setObjectName("pauseBattle");
     GameUi::styleButton(pauseButton);
     pauseButton->setFocusPolicy(Qt::NoFocus);
     pauseButton->setGeometry(20,220,170,44);
@@ -340,20 +333,20 @@ void PlayScene::buildPauseBtn() {
     sound->setGeometry(20,340,170,44);
     connect(sound,&QPushButton::clicked,this,&PlayScene::showAudioSettings);
     auto *help = new QLabel(this);
-    auto updateHelp = [help](bool plants,bool enemies) {
-        help->setText(QString("点击铲子 / R：拿起或放下\n右键：取消选择\nEsc：退出全屏\n空格：暂停 / 继续\nH：植物血量 %1\nJ：金毛血量 %2\nF11：全屏 / 窗口")
+    auto updateHelp = [help,this](bool plants,bool enemies) {
+        help->setText((levelIndex==1 ? "铲子：第二关解锁\n" : "点击铲子 / R：拿起或放下\n")+QString("右键：取消选择\nEsc：退出全屏\n空格：暂停 / 继续\nH：植物血量 %1\nJ：金毛血量 %2\nF11：全屏 / 窗口")
             .arg(plants ? "开" : "关").arg(enemies ? "开" : "关"));
     };
     updateHelp(false,false);
     help->setGeometry(20,405,250,235);
     help->setStyleSheet("color:#26392e; font-size:16px; background:rgba(255,253,245,225); border-radius:10px; padding:12px;");
     const auto& level = GameCatalog::level(levelIndex);
-    auto *wave = new QLabel(QString("准备防守！\n共 %1 波进攻").arg(level.waves),this);
+    auto *wave = new QLabel(endlessMode ? "无尽模式\n准备防守！" : QString("准备防守！\n共 %1 波进攻").arg(level.waves),this);
     wave->setObjectName("waveStatus");
     wave->setGeometry(20,655,250,85);
     wave->setStyleSheet("background:#ffe3a0; border:3px solid #8d6435; border-radius:16px; padding:12px; color:#65452d; font: bold 18px 'Microsoft YaHei';");
     connect(myGameScene,&MyGameScene::waveStarted,this,[wave](int current,int total) {
-        wave->setText(QString("第 %1 / %2 波\n守住你的草坪！").arg(current).arg(total));
+        wave->setText(total==0 ? QString("无尽模式 · 第 %1 波\n守住你的草坪！").arg(current) : QString("第 %1 / %2 波\n守住你的草坪！").arg(current).arg(total));
     });
     connect(myGameScene,&MyGameScene::healthVisibilityChanged,this,updateHelp);
 }
@@ -361,9 +354,14 @@ void PlayScene::buildPauseBtn() {
 void PlayScene::togglePauseMenu() {
     if(finished || (openingActive && (!tutorial || tutorial->step()!=LevelTutorial::Step::Controls))) return;
     if(paused) { gameContinued(); return; }
-    gamePaused();
     if(tutorial) tutorial->notePauseUsed();
     AudioManager::instance().play("pause");
+    showPauseMenu();
+}
+
+void PlayScene::showPauseMenu() {
+    if(finished) return;
+    gamePaused();
     if(!pauseMenu) {
         pauseMenu = new PauseDialog(this);
         connect(pauseMenu,&PauseDialog::resumeRequested,this,&PlayScene::gameContinued);
@@ -373,6 +371,11 @@ void PlayScene::togglePauseMenu() {
     }
     pauseMenu->move(mapToGlobal(rect().center()) - pauseMenu->rect().center());
     pauseMenu->show();
+    pauseShortcut->setEnabled(false);
+}
+void PlayScene::suspendToMenu() {
+    gamePaused();
+    for(auto *dialog : findChildren<QDialog*>()) dialog->hide();
     pauseShortcut->setEnabled(false);
 }
 

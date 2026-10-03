@@ -58,7 +58,9 @@ void GamePage::initializePage(const QRect& buttonRect) {
         saved.widget=widget; saved.geometry=widget->geometry();
         saved.minimum=widget->minimumSize(); saved.maximum=widget->maximumSize();
         saved.font=widget->font(); saved.style=widget->styleSheet();
-        if(auto *button=qobject_cast<QAbstractButton*>(widget)) saved.iconSize=button->iconSize();
+        if(auto *button=qobject_cast<QAbstractButton*>(widget)) {
+            saved.iconSize=button->iconSize(); saved.icon=button->icon().pixmap(saved.iconSize);
+        }
         if(auto *label=qobject_cast<QLabel*>(widget))
             if(!label->movie()) saved.pixmap=label->pixmap(Qt::ReturnByValue);
         overlays.append(saved);
@@ -88,7 +90,10 @@ void GamePage::layoutOverlays() {
         widget->setMinimumSize(scaledSize(saved.minimum,scale));
         widget->setMaximumSize(scaledSize(saved.maximum,scale));
         widget->setGeometry(QRect(canvasPoint(saved.geometry.topLeft()),scaledSize(saved.geometry.size(),scale)));
-        if(auto *button=qobject_cast<QAbstractButton*>(widget)) button->setIconSize(scaledSize(saved.iconSize,scale));
+        if(auto *button=qobject_cast<QAbstractButton*>(widget)) {
+            button->setIconSize(scaledSize(saved.iconSize,scale));
+            if(!saved.icon.isNull()) button->setIcon(QIcon(saved.icon.scaled(scaledSize(saved.iconSize,scale),Qt::KeepAspectRatio,Qt::SmoothTransformation)));
+        }
         if(auto *label=qobject_cast<QLabel*>(widget))
             if(!saved.pixmap.isNull()) label->setPixmap(saved.pixmap.scaled(scaledSize(saved.pixmap.size(),scale),Qt::KeepAspectRatio,Qt::SmoothTransformation));
     }

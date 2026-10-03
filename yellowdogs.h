@@ -13,7 +13,7 @@ class YellowDogs : public MyItem
     Q_PROPERTY(qreal biteProgress READ biteProgress WRITE setBiteProgress)
     Q_PROPERTY(qreal deathProgress READ deathProgress WRITE setDeathProgress)
 public:
-    explicit YellowDogs(int row, MyGameScene *myScene,int typeNum);
+    explicit YellowDogs(int row, MyGameScene *myScene,int typeNum,int difficultyWave=1);
     bool checkCollision();
     void startAttacking(WhiteDogs *tar);
     void getAttacked(int atk);

@@ -42,17 +42,11 @@ void LevelOpening::enter(Stage next) {
 }
 void LevelOpening::buildPreview() {
     const auto types=WavePlanner::previewTypes(level,*QRandomGenerator::global());
-    auto *road=scene->addRect(QRectF(1570,185,490,650),QPen(QColor("#8e704d"),6),QBrush(QColor("#ddd1b4")));
-    road->setZValue(2); previewItems.append(road);
-    QStringList counts;
-    for(int type=0;type<=GameCatalog::level(level).maxEnemyType;++type)
-        counts.append(QString("%1 × %2").arg(GameCatalog::enemies()[type].name).arg(types.count(type)));
-    auto *label=scene->addText("本关的小金毛\n"+counts.join("  "),QFont("Microsoft YaHei",15,QFont::Bold));
-    label->setTextWidth(465); label->setDefaultTextColor(QColor("#65452d")); label->setPos(1582,195); label->setZValue(3); previewItems.append(label);
     for(int i=0;i<types.size();++i) {
         auto *image=scene->addPixmap(QPixmap()); image->setZValue(3);
         image->setData(0,QString("enemyPreview")); image->setData(1,types[i]);
-        image->setPos(1610+(i%3)*140,310+(i/3)*125);
+        image->setPos(1605+(i%3)*140+QRandomGenerator::global()->bounded(-20,21),
+                      235+(i/3)*145+QRandomGenerator::global()->bounded(-18,19));
         auto *movie=new QMovie(GameCatalog::enemies()[types[i]].image,QByteArray(),this);
         connect(movie,&QMovie::frameChanged,this,[movie,image] {
             image->setPixmap(movie->currentPixmap().scaled(115,115,Qt::KeepAspectRatio,Qt::SmoothTransformation));

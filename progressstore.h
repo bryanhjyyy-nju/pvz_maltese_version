@@ -8,6 +8,19 @@ public:
     bool load();
     bool startLevel(int level);
     bool completeLevel(int level);
+    bool finishAttempt();
+    bool reset();
+    bool unlockAll();
+    bool startEndless();
+    bool recordEndlessWave(int wave);
+    bool finishEndless();
+    int unlockedLevel() const;
+    bool isUnlocked(int level) const;
+    bool hasUnfinishedLevel() const { return unfinished; }
+    bool endlessUnlocked() const { return m_highestCompleted==10; }
+    bool hasEndlessRun() const { return endlessActive; }
+    int endlessBest() const { return bestWave; }
+    int endlessCheckpoint() const { return checkpoint; }
     int resumeLevel() const { return m_resumeLevel; }
     int highestCompleted() const { return m_highestCompleted; }
     bool hasProgress() const { return m_hasProgress; }
@@ -18,4 +31,7 @@ private:
     QString m_path, m_error;
     int m_resumeLevel = 1, m_highestCompleted = 0;
     bool m_hasProgress = false;
+    bool unfinished=false,endlessActive=false;
+    int bestWave=0,checkpoint=1;
+    bool writeState(int resume,int completed,bool active,bool endless,int best,int wave);
 };

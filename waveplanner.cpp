@@ -53,3 +53,21 @@ int WavePlanner::enemyCount(const Plan& plan) {
     for(const auto& wave : plan) count+=wave.size();
     return count;
 }
+QVector<int> WavePlanner::endlessWave(int wave,QRandomGenerator& random) {
+    // Two more threat points each wave; all enemy types are eligible.
+    int remaining=4+2*qMax(1,wave);
+    QVector<int> result;
+    while(remaining>0) {
+        double total=0;
+        for(int type=0;type<3;++type) if(GameCatalog::enemies()[type].weight<=remaining) total+=enemyLikelihood(type);
+        double pick=random.generateDouble()*total;
+        int selected=0;
+        for(int type=0;type<3;++type) {
+            if(GameCatalog::enemies()[type].weight>remaining) continue;
+            pick-=enemyLikelihood(type);
+            if(pick<0) { selected=type; break; }
+        }
+        result.append(selected); remaining-=GameCatalog::enemies()[selected].weight;
+    }
+    return result;
+}

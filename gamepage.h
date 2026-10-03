@@ -38,6 +38,7 @@ private:
         QFont font;
         QString style;
         QPixmap pixmap;
+        QPixmap icon;
     };
     QVector<Overlay> overlays;
     QPushButton *screenButton=nullptr;

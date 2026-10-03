@@ -35,6 +35,10 @@
 class GameTests : public QObject {
     Q_OBJECT
     QTemporaryDir settingsDirectory;
+    QString unlockedPath(const QTemporaryDir& dir) {
+        const auto path=dir.filePath("progress.json");
+        ProgressStore store(path); store.unlockAll(); return path;
+    }
     void completeOpening(PlayScene *play) {
         auto *timeline=play->findChild<LevelOpening*>()->findChild<QVariantAnimation*>("openingTimeline");
         for(int stage=0;stage<4;++stage) timeline->setCurrentTime(timeline->duration());
@@ -42,6 +46,69 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void progressionAndSaveManagement() {
+        QTemporaryDir dir; const auto path=dir.filePath("fresh.json");
+        GameWindow root(nullptr,path,false); root.show(); root.showLevels();
+        for(int level=1;level<=10;++level)
+            QCOMPARE(root.levelPage()->findChild<QPushButton*>(QString("level%1").arg(level))->isVisible(),level==1);
+        root.startLevel(2); QVERIFY(!root.playPage());
+        for(int level=1;level<=10;++level) {
+            root.startLevel(level); QVERIFY(root.playPage());
+            root.playPage()->gameWin(); root.playPage()->playSceneBack();
+            QCOMPARE(ProgressStore(path).unlockedLevel(),qMin(10,level+1));
+        }
+        root.showMenu(); auto *endless=root.homePage()->findChild<QPushButton*>("endlessGame");
+        QVERIFY(endless->isVisible()); QCOMPARE(endless->text(),QString("开始无尽模式"));
+        QTimer::singleShot(30,&root,[&root] {
+            auto *dialog=root.findChild<QDialog*>("saveSettingsDialog"); QVERIFY(dialog);
+            QTest::mouseClick(dialog->findChild<QPushButton*>("resetSave"),Qt::LeftButton);
+        });
+        root.showSaveSettings(); QCOMPARE(ProgressStore(path).unlockedLevel(),1);
+        QVERIFY(!endless->isVisible());
+        QTimer::singleShot(30,&root,[&root] {
+            auto *dialog=root.findChild<QDialog*>("saveSettingsDialog"); QVERIFY(dialog);
+            QTest::mouseClick(dialog->findChild<QPushButton*>("unlockSave"),Qt::LeftButton);
+        });
+        root.showSaveSettings(); QCOMPARE(ProgressStore(path).unlockedLevel(),10);
+        QVERIFY(endless->isVisible());
+        for(const auto& name : {"startGame","resumeGame","quitGame","menuAlmanac"}) {
+            auto *button=root.homePage()->findChild<QPushButton*>(name); QVERIFY(button);
+            QCOMPARE(button->size(),QSize(430,84)); QCOMPARE(button->property("color").toString(),QString("sunshine"));
+        }
+    }
+    void endlessWavesAndResume() {
+        QRandomGenerator random(7);
+        for(int wave=1;wave<=20;++wave) {
+            int weight=0; for(int type : WavePlanner::endlessWave(wave,random)) weight+=GameCatalog::enemies()[type].weight;
+            QCOMPARE(weight,4+2*wave);
+        }
+        QTemporaryDir dir; const auto path=unlockedPath(dir);
+        GameWindow root(nullptr,path,false); root.show(); root.startEndless();
+        auto *play=root.playPage(); QVERIFY(play && play->endlessMode);
+        auto *scene=play->findChild<MyGameScene*>();
+        auto *waveTimer=scene->findChild<QTimer*>("waveTimer"); auto *stagger=scene->findChild<QTimer*>("waveStaggerTimer");
+        QSignalSpy win(scene,&MyGameScene::gameWin), final(scene,&MyGameScene::finalWaveApproaching);
+        for(int wave=1;wave<=3;++wave) {
+            QMetaObject::invokeMethod(waveTimer,"timeout");
+            while(stagger->isActive()) QMetaObject::invokeMethod(stagger,"timeout");
+            QCOMPARE(scene->wavesStarted(),wave); QVERIFY(!waveTimer->isActive());
+            for(auto *enemy : scene->findChildren<YellowDogs*>()) {
+                QVERIFY(enemy->getHp()>=GameCatalog::enemies()[enemy->typeIndex()].health);
+                enemy->getAttacked(100000);
+            }
+            QTRY_VERIFY_WITH_TIMEOUT(waveTimer->isActive(),1200);
+            QCOMPARE(ProgressStore(path).endlessBest(),wave);
+        }
+        QCOMPARE(win.count(),0); QCOMPARE(final.count(),0);
+        play->showPauseMenu(); play->mainMenuRequested();
+        QCOMPARE(root.homePage()->findChild<QPushButton*>("endlessGame")->text(),QString("继续无尽模式"));
+        QVERIFY(!root.homePage()->findChild<QPushButton*>("resumeGame")->isEnabled());
+        root.startEndless(); QCOMPARE(root.playPage(),play); QVERIFY(play->isPaused());
+        QVERIFY(play->findChild<PauseDialog*>()->isVisible());
+        play->gameLose(); play->playSceneBack(); root.showMenu();
+        QCOMPARE(root.homePage()->findChild<QPushButton*>("endlessGame")->text(),QString("开始无尽模式"));
+        QCOMPARE(ProgressStore(path).endlessBest(),3); QVERIFY(!ProgressStore(path).hasEndlessRun());
+    }
     void initTestCase() {
         QApplication::setQuitOnLastWindowClosed(false);
         QCoreApplication::setOrganizationName("PvZTests");
@@ -106,7 +173,7 @@ private slots:
     }
     void spacePauseMenu() {
         QTemporaryDir dir;
-        GameWindow picker(nullptr,dir.filePath("progress.json"),false);
+        GameWindow picker(nullptr,unlockedPath(dir),false);
         picker.show();
         picker.startLevel(4);
         auto *view = picker.playPage()->findChild<QGraphicsView*>();
@@ -131,10 +198,13 @@ private slots:
         QTest::keyClick(menu,Qt::Key_Space);
         QVERIFY(!menu->isVisible());
         QCOMPARE(Card::currentState(),GameState::Normal);
-        QTest::keyClick(view,Qt::Key_Space);
+        view->setFocus(); QTest::qWait(30);
+        QTest::mouseClick(picker.playPage()->findChild<QPushButton*>("pauseBattle"),Qt::LeftButton);
+        QVERIFY(menu->isVisible()); QVERIFY(picker.playPage()->isPaused());
         QTest::mouseClick(menu->findChild<QPushButton*>("mainMenu"),Qt::LeftButton);
         QCOMPARE(picker.currentPage(),static_cast<GamePage*>(picker.homePage()));
-        QVERIFY(!picker.playPage());
+        QVERIFY(picker.playPage()->isPaused());
+        QVERIFY(!menu->isVisible());
         QCOMPARE(ProgressStore(dir.filePath("progress.json")).resumeLevel(),4);
     }
     void mouseShovel() {
@@ -225,26 +295,31 @@ private slots:
     }
     void continueFlow() {
         QTemporaryDir dir;
-        const auto path = dir.filePath("progress.json");
-        GameWindow picker(nullptr,path,false);
-        picker.show();
-        picker.startLevel(1);
-        QVERIFY(picker.playPage());
-        QCOMPARE(ProgressStore(path).resumeLevel(),1);
-        picker.playPage()->gameWin();
-        QCOMPARE(ProgressStore(path).resumeLevel(),2);
-        picker.playPage()->playSceneBack();
-        QVERIFY(!picker.playPage());
-        picker.continueGame();
-        QVERIFY(picker.playPage());
-        QCOMPARE(picker.playPage()->levelIndex,2);
-        picker.playPage()->gameLose();
-        picker.playPage()->playSceneBack();
-        QVERIFY(!picker.playPage());
-        QCOMPARE(ProgressStore(path).resumeLevel(),2);
-        picker.continueGame();
-        QCOMPARE(picker.playPage()->levelIndex,2);
-        picker.playPage()->playSceneBack();
+        const auto path=dir.filePath("progress.json");
+        GameWindow root(nullptr,path,false); root.show();
+        auto *resume=root.homePage()->findChild<QPushButton*>("resumeGame");
+        QVERIFY(!resume->isEnabled()); root.continueGame(); QVERIFY(!root.playPage());
+        root.startLevel(1); auto *play=root.playPage(); QVERIFY(play);
+        auto *scene=play->findChild<MyGameScene*>(); scene->setAYellowDog(2);
+        auto *enemy=scene->getZombieMap(2).front();
+        root.showMenu(); QCOMPARE(root.currentPage(),static_cast<GamePage*>(play));
+        play->showPauseMenu(); play->mainMenuRequested();
+        QVERIFY(resume->isEnabled()); QVERIFY(play->isPaused());
+        const auto position=enemy->pos(); QTest::qWait(120); QCOMPARE(enemy->pos(),position);
+        root.continueGame(); QCOMPARE(root.playPage(),play);
+        QVERIFY(play->isPaused()); QVERIFY(play->findChild<PauseDialog*>()->isVisible());
+        QCOMPARE(enemy->pos(),position);
+        play->gameContinued(); QTest::qWait(100); QVERIFY(enemy->x()<position.x());
+        play->gameWin(); QVERIFY(!ProgressStore(path).hasUnfinishedLevel());
+        play->playSceneBack(); QVERIFY(!root.playPage());
+        root.showMenu(); QVERIFY(!resume->isEnabled()); root.continueGame(); QVERIFY(!root.playPage());
+        root.startLevel(2); root.playPage()->gameLose(); root.playPage()->playSceneBack();
+        root.showMenu(); QVERIFY(!resume->isEnabled());
+        // A process restart restores the level checkpoint directly into pause.
+        ProgressStore saved(path); QVERIFY(saved.startLevel(2));
+        GameWindow restored(nullptr,path,false); restored.show(); restored.continueGame();
+        QVERIFY(restored.playPage()); QVERIFY(restored.playPage()->isPaused());
+        QVERIFY(restored.playPage()->findChild<PauseDialog*>()->isVisible());
     }
     void independentLiveHealthOverlays() {
         PlayScene play(8,nullptr,false);
@@ -293,14 +368,14 @@ private slots:
     }
     void cartoonMenuButtons() {
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json"),false);
+        GameWindow root(nullptr,unlockedPath(dir),false);
         root.show();
         auto *menu=root.homePage();
         QCOMPARE(root.windowTitle(),QString("小白大战小金毛"));
         auto *start=menu->findChild<QPushButton*>("startGame");
         auto *quit=menu->findChild<QPushButton*>("quitGame");
         QVERIFY(start); QVERIFY(quit);
-        QCOMPARE(start->text(),QString("开始游戏"));
+        QCOMPARE(start->text(),QString("选择关卡"));
         QCOMPARE(quit->text(),QString("退出游戏"));
         QVERIFY(start->icon().isNull()); QVERIFY(quit->icon().isNull());
         QCOMPARE(start->property("color").toString(),QString("sunshine"));
@@ -319,6 +394,8 @@ private slots:
         const auto path = dir.filePath("save/progress.json");
         ProgressStore store(path);
         QVERIFY(!store.hasProgress());
+        QVERIFY(!store.startLevel(3));
+        QVERIFY(store.completeLevel(1)); QVERIFY(store.completeLevel(2));
         QVERIFY(store.startLevel(3));
         QCOMPARE(ProgressStore(path).resumeLevel(),3);
         QVERIFY(store.completeLevel(3));
@@ -334,13 +411,13 @@ private slots:
         ProgressStore broken(path);
         QVERIFY(!broken.hasProgress()); QVERIFY(!broken.error().isEmpty());
         QCOMPARE(broken.resumeLevel(),1);
-        QVERIFY(broken.startLevel(2));
-        QCOMPARE(ProgressStore(path).resumeLevel(),2);
+        QVERIFY(broken.startLevel(1));
+        QCOMPARE(ProgressStore(path).resumeLevel(),1);
     }
     void progressWriteFailure() {
         QTemporaryDir dir;
         ProgressStore store(dir.path()); // A directory cannot be replaced by a file.
-        QVERIFY(!store.startLevel(2));
+        QVERIFY(!store.startLevel(1));
         QVERIFY(!store.error().isEmpty());
         QVERIFY(!store.hasProgress());
     }
@@ -548,7 +625,7 @@ private slots:
     }
     void fullScreenNavigationAndInput() {
         QTemporaryDir dir;
-        GameWindow menu(nullptr,dir.filePath("progress.json"),false);
+        GameWindow menu(nullptr,unlockedPath(dir),false);
         menu.show(); QTest::qWait(40);
         QTest::keyClick(&menu,Qt::Key_F11);
         QTRY_VERIFY(menu.isFullScreen());
@@ -621,15 +698,15 @@ private slots:
         QTRY_VERIFY(!menu.isFullScreen());
         const auto scale=view->transform().m11();
         QCOMPARE(scale,1.0);
-        play->mainMenuRequested();
+        play->gamePaused(); play->mainMenuRequested();
         QTRY_VERIFY(menu.isVisible());
         QVERIFY(!menu.isFullScreen());
         QCOMPARE(menu.size(),GameWindow::logicalSize());
-        QCOMPARE(menu.homePage()->findChild<QPushButton*>("startGame")->geometry(),QRect(610,495,430,84));
+        QCOMPARE(menu.homePage()->findChild<QPushButton*>("startGame")->geometry(),QRect(610,430,430,84));
     }
     void nativeMaximizeAndFullScreenButton() {
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json"),false);
+        GameWindow root(nullptr,unlockedPath(dir),false);
         root.show(); QTest::qWait(40);
         QVERIFY(root.windowFlags().testFlag(Qt::WindowMaximizeButtonHint));
         QVERIFY(root.maximumWidth()>root.width());
@@ -654,7 +731,7 @@ private slots:
     }
     void levelButtonsAndCardArtworkScale() {
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json"),false);
+        GameWindow root(nullptr,unlockedPath(dir),false);
         root.show(); root.showLevels();
         const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
         for(const auto& size : {QSize(1650,900),QSize(1280,720),QSize(1920,1080),QSize(2560,1440)}) {
@@ -706,15 +783,16 @@ private slots:
             ++samples;
         }
         QVERIFY(samples>=3);
-        QTest::mouseClick(play->findChild<QPushButton*>("backToLevels"),Qt::LeftButton);
-        QVERIFY(!root.playPage()); QVERIFY(root.levelPage()->isVisible());
+        QVERIFY(!play->findChild<QPushButton*>("backToLevels"));
+        play->gamePaused(); root.showMenu(); root.showLevels();
+        QVERIFY(root.playPage()==play); QVERIFY(root.levelPage()->isVisible());
         root.resize(GameWindow::logicalSize()); QTest::qWait(25);
         root.setFullScreenEnabled(true); QTest::qWait(50);
         if(!folder.isEmpty()) QVERIFY(root.grab().save(folder+"/levels-fullscreen.png"));
     }
     void returningStopsOldBattleAndResizingKeepsPreviewAligned() {
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json"),false);
+        GameWindow root(nullptr,unlockedPath(dir),false);
         root.show(); root.startLevel(8); QTest::qWait(40);
         QPointer<PlayScene> old=root.playPage();
         auto *view=old->findChild<QGraphicsView*>();
@@ -732,7 +810,7 @@ private slots:
         // follows the most recent scene position in either case.
         point=view->mapFromScene(moves.last().first().toPointF());
         QVERIFY(QLineF(preview->geometry().center(),view->viewport()->mapTo(old,point)).length()<2);
-        old->playSceneBack();
+        old->gameLose(); old->playSceneBack();
         QVERIFY(!root.playPage()); QVERIFY(root.levelPage()->isVisible());
         for(auto *timer : old->findChildren<QTimer*>()) QVERIFY(!timer->isActive());
         root.startLevel(3);
@@ -756,7 +834,7 @@ private slots:
     void closeExitsApplication() {
         QFETCH(int,page);
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json"),false);
+        GameWindow root(nullptr,unlockedPath(dir),false);
         root.show();
         const auto nativeId=root.winId();
         if(page==1) root.showLevels();
@@ -787,7 +865,7 @@ private slots:
     }
     void escapeOnlyLeavesFullScreen() {
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json"),false);
+        GameWindow root(nullptr,unlockedPath(dir),false);
         root.show(); root.startLevel(8); QTest::qWait(40);
         auto *play=root.playPage();
         auto *view=play->findChild<QGraphicsView*>();
@@ -860,7 +938,7 @@ private slots:
     void openingSequence() {
         QFETCH(int,level);
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json"));
+        GameWindow root(nullptr,unlockedPath(dir));
         root.show(); root.startLevel(level); QTest::qWait(30);
         auto *play=root.playPage(); auto *scene=play->findChild<MyGameScene*>();
         auto *view=play->findChild<QGraphicsView*>(); auto *opening=play->findChild<LevelOpening*>();
@@ -937,7 +1015,7 @@ private slots:
     }
     void firstLevelInteractiveTutorial() {
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json")); root.show(); root.startLevel(1);
+        GameWindow root(nullptr,unlockedPath(dir)); root.show(); root.startLevel(1);
         auto *play=root.playPage(); completeOpening(play); QTest::qWait(30);
         auto *scene=play->findChild<MyGameScene*>(); auto *view=play->findChild<QGraphicsView*>();
         auto *tutorial=play->findChild<LevelTutorial*>(); auto *card=play->findChild<Card*>();
@@ -974,7 +1052,7 @@ private slots:
     }
     void secondLevelRequiresThreeShovelRemovals() {
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json")); root.show(); root.startLevel(2);
+        GameWindow root(nullptr,unlockedPath(dir)); root.show(); root.startLevel(2);
         auto *play=root.playPage(); completeOpening(play); QTest::qWait(30);
         auto *scene=play->findChild<MyGameScene*>(); auto *view=play->findChild<QGraphicsView*>();
         auto *tutorial=play->findChild<LevelTutorial*>();
@@ -1001,9 +1079,9 @@ private slots:
     }
     void closingDuringOpeningAndTutorialStopsActivity() {
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json")); root.show(); root.startLevel(2);
+        GameWindow root(nullptr,unlockedPath(dir)); root.show(); root.startLevel(2);
         QPointer<PlayScene> old=root.playPage();
-        old->playSceneBack();
+        old->gameLose(); old->playSceneBack();
         for(auto *animation : old->findChildren<QAbstractAnimation*>()) QVERIFY(animation->state()!=QAbstractAnimation::Running);
         QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete); QVERIFY(old.isNull());
         root.startLevel(1); completeOpening(root.playPage());
@@ -1013,7 +1091,7 @@ private slots:
     }
     void openingAdvancesAutomaticallyInRealTime() {
         QTemporaryDir dir;
-        GameWindow root(nullptr,dir.filePath("progress.json")); root.show(); root.startLevel(3);
+        GameWindow root(nullptr,unlockedPath(dir)); root.show(); root.startLevel(3);
         auto *play=root.playPage(); auto *scene=play->findChild<MyGameScene*>();
         QVERIFY(!scene->gameplayStarted());
         QTRY_VERIFY_WITH_TIMEOUT(scene->gameplayStarted(),10000);

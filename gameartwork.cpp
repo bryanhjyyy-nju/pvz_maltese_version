@@ -5,6 +5,16 @@
 #include <QFontMetricsF>
 #include <QtMath>
 namespace GameArtwork {
+QPixmap speakerIcon() {
+    QPixmap result(64,64); result.fill(Qt::transparent);
+    QPainter p(&result); p.setRenderHint(QPainter::Antialiasing);
+    p.setPen(QPen(QColor("#65452d"),4,Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));
+    p.setBrush(QColor("#fff6cc"));
+    QPainterPath shape; shape.moveTo(9,25); shape.lineTo(22,25); shape.lineTo(36,13);
+    shape.lineTo(36,51); shape.lineTo(22,39); shape.lineTo(9,39); shape.closeSubpath(); p.drawPath(shape);
+    p.setBrush(Qt::NoBrush); p.drawArc(QRectF(32,16,20,32),-65*16,130*16);
+    p.drawArc(QRectF(29,7,32,50),-65*16,130*16); return result;
+}
 void drawTitle(QPainter& p, const QRectF& area, const QString& text) {
     p.save();
     p.setRenderHint(QPainter::Antialiasing);

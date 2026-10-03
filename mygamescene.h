@@ -17,7 +17,7 @@ class MyGameScene : public QGraphicsScene
 {
     Q_OBJECT
 public:
-    explicit MyGameScene(int n = 1,QObject *parent = nullptr,bool deferStart=false);
+    explicit MyGameScene(int n = 1,QObject *parent = nullptr,bool deferStart=false,bool endless=false,int firstWave=1);
     enum class InputMode { Blocked,Normal,PlantPractice,HeartPractice,ShovelPractice };
     Q_ENUM(InputMode)
     void startGameplay();
@@ -43,6 +43,8 @@ public:
     int wavesStarted() const { return nextWave; }
     int getChosenNum() const { return chosenNum; }
     Lawn *lawn() const { return grass; }
+    QPointF defeatPosition() const { return losingPosition; }
+    bool isEndless() const { return endlessMode; }
 
     int getRestHeart() const { return restHeart; } // 得到剩余爱心的数值
 
@@ -59,6 +61,8 @@ public:
     const QVector<MyItem *>& getZombieMap(int row) const { return zombieMap.at(row); }
 private:
     int gameLevelNum = 0;
+    bool endlessMode=false;
+    QPointF losingPosition=QPointF(130,450);
 
     Map *mapGrid = nullptr;  //添加地图网咯
     Lawn *grass=nullptr;

@@ -7,6 +7,7 @@
 #include <QDebug>
 #include <QLabel>
 #include "progressstore.h"
+#include "mypushbutton.h"
 
 ChooseLevelScene::ChooseLevelScene(QWidget *parent) : GamePage(parent)
 {
@@ -16,11 +17,6 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent) : GamePage(parent)
 
     //每一关对应的按钮
     buildLevelBtn();
-    continueButton = new QPushButton(this);
-    GameUi::styleButton(continueButton);
-    continueButton->setObjectName("continueGame");
-    continueButton->setGeometry(620, 785, 400, 48);
-    connect(continueButton, &QPushButton::clicked, this, &ChooseLevelScene::continueRequested);
     progressLabel = new QLabel(this);
     progressLabel->setGeometry(280, 840, 1100, 45);
     progressLabel->setAlignment(Qt::AlignCenter);
@@ -32,7 +28,7 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent) : GamePage(parent)
         AlmanacDialog dialog(this);
         dialog.exec();
     });
-    initializePage(QRect(1170,30,200,44));
+    initializePage(QRect(30,30,230,44));
 }
 
 void ChooseLevelScene::paintEvent(QPaintEvent *){
@@ -61,10 +57,10 @@ void ChooseLevelScene::paintEvent(QPaintEvent *){
 }
 
 void ChooseLevelScene::buildBackBtn() {
-    auto *back=new QPushButton("返回首页",this);
-    GameUi::styleButton(back,"gold");
-    back->setObjectName("backToMenu");
-    back->setGeometry(1440,25,180,50);
+    auto *back=new MyPushButton(":/others/Image/backBtn.png");
+    back->setParent(this); back->setObjectName("backToMenu");
+    back->setToolTip("返回主菜单"); back->setAccessibleName("返回主菜单");
+    back->move(1650-back->width()-35,25);
     connect(back,&QPushButton::clicked,this,&ChooseLevelScene::backRequested);
 }
 
@@ -83,10 +79,10 @@ void ChooseLevelScene::buildLevelBtn() {
 }
 
 void ChooseLevelScene::refreshProgress(const ProgressStore& progress) {
-    continueButton->setEnabled(progress.hasProgress());
-    continueButton->setText(QString("继续游戏 · 第 %1 关").arg(progress.resumeLevel()));
+    for(int level=1;level<=10;++level)
+        findChild<QPushButton*>(QString("level%1").arg(level))->setVisible(progress.isUnlocked(level));
     progressLabel->setText(progress.error().isEmpty()
-        ? QString("最高通过：%1 / 10 关 · 自动记录关卡进度；继续游戏会从该关开局。%2")
+        ? QString("已通过：%1 / 10 关 · 通关后解锁下一关。%2")
             .arg(progress.highestCompleted()).arg(progress.highestCompleted() == 10 ? "  已全部通关！" : "")
         : progress.error());
 }

@@ -23,8 +23,8 @@
 #include <QKeyEvent>
 #include "lawn.h"
 
-MyGameScene::MyGameScene(int n,QObject *parent,bool deferStart)
-    : QGraphicsScene(parent)
+MyGameScene::MyGameScene(int n,QObject *parent,bool deferStart,bool endless,int firstWave)
+    : QGraphicsScene(parent),endlessMode(endless)
 {
     gameLevelNum = qBound(1,n,GameCatalog::LevelCount);
     m_isGameOver = false;
@@ -32,7 +32,8 @@ MyGameScene::MyGameScene(int n,QObject *parent,bool deferStart)
     m_zombiesKilled = 0;
 
     const auto level = GameCatalog::level(gameLevelNum);
-    wavePlan = WavePlanner::create(gameLevelNum,*QRandomGenerator::global());
+    if(endlessMode) nextWave=qMax(1,firstWave)-1;
+    else wavePlan = WavePlanner::create(gameLevelNum,*QRandomGenerator::global());
     m_totalZombiesForLevel = WavePlanner::enemyCount(wavePlan);
     restHeart = level.startingHearts;
     setupBoard();
@@ -44,20 +45,6 @@ MyGameScene::MyGameScene(int n,QObject *parent,bool deferStart)
 }
 
 void MyGameScene::setupBoard() {
-    QFont font;
-    font.setBold(true);
-    font.setFamily("黑体");
-    font.setPointSize(18);
-    QGraphicsTextItem * textZombieUp = this->addText("已击败：",font);
-    textZombieUp->setPos(QPointF(1330,10));
-    textZombieUp->setZValue(31);
-    QGraphicsTextItem * textZombieDown = this->addText(QString("%1/%2").arg(m_zombiesKilled).arg(m_totalZombiesForLevel),font);
-    textZombieDown->setPos(QPointF(1360,60));
-    textZombieDown->setZValue(31);
-    connect(this, &MyGameScene::changeRestZombieNumber, this, [=](){
-        textZombieDown->setPlainText(QString("%1/%2").arg(m_zombiesKilled).arg(m_totalZombiesForLevel));
-    });
-
     setSceneRect(0, 0, 1650, 900);
 
     zombieMap.resize(5);
@@ -72,16 +59,19 @@ void MyGameScene::setupBoard() {
     grass->setParent(this);
     addItem(grass);
 
+    if(gameLevelNum>=2) {
     auto *shovelBar = new QGraphicsPixmapItem(GameArtwork::shovelSlot());
     shovelBar->setPos(GameArtwork::shovelSlotRect().topLeft());
     shovelBar->setZValue(29);
     shovelBar->setToolTip("点击拿起 / 放下铲子，也可以按 R");
     addItem(shovelBar);
     shovel = new QGraphicsPixmapItem(GameArtwork::cuteShovel());
-    shovel->setPos(GameArtwork::shovelHome());
+    if(shovel) shovel->setPos(GameArtwork::shovelHome());
     shovel->setZValue(30);
     shovel->setToolTip("可爱铲子 · 点击拿起 / 放下");
     addItem(shovel);
+
+    }
 
     mapGrid = new Map(9, 5, QSize(121,145), QPointF(380,130));
     const auto& level=GameCatalog::level(gameLevelNum);
@@ -125,12 +115,15 @@ void MyGameScene::startGameplay() {
 
 void MyGameScene::spawnWave() {
     if(!started) return;
-    if(m_isGameOver || nextWave >= wavePlan.size()) { memYellowDogsTimer->stop(); return; }
-    pendingWave = wavePlan[nextWave++];
+    if(m_isGameOver || (!endlessMode && nextWave >= wavePlan.size())) { memYellowDogsTimer->stop(); return; }
+    if(endlessMode) {
+        pendingWave=WavePlanner::endlessWave(++nextWave,*QRandomGenerator::global());
+        memYellowDogsTimer->stop();
+    } else pendingWave = wavePlan[nextWave++];
     pendingIndex = 0;
     waveRowCounts.fill(0);
-    emit waveStarted(nextWave,wavePlan.size());
-    if(nextWave==wavePlan.size()) {
+    emit waveStarted(nextWave,endlessMode ? 0 : wavePlan.size());
+    if(!endlessMode && nextWave==wavePlan.size()) {
         emit finalWaveApproaching();
         waveStaggerTimer->start(1800);
     } else {
@@ -138,6 +131,7 @@ void MyGameScene::spawnWave() {
         if(pendingIndex < pendingWave.size()) waveStaggerTimer->start(900);
     }
     const auto& level = GameCatalog::level(gameLevelNum);
+    if(endlessMode) return;
     if(nextWave == wavePlan.size()) memYellowDogsTimer->stop();
     else memYellowDogsTimer->setInterval(QRandomGenerator::global()->bounded(level.minInterval,level.maxInterval+1));
 }
@@ -250,18 +244,22 @@ void MyGameScene::keyPressEvent(QKeyEvent *event){
 
 void MyGameScene::setAYellowDog(int r,int typeNum){
     if(!started) return;
-    if(m_isGameOver || r < 0 || r >= 5 || m_zombiesSpawned >= m_totalZombiesForLevel){
+    if(m_isGameOver || r < 0 || r >= 5 || (!endlessMode && m_zombiesSpawned >= m_totalZombiesForLevel)){
         memYellowDogsTimer->stop();
         return;
     }
     m_zombiesSpawned++;
 
-    YellowDogs *zombie = new YellowDogs(r,this,typeNum);
+    YellowDogs *zombie = new YellowDogs(r,this,typeNum,endlessMode ? nextWave : 1);
     zombie->setParent(this);
     this->zombieMap[r].append(zombie);
     this->addItem(zombie);
     zombie->setHealthVisible(showEnemyHealth);
-    connect(zombie, &YellowDogs::arrivedYourHome, this, &MyGameScene::gameLose);
+    connect(zombie, &YellowDogs::arrivedYourHome, this, [this,zombie] {
+        if(m_isGameOver) return;
+        losingPosition=zombie->sceneBoundingRect().center();
+        emit gameLose();
+    });
     connect(zombie,&YellowDogs::dying,this,[this,r](YellowDogs *zb) {
         zombieMap[r].removeOne(zb);
     });
@@ -290,6 +288,11 @@ void MyGameScene::removeWhite(int r,int c){
 
 void MyGameScene::checkWinCondition()
 {
+    if(endlessMode) {
+        if(!m_isGameOver && pendingIndex>=pendingWave.size() && m_zombiesSpawned>0 && m_zombiesKilled==m_zombiesSpawned && !memYellowDogsTimer->isActive())
+            memYellowDogsTimer->start(6000);
+        return;
+    }
     if (m_isGameOver || m_zombiesSpawned < m_totalZombiesForLevel) {
         return;
     }
@@ -299,15 +302,10 @@ void MyGameScene::checkWinCondition()
     }
 }
 
-void MyGameScene::finishGame(bool won) {
+void MyGameScene::finishGame(bool) {
     if(m_isGameOver) return;
     m_isGameOver = true;
     terminalActivity.pause(this);
-    auto *text = addSimpleText(won ? "WIN" : "LOSE",QFont("Arial",150,QFont::Bold));
-    text->setBrush(won ? Qt::green : Qt::red);
-    const auto rect = text->boundingRect();
-    text->setPos(sceneRect().center()-QPointF(rect.width()/2,rect.height()/2));
-    text->setZValue(32);
 }
 
 void MyGameScene::winTheGame() { finishGame(true); }
@@ -319,10 +317,11 @@ void MyGameScene::cancelSelection() {
     Card::setGameState(GameState::Normal);
     emit pleaseRemovePreImage();
     emit banTracking();
-    shovel->setPos(GameArtwork::shovelHome());
+    if(shovel) shovel->setPos(GameArtwork::shovelHome());
 }
 
 void MyGameScene::toggleShovel() {
+    if(!shovel) return;
     if(inputMode!=InputMode::Normal && inputMode!=InputMode::ShovelPractice) return;
     const auto state = Card::currentState();
     if(state == GameState::Paused || state == GameState::GameOver || m_isGameOver) return;

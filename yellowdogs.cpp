@@ -6,11 +6,15 @@
 #include <QRandomGenerator>
 #include <QtMath>
 
-YellowDogs::YellowDogs(int row, MyGameScene *scene, int type)
+YellowDogs::YellowDogs(int row, MyGameScene *scene, int type,int difficultyWave)
     : targetWhiteDog(nullptr), battleScene(scene), enemyType(qBound(0,type,2)) {
     itRow = row;
     setZValue(5);
     initArgues(enemyType);
+    const int extra=qMax(0,difficultyWave-1);
+    hp=qRound(hp*(1+.08*extra));
+    atkPower=qRound(atkPower*(1+.025*extra));
+    speed*=1+.01*extra;
     setPos(QRandomGenerator::global()->bounded(180)+1589-pixmap().width()/2,
            130+145*(row+.5)-pixmap().height()/2);
     tempBackAnim = new QPropertyAnimation(this,"pos",this);

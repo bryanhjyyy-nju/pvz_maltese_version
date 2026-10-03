@@ -8,4 +8,5 @@ Plan create(int level, QRandomGenerator& random);
 int enemyCount(const Plan& plan);
 double enemyLikelihood(int type);
 QVector<int> previewTypes(int level,QRandomGenerator& random);
+QVector<int> endlessWave(int wave,QRandomGenerator& random);
 }

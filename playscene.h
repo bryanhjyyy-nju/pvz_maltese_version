@@ -18,10 +18,15 @@ public:
 
     //内部成员记录关卡号
     const int levelIndex;
+    const bool endlessMode;
 
     //构造函数：第几关
-    PlayScene(int levelNum,QWidget *parent=nullptr,bool withOpening=true);
+    PlayScene(int levelNum,QWidget *parent=nullptr,bool withOpening=true,bool endless=false,int firstWave=1);
     void shutdown();
+    bool isPaused() const { return paused; }
+    bool isFinished() const { return finished; }
+    void showPauseMenu();
+    void suspendToMenu();
 
     void gamePaused();
     void gameContinued();
@@ -51,7 +56,6 @@ private:
     void fitBattlefield();
     QVector<Card *> myCards;
 
-    void buildBackBtn();
     void buildPauseBtn();
     void setLevelText();
     void setCardBar();
