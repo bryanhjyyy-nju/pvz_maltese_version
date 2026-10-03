@@ -11,7 +11,7 @@
 #include "playscene.h"
 
 ChooseLevelScene::ChooseLevelScene(QWidget *parent, const QString& progressPath)
-    : QMainWindow{parent}, progress(progressPath)
+    : GameWindow{parent}, progress(progressPath)
 {
     //设置固定大小
     setFixedSize(1650,900);
@@ -44,10 +44,12 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent, const QString& progressPath)
         dialog.exec();
     });
     refreshProgress();
+    initializeWindowMode(QRect(1170,30,200,44));
 }
 
 void ChooseLevelScene::paintEvent(QPaintEvent *){
     QPainter painter(this);
+    prepareCanvasPaint(painter);
     QPixmap pix;
 
     //背景图片
@@ -57,7 +59,7 @@ void ChooseLevelScene::paintEvent(QPaintEvent *){
         return;
     }
 
-    painter.drawPixmap(0,0,this->width(),this->height(),pix);
+    painter.drawPixmap(0,0,1650,900,pix);
 
     //绘制关卡选择四个字
     ret = pix.load(":others/Image/chooseTitle.png");
@@ -66,7 +68,7 @@ void ChooseLevelScene::paintEvent(QPaintEvent *){
         return;
     }
     pix = pix.scaled(pix.width() * 2,pix.height() * 2);
-    painter.drawPixmap(this->width() * 0.2 - pix.width() * 0.5,this->height() * 0.1,pix);
+    painter.drawPixmap(1650 * 0.2 - pix.width() * 0.5,900 * 0.1,pix);
 
 }
 

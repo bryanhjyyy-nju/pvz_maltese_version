@@ -7,6 +7,8 @@ SOURCES += waveplanner.cpp
 HEADERS += waveplanner.h
 SOURCES += gameartwork.cpp
 HEADERS += gameartwork.h
+SOURCES += gamewindow.cpp
+HEADERS += gamewindow.h
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 

@@ -13,6 +13,7 @@
 #include <QVector>
 #include "mygamescene.h"
 #include <QMouseEvent>
+#include <QKeyEvent>
 
 PlayScene::PlayScene(int levelNum) :
     levelIndex(levelNum), //维护传进来的关卡号, 加载地图
@@ -55,6 +56,8 @@ PlayScene::PlayScene(int levelNum) :
 
     //初始化预加载图片
     preImageLabel = new QLabel(this);
+    preImageLabel->setObjectName("plantPreview");
+    preImageLabel->setProperty("manualScale",true);
     preImageLabel->setVisible(false);
     preImageLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
 
@@ -86,7 +89,9 @@ PlayScene::PlayScene(int levelNum) :
 
     // 配置视图
     myGraphicsView->setRenderHint(QPainter::Antialiasing);  // 抗锯齿
-    myGraphicsView->setAlignment(Qt::AlignLeft | Qt::AlignTop);  // 对齐方式
+    myGraphicsView->setAlignment(Qt::AlignCenter);
+    myGraphicsView->setFrameShape(QFrame::NoFrame);
+    myGraphicsView->setBackgroundBrush(QColor("#20291c"));
     myGraphicsView->setViewportUpdateMode(QGraphicsView::FullViewportUpdate); // 设置更新模式
     myGraphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     myGraphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -135,9 +140,16 @@ PlayScene::PlayScene(int levelNum) :
     });
 
     connect(myGameScene, &MyGameScene::mouseMovedTo, this, [=](QPointF mousePos){
-        preImageLabel->move(mousePos.x() - preImageLabel->width() / 2, mousePos.y() - preImageLabel->height() / 2);
+        const auto point=myGraphicsView->viewport()->mapTo(this,myGraphicsView->mapFromScene(mousePos));
+        preImageLabel->move(point-QPoint(preImageLabel->width()/2,preImageLabel->height()/2));
         preImageLabel->setVisible(true);
     });
+    connect(this,&GameWindow::canvasResized,this,&PlayScene::fitBattlefield);
+    connect(this,&GameWindow::displayModeChanging,this,[this] {
+        if(!paused && !finished) myGameScene->cancelSelection();
+        stopShow();
+    });
+    initializeWindowMode(QRect(20,760,250,44));
 }
 
 
@@ -272,8 +284,9 @@ void PlayScene::startShow(int num){
     QPixmap pix;
     const auto& plant = GameCatalog::plants().at(num);
     pix.load(plant.image);
-    pix = pix.scaled(plant.iconSize * 2, plant.iconSize * 2);
-    preImageLabel->setFixedSize(plant.iconSize * 2, plant.iconSize * 2);
+    const int size=qRound(plant.iconSize*2*canvasScale());
+    pix = pix.scaled(size,size,Qt::KeepAspectRatio,Qt::SmoothTransformation);
+    preImageLabel->setFixedSize(size,size);
     preImageLabel->setPixmap(pix);
     // preImageLabel->move(100 - preImageLabel->width() / 2, 100 - preImageLabel->height() / 2);
     // preImageLabel->setVisible(true);
@@ -345,7 +358,7 @@ void PlayScene::buildPauseBtn() {
     connect(sound,&QPushButton::clicked,this,&PlayScene::showAudioSettings);
     auto *help = new QLabel(this);
     auto updateHelp = [help](bool plants,bool enemies) {
-        help->setText(QString("点击铲子 / R：拿起或放下\nEsc：取消选择\n空格：暂停 / 继续\nH：植物血量 %1\nJ：金毛血量 %2\n退出后可继续本关")
+        help->setText(QString("点击铲子 / R：拿起或放下\nEsc：取消选择\n空格：暂停 / 继续\nH：植物血量 %1\nJ：金毛血量 %2\nF11：全屏 / 窗口\n退出后可继续本关")
             .arg(plants ? "开" : "关").arg(enemies ? "开" : "关"));
     };
     updateHelp(false,false);
@@ -360,12 +373,6 @@ void PlayScene::buildPauseBtn() {
         wave->setText(QString("第 %1 / %2 波\n守住你的草坪！").arg(current).arg(total));
     });
     connect(myGameScene,&MyGameScene::healthVisibilityChanged,this,updateHelp);
-    auto *plantHp = new QShortcut(QKeySequence(Qt::Key_H),this);
-    plantHp->setAutoRepeat(false);
-    connect(plantHp,&QShortcut::activated,myGameScene,&MyGameScene::togglePlantHealth);
-    auto *enemyHp = new QShortcut(QKeySequence(Qt::Key_J),this);
-    enemyHp->setAutoRepeat(false);
-    connect(enemyHp,&QShortcut::activated,myGameScene,&MyGameScene::toggleEnemyHealth);
 }
 
 void PlayScene::togglePauseMenu() {
@@ -405,4 +412,20 @@ void PlayScene::showAudioSettings() {
 void PlayScene::closeEvent(QCloseEvent *event) {
     Q_UNUSED(event);
     emit playSceneBack();
+}
+
+void PlayScene::fitBattlefield() {
+    myGraphicsView->resetTransform();
+    myGraphicsView->scale(canvasScale(),canvasScale());
+    myGraphicsView->centerOn(myGameScene->sceneRect().center());
+}
+
+bool PlayScene::handleGameKey(QKeyEvent *event) {
+    if(event->modifiers()!=Qt::NoModifier) return false;
+    if(event->key()!=Qt::Key_H && event->key()!=Qt::Key_J) return false;
+    if(!event->isAutoRepeat()) {
+        if(event->key()==Qt::Key_H) myGameScene->togglePlantHealth();
+        else myGameScene->toggleEnemyHealth();
+    }
+    return true;
 }

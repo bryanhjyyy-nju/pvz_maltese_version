@@ -2,11 +2,12 @@
 #define CHOOSELEVELSCENE_H
 
 #include <QMainWindow>
+#include "gamewindow.h"
 #include "playscene.h"
 #include "progressstore.h"
 #include <QPushButton>
 
-class ChooseLevelScene : public QMainWindow
+class ChooseLevelScene : public GameWindow
 {
     Q_OBJECT
 public:

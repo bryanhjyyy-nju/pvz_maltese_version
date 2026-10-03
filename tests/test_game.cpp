@@ -525,6 +525,86 @@ private slots:
         play.gameContinued();
         QTRY_COMPARE_WITH_TIMEOUT(removed.count(),1,800);
     }
+    void fullScreenNavigationAndInput() {
+        QTemporaryDir dir;
+        MainScene menu(nullptr,dir.filePath("progress.json"));
+        menu.show(); QTest::qWait(40);
+        QTest::keyClick(&menu,Qt::Key_F11);
+        QTRY_VERIFY(menu.isFullScreen());
+        QVERIFY(GameWindow::fullScreenEnabled());
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(!folder.isEmpty()) QVERIFY(menu.grab().save(folder+"/menu-fullscreen.png"));
+        QTest::mouseClick(menu.findChild<QPushButton*>("startGame"),Qt::LeftButton);
+        auto *picker=menu.chooseScene;
+        QTRY_VERIFY(picker->isFullScreen());
+        picker->startLevel(8);
+        auto *play=picker->play;
+        QTRY_VERIFY(play->isFullScreen());
+        auto *view=play->findChild<QGraphicsView*>();
+        auto *scene=play->findChild<MyGameScene*>();
+        for(const auto& size : {QSize(1920,1080),QSize(1280,720),QSize(2560,1440)}) {
+            play->resize(size); QTest::qWait(25);
+            QCOMPARE(view->transform().m11(),play->canvasScale());
+            const auto point=view->mapFromScene(QPointF(440,490));
+            QVERIFY(view->viewport()->rect().contains(point));
+            QVERIFY(QLineF(view->mapToScene(point),QPointF(440,490)).length()<2);
+        }
+        // QWidget::resize may clear the native full-screen flag; restore the
+        // real window mode after checking several synthetic viewport sizes.
+        play->setFullScreenEnabled(true);
+        QTRY_VERIFY(play->isFullScreen());
+        view->setFocus();
+        QTest::keyClick(view,Qt::Key_H);
+        auto cards=play->findChildren<Card*>();
+        QTest::mouseClick(cards[1],Qt::LeftButton);
+        QCOMPARE(Card::currentState(),GameState::PrePlace);
+        const QPoint target=view->mapFromScene(QPointF(440,490));
+        QTest::mouseMove(view->viewport(),target);
+        QVERIFY(view->hasMouseTracking());
+        QVERIFY(view->viewport()->hasMouseTracking());
+        // Deliver the move through the viewport because the offscreen backend
+        // does not reliably dispatch native cursor movement after mode changes.
+        QMouseEvent movement(QEvent::MouseMove,QPointF(target),Qt::NoButton,Qt::NoButton,Qt::NoModifier);
+        QApplication::sendEvent(view->viewport(),&movement);
+        auto *preview=play->findChild<QLabel*>("plantPreview");
+        QTRY_VERIFY(preview->isVisible());
+        QVERIFY(QLineF(preview->geometry().center(),view->viewport()->mapTo(play,target)).length()<2);
+        QCOMPARE(preview->width(),qRound(GameCatalog::plants()[1].iconSize*2*play->canvasScale()));
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,target);
+        auto *plant=scene->plantAhead(2,1000);
+        QVERIFY(plant); QVERIFY(plant->isHealthVisible());
+        QCOMPARE(scene->getRestHeart(),50);
+        if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+"/battle-fullscreen.png"));
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(1240,50)));
+        QCOMPARE(Card::currentState(),GameState::Shoveling);
+        QTest::keyClick(view,Qt::Key_Escape);
+        QTest::keyClick(view,Qt::Key_Space); QTest::qWait(30);
+        auto *pause=play->findChild<PauseDialog*>();
+        QVERIFY(pause); QVERIFY(pause->isVisible());
+        QTest::keyClick(pause,Qt::Key_H);
+        QVERIFY(!scene->plantHealthVisible());
+        QCOMPARE(Card::currentState(),GameState::Paused);
+        QTest::keyClick(pause,Qt::Key_H);
+        QVERIFY(scene->plantHealthVisible());
+        QTest::keyClick(pause,Qt::Key_F11);
+        QTRY_VERIFY(!play->isFullScreen());
+        QCOMPARE(play->size(),GameWindow::logicalSize());
+        QCOMPARE(Card::currentState(),GameState::Paused);
+        QVERIFY(pause->isVisible());
+        QTest::keyClick(pause,Qt::Key_Space);
+        QCOMPARE(Card::currentState(),GameState::Normal);
+        QTest::mouseClick(play->findChild<QPushButton*>("fullScreenButton"),Qt::LeftButton);
+        QTRY_VERIFY(play->isFullScreen());
+        QTest::keyClick(view,Qt::Key_F11);
+        QTRY_VERIFY(!play->isFullScreen());
+        const auto scale=view->transform().m11();
+        QCOMPARE(scale,1.0);
+        play->mainMenuRequested();
+        QTRY_VERIFY(menu.isVisible());
+        QVERIFY(!menu.isFullScreen());
+        QCOMPARE(menu.size(),GameWindow::logicalSize());
+        QCOMPARE(menu.findChild<QPushButton*>("startGame")->geometry(),QRect(610,495,430,84));
+    }
     void enemyLimit() {
         MyGameScene scene(1);
         for(int i=0;i<8;++i) scene.setAYellowDog(2);

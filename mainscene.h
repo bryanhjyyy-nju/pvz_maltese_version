@@ -2,6 +2,7 @@
 #define MAINSCENE_H
 
 #include <QMainWindow>
+#include "gamewindow.h"
 #include "chooselevelscene.h"
 
 QT_BEGIN_NAMESPACE
@@ -10,12 +11,12 @@ class MainScene;
 }
 QT_END_NAMESPACE
 
-class MainScene : public QMainWindow
+class MainScene : public GameWindow
 {
     Q_OBJECT
 
 public:
-    explicit MainScene(QWidget *parent = nullptr);
+    explicit MainScene(QWidget *parent = nullptr, const QString& progressPath = {});
     ~MainScene();
 
     //重写paintEvent事件 画背景图
@@ -27,7 +28,7 @@ private:
     //ui界面（未使用）
     Ui::MainScene *ui;
 
-    void buildStartBtn(); //创建开始按钮
+    void buildStartBtn(const QString& progressPath); //创建开始按钮
     void buildQuitBtn(); //创建退出按钮
     void setGif(int w,int h,int x,int y); //显示我的动图
 };

@@ -11,8 +11,8 @@
 #include <QLabel>
 #include <QTimer>
 
-MainScene::MainScene(QWidget *parent)
-    : QMainWindow(parent)
+MainScene::MainScene(QWidget *parent,const QString& progressPath)
+    : GameWindow(parent)
     , ui(new Ui::MainScene)
 {
     ui->setupUi(this);
@@ -29,7 +29,7 @@ MainScene::MainScene(QWidget *parent)
     setWindowTitle("小白大战小金毛");
 
     //添加开始按钮
-    buildStartBtn();
+    buildStartBtn(progressPath);
 
     //添加退出游戏按钮
     buildQuitBtn();
@@ -57,31 +57,33 @@ MainScene::MainScene(QWidget *parent)
     //插入两个动画
     setGif(400,400,this->width() * 0.05,this->height() * 0.45);
     setGif(400,400,this->width() * 0.7,this->height() * 0.45);
+    initializeWindowMode(QRect(1170,30,200,44));
 
 }
 
 void MainScene::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
+    prepareCanvasPaint(painter);
     QPixmap pix;
 
     //背景图片
     pix.load(":/others/Image/StartPage.jpg");
 
-    painter.drawPixmap(0,0,this->width(),this->height(),pix);
+    painter.drawPixmap(0,0,1650,900,pix);
 
     GameArtwork::drawTitle(painter,QRectF(325,155,1000,235),"小白大战小金毛");
 
 }
 
-void MainScene::buildStartBtn(){
+void MainScene::buildStartBtn(const QString& progressPath){
     auto *startBtn = new QPushButton("开始游戏",this);
     startBtn->setObjectName("startGame");
     GameUi::styleButton(startBtn,"sunshine");
     startBtn->setGeometry(610,495,430,84);
 
     //实例化选择关卡的场景
-    chooseScene = new ChooseLevelScene;
+    chooseScene = new ChooseLevelScene(nullptr,progressPath);
 
     //监听选择界面返回按钮信号
     connect(chooseScene,&ChooseLevelScene::chooseSceneBack,this,[=](){

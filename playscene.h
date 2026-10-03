@@ -2,6 +2,7 @@
 #define PLAYSCENE_H
 
 #include <QMainWindow>
+#include "gamewindow.h"
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QVector>
@@ -11,7 +12,7 @@
 #include "gamepause.h"
 
 
-class PlayScene : public QMainWindow
+class PlayScene : public GameWindow
 {
     Q_OBJECT
 public:
@@ -27,6 +28,7 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    bool handleGameKey(QKeyEvent *event) override;
 
 private:
     GamePause pausedActivity;
@@ -39,6 +41,7 @@ private:
     void showAlmanac();
     void showAudioSettings();
     void finishGame();
+    void fitBattlefield();
     QVector<Card *> myCards;
 
     void buildBackBtn();
