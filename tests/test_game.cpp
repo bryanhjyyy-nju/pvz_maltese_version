@@ -47,6 +47,17 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void skyHeartSpacingUsesLongerIntervals() {
+        MyGameScene scene(3);
+        auto *timer=scene.findChild<QTimer*>("skyHeartTimer"); QVERIFY(timer && timer->isActive());
+        for(int i=0;i<20;++i) {
+            QVERIFY(timer->interval()>=5000); QVERIFY(timer->interval()<=6000);
+            QMetaObject::invokeMethod(timer,"timeout");
+        }
+        QCOMPARE(scene.findChildren<Heart*>().size(),20);
+        for(auto *heart : scene.findChildren<Heart*>())
+            QCOMPARE(heart->findChild<QPropertyAnimation*>("heartFallAnimation")->duration(),6000);
+    }
     void skyHeartsFallSlowlyAndRemainCollectable() {
         PlayScene play(3,nullptr,false); play.show();
         auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();

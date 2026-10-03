@@ -87,11 +87,12 @@ void MyGameScene::setupTimers() {
     memLongGameTimer->setInterval(500);
 
     memSkyHeartTimer = new QTimer(this);
+    memSkyHeartTimer->setObjectName("skyHeartTimer");
     connect(memSkyHeartTimer,&QTimer::timeout,this,[this] {
         generateSkyHeart();
-        memSkyHeartTimer->setInterval(3500+QRandomGenerator::global()->bounded(1000));
+        memSkyHeartTimer->setInterval(QRandomGenerator::global()->bounded(GameCatalog::SkyHeartMinIntervalMs,GameCatalog::SkyHeartMaxIntervalMs+1));
     });
-    memSkyHeartTimer->setInterval(3500+QRandomGenerator::global()->bounded(1000));
+    memSkyHeartTimer->setInterval(QRandomGenerator::global()->bounded(GameCatalog::SkyHeartMinIntervalMs,GameCatalog::SkyHeartMaxIntervalMs+1));
 
     memYellowDogsTimer = new QTimer(this);
     memYellowDogsTimer->setObjectName("waveTimer");

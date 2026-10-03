@@ -9,6 +9,8 @@ constexpr int LevelCount = 10;
 constexpr int BulletDamage = 30;
 constexpr int HeartValue = 25;
 constexpr int SkyHeartFallDurationMs = 6000;
+constexpr int SkyHeartMinIntervalMs = 5000;
+constexpr int SkyHeartMaxIntervalMs = 6000;
 constexpr int GuitarShotIntervalMs = 2000;
 struct Plant {
     QString id, name, image, description;
