@@ -1,3 +1,4 @@
+#include "audiomanager.h"
 #include "chooselevelscene.h"
 #include "almanacdialog.h"
 #include <QMessageBox>
@@ -146,6 +147,7 @@ void ChooseLevelScene::startLevel(int level) {
     });
     connect(play, &PlayScene::playSceneBack, this, [this] {
         if(!play) return;
+        AudioManager::instance().setBattle(false);
         play->hide();
         play->deleteLater();
         play = nullptr;

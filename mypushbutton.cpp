@@ -1,8 +1,10 @@
+#include "audiomanager.h"
 #include "mypushbutton.h"
 #include <QDebug>
 #include <QPropertyAnimation>
 
 MyPushButton::MyPushButton(QString firstImg, QString secondImg, float times){
+    connect(this, &QPushButton::clicked, this, [] { AudioManager::instance().play("click"); });
     this->firstImgPath = firstImg;
     this->secondImgPath = secondImg;
 

@@ -1,3 +1,4 @@
+#include "audiomanager.h"
 #include "card.h"
 #include <QDebug>
 #include <QPainter>
@@ -90,6 +91,7 @@ Card::Card(int cardNum):whiteType("") ,coolTime(0) ,heartCost(0),cardIndex(cardN
 
 
     connect(this, &Card::clicked, [this]() {
+        AudioManager::instance().play("click");
         emit cardSelected(this);
     });
 

@@ -45,4 +45,16 @@
         <file>Media/plant.mp3</file>
         <file>Media/sunShine.mp3</file>
     </qresource>
+    <qresource prefix="/audio">
+        <file>Media/menu.wav</file>
+        <file>Media/battle.wav</file>
+        <file>Media/click.wav</file>
+        <file>Media/plant.wav</file>
+        <file>Media/collect.wav</file>
+        <file>Media/shoot.wav</file>
+        <file>Media/hit.wav</file>
+        <file>Media/shovel.wav</file>
+        <file>Media/win.wav</file>
+        <file>Media/lose.wav</file>
+    </qresource>
 </RCC>

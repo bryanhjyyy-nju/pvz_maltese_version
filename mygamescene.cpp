@@ -1,3 +1,4 @@
+#include "audiomanager.h"
 #include "gamecatalog.h"
  //mygamescene.cpp
 #include "mygamescene.h"
@@ -201,6 +202,7 @@ void MyGameScene::generateSkyHeart(){
     //链接信号和槽
     connect(heart, &Heart::collected,this,[=](){
         addHeart(heart->value());
+        AudioManager::instance().play("collect");
         emit heartCollected();
         hearts.removeOne(heart);
     });
@@ -221,6 +223,7 @@ void MyGameScene::generateWhiteHeart(QPointF whitePos){
     hearts.append(heart);
     connect(heart, &Heart::collected,this,[=](){
         addHeart(heart->value());
+        AudioManager::instance().play("collect");
         emit heartCollected();
         hearts.removeOne(heart);
     });
@@ -232,6 +235,7 @@ void MyGameScene::generateWhiteHeart(QPointF whitePos){
 void MyGameScene::generateBullet(int r,int c){
     //调试
     // qDebug() << "generated!";
+    AudioManager::instance().play("shoot");
     Bullet *blt = new Bullet(r, c, memGameTimer);
     this->addItem(blt);
     bullets.append(blt);
@@ -315,6 +319,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
 
                 //用于调试
                 // qDebug() << col << " " << row;
+                AudioManager::instance().play("plant");
                 emit plantFinished(); //发送种植完成信号
 
                 if(chosenNum == 3){ myDog->startMoving(); }
@@ -337,6 +342,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
         int col, row;
         if(mapGrid->turnPosToMap(event->scenePos(),col,row)){
             if(mapOccupied[row * 9 + col]){
+                AudioManager::instance().play("shovel");
                 dogMap[row * 9 + col]->removeItself();
                 emit banTracking();
                 Card::setGameState(GameState::Normal);

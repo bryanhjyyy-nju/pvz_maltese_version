@@ -1,3 +1,4 @@
+#include "audiomanager.h"
 #include "mainscene.h"
 #include "almanacdialog.h"
 #include "ui_mainscene.h"
@@ -45,6 +46,9 @@ MainScene::MainScene(QWidget *parent)
         AlmanacDialog dialog(this);
         dialog.exec();
     });
+    auto *sound = new QPushButton("声音设置", this);
+    sound->setGeometry(1390, 30, 180, 44);
+    connect(sound, &QPushButton::clicked, this, [this] { AudioManager::instance().showSettings(this); });
     //插入两个动画
     setGif(400,400,this->width() * 0.05,this->height() * 0.45);
     setGif(400,400,this->width() * 0.7,this->height() * 0.45);

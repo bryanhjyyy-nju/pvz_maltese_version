@@ -1,3 +1,4 @@
+#include "audiomanager.h"
 #include "playscene.h"
 #include "gamecatalog.h"
 #include <QPainter>
@@ -15,6 +16,7 @@ PlayScene::PlayScene(int levelNum) :
     myGraphicsView(new QGraphicsView(myGameScene, this))
 {
 
+    AudioManager::instance().setBattle(true);
     //先初始化Card的静态成员
     Card::setCurRestHeart(50);
     Card::setGameState(GameState::Normal);
@@ -59,11 +61,13 @@ PlayScene::PlayScene(int levelNum) :
     connect(this, &PlayScene::gameLose, this, &PlayScene::gamePaused);
     connect(this, &PlayScene::gameWin, this, &PlayScene::gamePaused);
     connect(this, &PlayScene::gameLose, this, [=](){
+        AudioManager::instance().play("lose");
         QTimer::singleShot(3000,this,[=](){
             emit this->playSceneBack();
         });
     });
     connect(this, &PlayScene::gameWin, this, [=](){
+        AudioManager::instance().play("win");
         QTimer::singleShot(3000,this,[=](){
             emit this->playSceneBack();
         });

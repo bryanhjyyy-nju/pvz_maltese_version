@@ -1,4 +1,6 @@
 #include <QtTest>
+#include "audiomanager.h"
+#include <QSettings>
 #include "map.h"
 #include "progressstore.h"
 #include <QTemporaryDir>
@@ -10,7 +12,25 @@
 
 class GameTests : public QObject {
     Q_OBJECT
+    QTemporaryDir settingsDirectory;
 private slots:
+    void initTestCase() {
+        QCoreApplication::setOrganizationName("PvZTests");
+        QCoreApplication::setApplicationName("PvZTests");
+        QSettings::setDefaultFormat(QSettings::IniFormat);
+        QSettings::setPath(QSettings::IniFormat,QSettings::UserScope,settingsDirectory.path());
+        QSettings().setValue("audio/music",0);
+        QSettings().setValue("audio/effects",0);
+    }
+    void audioAssetsLoad() {
+        auto& manager = AudioManager::instance();
+        const auto sounds = manager.findChildren<QSoundEffect*>();
+        QCOMPARE(sounds.size(),10);
+        for(auto *sound : sounds) {
+            QTRY_VERIFY_WITH_TIMEOUT(sound->status() != QSoundEffect::Loading,5000);
+            QCOMPARE(sound->status(),QSoundEffect::Ready);
+        }
+    }
     void progressRoundTrip() {
         QTemporaryDir dir;
         const auto path = dir.filePath("save/progress.json");

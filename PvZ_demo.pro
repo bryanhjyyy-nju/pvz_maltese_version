@@ -1,4 +1,4 @@
-QT       += core gui
+QT       += core gui multimedia
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -75,3 +75,6 @@ HEADERS += progressstore.h
 
 SOURCES += almanacdialog.cpp
 HEADERS += almanacdialog.h
+
+SOURCES += audiomanager.cpp
+HEADERS += audiomanager.h

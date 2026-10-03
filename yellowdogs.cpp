@@ -1,3 +1,4 @@
+#include "audiomanager.h"
 #include "gamecatalog.h"
 #include "yellowdogs.h"
 #include <QDebug>
@@ -97,6 +98,7 @@ bool YellowDogs::checkCollision(){
 }
 
 void YellowDogs::getAttacked(int atk){
+    AudioManager::instance().play("hit");
     cutHp(atk);
     emit isAttacked();
 }
