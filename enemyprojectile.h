@@ -5,7 +5,7 @@ class EnemyProjectile : public QGraphicsObject {
     Q_OBJECT
 public:
     EnemyProjectile(MyGameScene *scene, int row, const QPointF& origin, int damage);
-    QRectF boundingRect() const override { return QRectF(0,0,34,50); }
+    QRectF boundingRect() const override { return QRectF(0,0,48,56); }
     void paint(QPainter *,const QStyleOptionGraphicsItem *,QWidget *) override;
     int damage() const { return m_damage; }
 private:

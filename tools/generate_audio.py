@@ -66,7 +66,7 @@ if __name__ == "__main__":
     music("menu",.45,0)
     music("battle",.32,-5)
     effects = {"pause":[79,72,67], "shovelPickup":[72,84], "shovelPutdown":[64,52],
-               "death":[67,60,48], "restShot":[60,55,48],
+               "death":[67,60,48], "guitarShot":[64,71,76], "guitarHit":[83,71],
                "click":[84], "plant":[55,62], "collect":[79,84,88],
                "shoot":[79,67], "hit":[43,38], "shovel":[50,43],
                "win":[72,76,79,84], "lose":[60,56,53,48]}

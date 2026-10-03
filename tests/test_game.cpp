@@ -38,7 +38,7 @@ private slots:
     void audioAssetsLoad() {
         auto& manager = AudioManager::instance();
         const auto sounds = manager.findChildren<QSoundEffect*>();
-        QCOMPARE(sounds.size(),17);
+        QCOMPARE(sounds.size(),18);
         for(auto *sound : sounds) {
             QTRY_VERIFY_WITH_TIMEOUT(sound->status() != QSoundEffect::Loading,5000);
             QCOMPARE(sound->status(),QSoundEffect::Ready);
@@ -184,7 +184,7 @@ private slots:
             auto *enemy=static_cast<YellowDogs*>(scene->getZombieMap(i+1).back());
             enemy->stopMoving(); enemy->setPos(750,130+145*(i+1+.5)-enemy->boundingRect().height()/2);
             if(i==0) enemy->getAttacked(30);
-            if(i==1) enemy->shootRest();
+            if(i==1) enemy->shootNote();
             if(i==2) enemy->getAttacked(10000);
         }
         QTest::qWait(120); play.gamePaused();
@@ -366,7 +366,7 @@ private slots:
         auto *enemy=static_cast<YellowDogs*>(scene->getZombieMap(2).front());
         enemy->stopMoving(); enemy->setPos(plant->pos()+QPointF(60,0));
         QVERIFY(enemy->checkCollision());
-        enemy->shootRest();
+        enemy->shootNote();
         QVERIFY(scene->findChildren<EnemyProjectile*>().isEmpty());
         int health=plant->getHp();
         enemy->startAttacking(plant);
@@ -381,9 +381,34 @@ private slots:
         play.gameContinued();
         enemy->getAttacked(10000);
         health=plant->getHp();
-        enemy->startAttacking(plant); enemy->shootRest();
+        enemy->startAttacking(plant); enemy->shootNote();
         QCOMPARE(plant->getHp(),health);
         QVERIFY(scene->findChildren<EnemyProjectile*>().isEmpty());
+    }
+    void guitarTimerFiresForwardWithoutTarget() {
+        PlayScene play(8);
+        auto *scene=play.findChild<MyGameScene*>();
+        scene->setAYellowDog(2,1);
+        auto *enemy=static_cast<YellowDogs*>(scene->getZombieMap(2).front());
+        auto *timer=enemy->findChild<QTimer*>("guitarRangedTimer");
+        QVERIFY(timer); QVERIFY(timer->isActive());
+        QCOMPARE(timer->interval(),GameCatalog::GuitarShotIntervalMs);
+        QVERIFY(!scene->plantAhead(2,enemy->x()));
+        timer->start(80);
+        QTRY_COMPARE_WITH_TIMEOUT(scene->findChildren<EnemyProjectile*>().size(),1,300);
+        timer->setInterval(GameCatalog::GuitarShotIntervalMs);
+        auto *shot=scene->findChild<EnemyProjectile*>();
+        const auto position=shot->pos();
+        QTest::qWait(80);
+        QVERIFY(shot->x()<position.x());
+        QCOMPARE(shot->y(),position.y());
+        play.gamePaused();
+        const auto frozen=shot->pos();
+        QTest::qWait(120);
+        QCOMPARE(shot->pos(),frozen);
+        QVERIFY(!timer->isActive());
+        play.gameContinued();
+        QVERIFY(timer->isActive());
     }
     void combatAnimationsAndRange() {
         PlayScene play(8);
@@ -398,7 +423,7 @@ private slots:
         scene->setAYellowDog(2,1);
         auto *enemy = static_cast<YellowDogs*>(scene->getZombieMap(2).front());
         enemy->stopMoving(); enemy->setPos(750,430);
-        enemy->shootRest();
+        enemy->shootNote();
         auto shots = scene->findChildren<EnemyProjectile*>();
         QCOMPARE(shots.size(),1);
         QCOMPARE(shots.front()->damage(),GameCatalog::enemies()[1].attack/4);

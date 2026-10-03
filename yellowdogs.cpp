@@ -41,7 +41,8 @@ YellowDogs::YellowDogs(int row, MyGameScene *scene, int type)
     });
     if(enemyType == 1) {
         auto *rangedTimer = new QTimer(this);
-        connect(rangedTimer,&QTimer::timeout,this,&YellowDogs::shootRest);
+        rangedTimer->setObjectName("guitarRangedTimer");
+        connect(rangedTimer,&QTimer::timeout,this,&YellowDogs::shootNote);
         rangedTimer->start(GameCatalog::GuitarShotIntervalMs);
     }
 }
@@ -79,11 +80,10 @@ void YellowDogs::startAttacking(WhiteDogs *plant) {
     }
     if(plant->getHp()<=0) { plant->removeItself(); targetWhiteDog=nullptr; }
 }
-void YellowDogs::shootRest() {
+void YellowDogs::shootNote() {
     if(enemyType!=1 || removed || m_isGamePaused || !scene() || checkCollision()) return;
-    auto *plant = battleScene->plantAhead(itRow,x());
-    if(!plant || x()-plant->x()>550) return;
-    AudioManager::instance().play("restShot");
+    // Shoot forward on every ranged tick, even before plants enter melee range.
+    AudioManager::instance().play("guitarShot");
     new EnemyProjectile(battleScene,itRow,QPointF(x()+10,130+145*(itRow+.5)),atkPower/4);
 }
 void YellowDogs::getAttacked(int attack) {

@@ -28,7 +28,7 @@ AudioManager::AudioManager(QObject *parent) : QObject(parent) {
         connect(sound,&QSoundEffect::statusChanged,this,[this]{ updateMusic(); });
     }
     for(const auto& name : {"pause","click","plant","collect","shoot","hit","shovel","win","lose",
-                           "bite","death","shovelPickup","shovelPutdown","uproot","restShot"})
+                           "bite","death","shovelPickup","shovelPutdown","uproot","guitarShot","guitarHit"})
         m_effects.insert(name,create(name));
     updateMusic();
 }

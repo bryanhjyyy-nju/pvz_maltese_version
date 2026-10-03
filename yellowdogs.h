@@ -28,7 +28,7 @@ public:
     void setBiteProgress(qreal v) { m_biteProgress=v; update(); }
     void setDeathProgress(qreal v) { m_deathProgress=v; update(); }
     void paint(QPainter *,const QStyleOptionGraphicsItem *,QWidget *) override;
-    void shootRest();
+    void shootNote();
 
     void initArgues(int typeNum); //初始化血量和速度和图像
 

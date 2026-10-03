@@ -70,6 +70,7 @@
         <file>Media/shovelPickup.wav</file>
         <file>Media/shovelPutdown.wav</file>
         <file>Media/uproot.wav</file>
-        <file>Media/restShot.wav</file>
+        <file>Media/guitarShot.wav</file>
+        <file>Media/guitarHit.wav</file>
     </qresource>
 </RCC>
