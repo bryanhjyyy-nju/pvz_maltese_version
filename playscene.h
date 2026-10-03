@@ -33,6 +33,9 @@ private:
     bool paused = false;
     bool finished = false;
     QPushButton *pauseButton = nullptr;
+    class PauseDialog *pauseMenu = nullptr;
+    class QShortcut *pauseShortcut = nullptr;
+    void togglePauseMenu();
     void showAlmanac();
     void showAudioSettings();
     void finishGame();
@@ -53,6 +56,7 @@ private:
     void stopShow();
 
 signals:
+    void mainMenuRequested();
     void playSceneBack();
     void signalToCard();
     void gameLose();

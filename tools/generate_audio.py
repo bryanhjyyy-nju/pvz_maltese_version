@@ -47,7 +47,7 @@ if __name__ == "__main__":
     OUT.mkdir(exist_ok=True)
     music("menu",.45,0)
     music("battle",.32,-5)
-    effects = {"click":[84], "plant":[55,62], "collect":[79,84,88],
+    effects = {"pause":[79,72,67], "click":[84], "plant":[55,62], "collect":[79,84,88],
                "shoot":[79,67], "hit":[43,38], "shovel":[50,43],
                "win":[72,76,79,84], "lose":[60,56,53,48]}
     for name, pitches in effects.items():

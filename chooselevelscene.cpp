@@ -154,6 +154,15 @@ void ChooseLevelScene::startLevel(int level) {
         refreshProgress();
         show();
     });
+    connect(play, &PlayScene::mainMenuRequested, this, [this] {
+        if(!play) return;
+        AudioManager::instance().setBattle(false);
+        play->hide();
+        play->deleteLater();
+        play = nullptr;
+        refreshProgress();
+        emit chooseSceneBack();
+    });
     hide();
     play->show();
 }

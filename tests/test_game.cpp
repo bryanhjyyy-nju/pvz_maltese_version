@@ -16,6 +16,8 @@
 #include "mygamescene.h"
 #include "singingwhite.h"
 #include "yellowdogs.h"
+#include "pausedialog.h"
+#include <QPushButton>
 
 class GameTests : public QObject {
     Q_OBJECT
@@ -32,7 +34,7 @@ private slots:
     void audioAssetsLoad() {
         auto& manager = AudioManager::instance();
         const auto sounds = manager.findChildren<QSoundEffect*>();
-        QCOMPARE(sounds.size(),10);
+        QCOMPARE(sounds.size(),11);
         for(auto *sound : sounds) {
             QTRY_VERIFY_WITH_TIMEOUT(sound->status() != QSoundEffect::Loading,5000);
             QCOMPARE(sound->status(),QSoundEffect::Ready);
@@ -81,6 +83,28 @@ private slots:
         QVERIFY(enemy->pos().x() < position.x());
         QVERIFY(plants.front()->findChild<QTimer*>()->isActive());
         play.gamePaused();
+    }
+    void spacePauseMenu() {
+        QTemporaryDir dir;
+        ChooseLevelScene picker(nullptr,dir.filePath("progress.json"));
+        QSignalSpy home(&picker,&ChooseLevelScene::chooseSceneBack);
+        picker.startLevel(4);
+        auto *view = picker.play->findChild<QGraphicsView*>();
+        view->setFocus();
+        QTest::qWait(50);
+        QTest::keyClick(view,Qt::Key_Space);
+        auto *menu = picker.play->findChild<PauseDialog*>();
+        QVERIFY(menu); QVERIFY(menu->isVisible());
+        QCOMPARE(Card::currentState(),GameState::Paused);
+        QTest::qWait(50);
+        QTest::keyClick(menu,Qt::Key_Space);
+        QVERIFY(!menu->isVisible());
+        QCOMPARE(Card::currentState(),GameState::Normal);
+        QTest::keyClick(view,Qt::Key_Space);
+        QTest::mouseClick(menu->findChild<QPushButton*>("mainMenu"),Qt::LeftButton);
+        QCOMPARE(home.count(),1);
+        QVERIFY(!picker.play);
+        QCOMPARE(ProgressStore(dir.filePath("progress.json")).resumeLevel(),4);
     }
     void renderScreens() {
         const QString folder = qEnvironmentVariable("PVZ_CAPTURE_DIR");

@@ -1,4 +1,12 @@
 <RCC>
+    <qresource prefix="/ui">
+        <file>Image/ui/panel_brown.png</file>
+        <file>Image/ui/panel_brown_corners_a.png</file>
+        <file>Image/ui/button_brown.png</file>
+        <file>Image/ui/button_red.png</file>
+        <file>Image/ui/banner_hanging.png</file>
+        <file>Image/ui/minimap_icon_star_yellow.png</file>
+    </qresource>
     <qresource prefix="/white">
         <file>Image/dogIcon.jpg</file>
         <file>Image/heartWhite.gif</file>
@@ -56,5 +64,6 @@
         <file>Media/shovel.wav</file>
         <file>Media/win.wav</file>
         <file>Media/lose.wav</file>
+        <file>Media/pause.wav</file>
     </qresource>
 </RCC>

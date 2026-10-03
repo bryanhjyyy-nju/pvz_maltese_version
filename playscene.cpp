@@ -1,6 +1,8 @@
 #include "audiomanager.h"
 #include "playscene.h"
 #include "almanacdialog.h"
+#include "pausedialog.h"
+#include "gameui.h"
 #include <QShortcut>
 #include "gamecatalog.h"
 #include <QPainter>
@@ -296,7 +298,7 @@ void PlayScene::gamePaused() {
     stopShow();
     Card::setGameState(GameState::Paused);
     pausedActivity.pause(this);
-    pauseButton->setText("继续 [P]");
+    pauseButton->setText("继续 [空格]");
     AudioManager::instance().setPaused(true);
 }
 
@@ -304,13 +306,16 @@ void PlayScene::gameContinued() {
     if(!paused || finished) return;
     pausedActivity.resume();
     paused = false;
+    if(pauseMenu) pauseMenu->hide();
+    if(pauseShortcut) pauseShortcut->setEnabled(true);
     Card::setGameState(GameState::Normal);
-    pauseButton->setText("暂停 [P]");
+    pauseButton->setText("暂停 [空格]");
     myGraphicsView->setFocus();
     AudioManager::instance().setPaused(false);
 }
 
 void PlayScene::finishGame() {
+    if(pauseMenu) pauseMenu->hide();
     gamePaused();
     finished = true;
     Card::setGameState(GameState::GameOver);
@@ -318,31 +323,52 @@ void PlayScene::finishGame() {
 }
 
 void PlayScene::buildPauseBtn() {
-    pauseButton = new QPushButton("暂停 [P]",this);
+    pauseButton = new QPushButton("暂停 [空格]",this);
+    GameUi::styleButton(pauseButton);
     pauseButton->setFocusPolicy(Qt::NoFocus);
     pauseButton->setGeometry(20,220,170,44);
-    auto toggle = [this] { if(paused) gameContinued(); else gamePaused(); };
+    auto toggle = [this] { togglePauseMenu(); };
     connect(pauseButton,&QPushButton::clicked,this,toggle);
-    auto *shortcut = new QShortcut(QKeySequence(Qt::Key_P),this);
+    auto *shortcut = new QShortcut(QKeySequence(Qt::Key_Space),this);
+    pauseShortcut = shortcut;
     connect(shortcut,&QShortcut::activated,this,toggle);
     auto *almanac = new QPushButton("植物 / 僵尸图鉴",this);
+    GameUi::styleButton(almanac,"gold");
     almanac->setFocusPolicy(Qt::NoFocus);
     almanac->setGeometry(20,280,170,44);
     connect(almanac,&QPushButton::clicked,this,&PlayScene::showAlmanac);
     auto *sound = new QPushButton("声音设置",this);
+    GameUi::styleButton(sound,"gold");
     sound->setFocusPolicy(Qt::NoFocus);
     sound->setGeometry(20,340,170,44);
     connect(sound,&QPushButton::clicked,this,&PlayScene::showAudioSettings);
-    auto *help = new QLabel("R：切换铲子\nEsc：取消选择\nP：暂停 / 继续\n\n退出后可继续本关",this);
+    auto *help = new QLabel("点击铲子 / R：拾取或放下\nEsc：取消选择\n空格：暂停 / 继续\n\n退出后可继续本关",this);
     help->setGeometry(20,405,250,180);
     help->setStyleSheet("color:#26392e; font-size:16px; background:rgba(255,253,245,225); border-radius:10px; padding:12px;");
+}
+
+void PlayScene::togglePauseMenu() {
+    if(finished) return;
+    if(paused) { gameContinued(); return; }
+    gamePaused();
+    AudioManager::instance().play("pause");
+    if(!pauseMenu) {
+        pauseMenu = new PauseDialog(this);
+        connect(pauseMenu,&PauseDialog::resumeRequested,this,&PlayScene::gameContinued);
+        connect(pauseMenu,&PauseDialog::mainMenuRequested,this,&PlayScene::mainMenuRequested);
+        connect(pauseMenu,&PauseDialog::almanacRequested,this,&PlayScene::showAlmanac);
+        connect(pauseMenu,&PauseDialog::audioRequested,this,&PlayScene::showAudioSettings);
+    }
+    pauseMenu->move(mapToGlobal(rect().center()) - pauseMenu->rect().center());
+    pauseMenu->show();
+    pauseShortcut->setEnabled(false);
 }
 
 void PlayScene::showAlmanac() {
     if(finished) return;
     const bool wasPaused = paused;
     gamePaused();
-    AlmanacDialog dialog(this);
+    AlmanacDialog dialog(pauseMenu && pauseMenu->isVisible() ? static_cast<QWidget*>(pauseMenu) : this);
     dialog.exec();
     if(!wasPaused) gameContinued();
 }
@@ -351,7 +377,7 @@ void PlayScene::showAudioSettings() {
     if(finished) return;
     const bool wasPaused = paused;
     gamePaused();
-    AudioManager::instance().showSettings(this);
+    AudioManager::instance().showSettings(pauseMenu && pauseMenu->isVisible() ? static_cast<QWidget*>(pauseMenu) : this);
     if(!wasPaused) gameContinued();
 }
 
