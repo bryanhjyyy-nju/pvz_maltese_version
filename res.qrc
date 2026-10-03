@@ -65,5 +65,11 @@
         <file>Media/win.wav</file>
         <file>Media/lose.wav</file>
         <file>Media/pause.wav</file>
+        <file>Media/bite.wav</file>
+        <file>Media/death.wav</file>
+        <file>Media/shovelPickup.wav</file>
+        <file>Media/shovelPutdown.wav</file>
+        <file>Media/uproot.wav</file>
+        <file>Media/restShot.wav</file>
     </qresource>
 </RCC>

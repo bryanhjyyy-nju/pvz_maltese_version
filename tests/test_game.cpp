@@ -34,7 +34,7 @@ private slots:
     void audioAssetsLoad() {
         auto& manager = AudioManager::instance();
         const auto sounds = manager.findChildren<QSoundEffect*>();
-        QCOMPARE(sounds.size(),11);
+        QCOMPARE(sounds.size(),17);
         for(auto *sound : sounds) {
             QTRY_VERIFY_WITH_TIMEOUT(sound->status() != QSoundEffect::Loading,5000);
             QCOMPARE(sound->status(),QSoundEffect::Ready);
@@ -105,6 +105,35 @@ private slots:
         QCOMPARE(home.count(),1);
         QVERIFY(!picker.play);
         QCOMPARE(ProgressStore(dir.filePath("progress.json")).resumeLevel(),4);
+    }
+    void mouseShovel() {
+        PlayScene play(8);
+        play.show();
+        auto *scene = play.findChild<MyGameScene*>();
+        auto *view = play.findChild<QGraphicsView*>();
+        auto click = [&](const QPointF& pos) {
+            QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(pos));
+        };
+        click(QPointF(1240,50));
+        QCOMPARE(Card::currentState(),GameState::Shoveling);
+        click(QPointF(1240,50));
+        QCOMPARE(Card::currentState(),GameState::Normal);
+        scene->setChosenNum(1);
+        Card::setGameState(GameState::PrePlace);
+        click(QPointF(440,490));
+        QCOMPARE(scene->findChildren<WhiteDogs*>().size(),1);
+        click(QPointF(1240,50));
+        click(QPointF(440,490));
+        QCOMPARE(Card::currentState(),GameState::Normal);
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        QVERIFY(scene->findChildren<WhiteDogs*>().isEmpty());
+        QTest::keyClick(view,Qt::Key_R);
+        QCOMPARE(Card::currentState(),GameState::Shoveling);
+        QTest::keyClick(view,Qt::Key_Escape);
+        QCOMPARE(Card::currentState(),GameState::Normal);
+        play.gamePaused();
+        scene->toggleShovel();
+        QCOMPARE(Card::currentState(),GameState::Paused);
     }
     void renderScreens() {
         const QString folder = qEnvironmentVariable("PVZ_CAPTURE_DIR");

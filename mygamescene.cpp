@@ -174,6 +174,11 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
         return;
     }
     if(event->button() != Qt::LeftButton) return;
+    if(Card::currentState() != GameState::Paused && Card::currentState() != GameState::GameOver
+        && QRectF(1200,0,100,105).contains(event->scenePos())) {
+        toggleShovel();
+        return;
+    }
     if (Card::currentState() == GameState::PrePlace){
         int col, row;
         if(mapGrid->turnPosToMap(event->scenePos(),col,row)){
@@ -193,11 +198,9 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
         int col, row;
         if(mapGrid->turnPosToMap(event->scenePos(),col,row)){
             if(dogMap[row * 9 + col]){
-                AudioManager::instance().play("shovel");
+                AudioManager::instance().play("uproot");
                 dogMap[row * 9 + col]->removeItself();
-                emit banTracking();
-                Card::setGameState(GameState::Normal);
-                shovel->setPos(1200,0);
+                cancelSelection();
             }
         }
         QGraphicsScene::mousePressEvent(event);
@@ -220,14 +223,9 @@ void MyGameScene::keyPressEvent(QKeyEvent *event){
         cancelSelection();
         return;
     }
-    if(event->key() == Qt::Key_R && Card::currentState() == GameState::Normal){
-        emit allowTracking();
-        Card::setGameState(GameState::Shoveling);
-    }
-    else if(event->key() == Qt::Key_R && Card::currentState() == GameState::Shoveling){
-        emit banTracking();
-        Card::setGameState(GameState::Normal);
-        shovel->setPos(1200,0);
+    if(event->key() == Qt::Key_R){
+        toggleShovel();
+        return;
     }
     QGraphicsScene::keyPressEvent(event);
 }
@@ -292,10 +290,22 @@ void MyGameScene::winTheGame() { finishGame(true); }
 void MyGameScene::loseTheGame() { finishGame(false); }
 
 void MyGameScene::cancelSelection() {
+    if(Card::currentState() == GameState::Shoveling)
+        AudioManager::instance().play("shovelPutdown");
     Card::setGameState(GameState::Normal);
     emit pleaseRemovePreImage();
     emit banTracking();
     shovel->setPos(1200,0);
+}
+
+void MyGameScene::toggleShovel() {
+    const auto state = Card::currentState();
+    if(state == GameState::Paused || state == GameState::GameOver || m_isGameOver) return;
+    if(state == GameState::Shoveling) { cancelSelection(); return; }
+    cancelSelection();
+    Card::setGameState(GameState::Shoveling);
+    AudioManager::instance().play("shovelPickup");
+    emit allowTracking();
 }
 
 void MyGameScene::addHeartItem(Heart *heart) {

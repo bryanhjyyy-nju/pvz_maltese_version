@@ -25,6 +25,7 @@ public:
 
     void setChosenNum(int cardNum);
     void cancelSelection();
+    void toggleShovel();
     int getChosenNum() const { return chosenNum; }
 
     int getRestHeart() const { return restHeart; } // 得到剩余爱心的数值

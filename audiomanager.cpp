@@ -26,7 +26,8 @@ AudioManager::AudioManager(QObject *parent) : QObject(parent) {
         sound->setLoopCount(QSoundEffect::Infinite);
         connect(sound,&QSoundEffect::statusChanged,this,[this]{ updateMusic(); });
     }
-    for(const auto& name : {"pause","click","plant","collect","shoot","hit","shovel","win","lose"})
+    for(const auto& name : {"pause","click","plant","collect","shoot","hit","shovel","win","lose",
+                           "bite","death","shovelPickup","shovelPutdown","uproot","restShot"})
         m_effects.insert(name,create(name));
     updateMusic();
 }

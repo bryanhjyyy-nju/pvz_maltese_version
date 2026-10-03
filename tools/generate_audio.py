@@ -5,6 +5,7 @@ Run from any directory with Python 3. Uses only the standard library.
 import math
 import struct
 import wave
+import random
 from pathlib import Path
 
 RATE = 22050
@@ -43,11 +44,30 @@ def music(name, beat, transpose):
     save(name,buffer)
 
 
+def texture(name, duration, frequency, noise, seed):
+    """Decaying noise gives physical actions a timbre distinct from the music."""
+    rng = random.Random(seed)
+    buffer = []
+    smoothed = 0.0
+    length = int(duration * RATE)
+    for i in range(length):
+        t = i / RATE
+        smoothed = smoothed * .65 + rng.uniform(-1,1) * .35
+        envelope = min(1,t/.005) * (1-i/length)**2
+        tone = math.sin(2*math.pi*frequency*t*(1-.35*i/length))
+        if name == "bite":
+            envelope *= .35 + .65 * abs(math.sin(2*math.pi*7*t))
+        buffer.append(.65*envelope*((1-noise)*tone+noise*smoothed))
+    save(name,buffer)
+
+
 if __name__ == "__main__":
     OUT.mkdir(exist_ok=True)
     music("menu",.45,0)
     music("battle",.32,-5)
-    effects = {"pause":[79,72,67], "click":[84], "plant":[55,62], "collect":[79,84,88],
+    effects = {"pause":[79,72,67], "shovelPickup":[72,84], "shovelPutdown":[64,52],
+               "death":[67,60,48], "restShot":[60,55,48],
+               "click":[84], "plant":[55,62], "collect":[79,84,88],
                "shoot":[79,67], "hit":[43,38], "shovel":[50,43],
                "win":[72,76,79,84], "lose":[60,56,53,48]}
     for name, pitches in effects.items():
@@ -56,3 +76,7 @@ if __name__ == "__main__":
         for i,pitch in enumerate(pitches):
             note(buffer,i*step,step+.15,pitch,.28)
         save(name,buffer)
+    texture("bite",.24,105,.88,11)
+    texture("hit",.15,155,.5,12)
+    texture("uproot",.32,80,.95,13)
+    texture("plant",.19,95,.72,14)

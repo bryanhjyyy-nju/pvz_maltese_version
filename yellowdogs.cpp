@@ -51,6 +51,7 @@ YellowDogs::YellowDogs(int row,MyGameScene *myScene,int typeNum): targetWhiteDog
         if(checkCollision()){
             //攻击逻辑
             stopMoving();
+            AudioManager::instance().play("bite");
             targetWhiteDog->cutHp(atkPower);
             if(targetWhiteDog->getAtkType() == 1){ getAttacked(atkPower * 0.5); } //跳舞小狗反弹50%伤害
             else if(targetWhiteDog->getAtkType() == 2){
