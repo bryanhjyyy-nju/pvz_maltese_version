@@ -18,6 +18,7 @@
 #include "yellowdogs.h"
 #include "pausedialog.h"
 #include <QPushButton>
+#include "enemyprojectile.h"
 
 class GameTests : public QObject {
     Q_OBJECT
@@ -243,7 +244,7 @@ private slots:
                 target->getAttacked(10000); // Duplicate damage must not count another kill.
             }
         }
-        QCOMPARE(wins.count(),1);
+        QTRY_COMPARE_WITH_TIMEOUT(wins.count(),1,1000);
         for(auto *timer : scene.findChildren<QTimer*>()) QVERIFY(!timer->isActive());
         scene.setAYellowDog(2);
         QVERIFY(scene.getZombieMap(2).isEmpty());
@@ -263,6 +264,43 @@ private slots:
         QTest::qWait(100);
         QCOMPARE(enemy->pos(),pos);
     }
+    void combatAnimationsAndRange() {
+        PlayScene play(8);
+        play.show();
+        auto *scene = play.findChild<MyGameScene*>();
+        auto *view = play.findChild<QGraphicsView*>();
+        scene->setChosenNum(1);
+        Card::setGameState(GameState::PrePlace);
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,490)));
+        auto *plant = scene->plantAhead(2,1000);
+        QVERIFY(plant);
+        scene->setAYellowDog(2,1);
+        auto *enemy = static_cast<YellowDogs*>(scene->getZombieMap(2).front());
+        enemy->stopMoving(); enemy->setPos(750,430);
+        enemy->shootRest();
+        auto shots = scene->findChildren<EnemyProjectile*>();
+        QCOMPARE(shots.size(),1);
+        QCOMPARE(shots.front()->damage(),GameCatalog::enemies()[1].attack/4);
+        play.gamePaused();
+        const auto pos = shots.front()->pos();
+        QTest::qWait(150); QCOMPARE(shots.front()->pos(),pos);
+        play.gameContinued();
+        const int health = plant->getHp();
+        QTRY_COMPARE_WITH_TIMEOUT(plant->getHp(),health-15,2000);
+        enemy->getAttacked(30);
+        QVERIFY(enemy->hitFlash()>0);
+        enemy->getAttacked(10000);
+        QVERIFY(enemy->isDying());
+        QVERIFY(scene->getZombieMap(2).isEmpty());
+        QSignalSpy removed(enemy,&YellowDogs::pleaseRemoveMe);
+        play.gamePaused();
+        const auto death = enemy->deathProgress();
+        QTest::qWait(650);
+        QCOMPARE(enemy->deathProgress(),death);
+        QCOMPARE(removed.count(),0);
+        play.gameContinued();
+        QTRY_COMPARE_WITH_TIMEOUT(removed.count(),1,800);
+    }
     void enemyLimit() {
         MyGameScene scene(1);
         for(int i=0;i<8;++i) scene.setAYellowDog(2);
@@ -270,7 +308,7 @@ private slots:
         QSignalSpy win(&scene,&MyGameScene::gameWin);
         const auto enemies = scene.getZombieMap(2);
         for(auto* enemy: enemies) static_cast<YellowDogs*>(enemy)->getAttacked(10000);
-        QCOMPARE(win.count(),1);
+        QTRY_COMPARE_WITH_TIMEOUT(win.count(),1,1000);
         QVERIFY(scene.getZombieMap(2).isEmpty());
     }
 };

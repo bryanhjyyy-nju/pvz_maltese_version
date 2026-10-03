@@ -16,6 +16,7 @@
 #include "heart.h"
 #include <QApplication>
 #include "yellowdogs.h"
+#include "combateffect.h"
 #include "bullet.h"
 #include <QPainter>
 #include <QKeyEvent>
@@ -199,6 +200,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
         if(mapGrid->turnPosToMap(event->scenePos(),col,row)){
             if(dogMap[row * 9 + col]){
                 AudioManager::instance().play("uproot");
+                new CombatEffect(this,dogMap[row * 9 + col]->sceneBoundingRect().center(),CombatEffect::Uproot);
                 dogMap[row * 9 + col]->removeItself();
                 cancelSelection();
             }
@@ -242,6 +244,9 @@ void MyGameScene::setAYellowDog(int r,int typeNum){
     this->zombieMap[r].append(zombie);
     this->addItem(zombie);
     connect(zombie, &YellowDogs::arrivedYourHome, this, &MyGameScene::gameLose);
+    connect(zombie,&YellowDogs::dying,this,[this,r](YellowDogs *zb) {
+        zombieMap[r].removeOne(zb);
+    });
     connect(zombie, &YellowDogs::pleaseRemoveMe, this,[=](YellowDogs *zb){
         this->removeItem(zb);
         zombieMap[r].removeOne(zb);
@@ -353,7 +358,18 @@ void MyGameScene::placePlant(int row, int col) {
     Card::setGameState(GameState::Normal);
 
     AudioManager::instance().play("plant");
+    new CombatEffect(this,centerLoc,CombatEffect::Plant);
     emit plantFinished(); //发送种植完成信号
 
     if(chosenNum == 3){ myDog->startMoving(); }
+}
+
+WhiteDogs *MyGameScene::plantAhead(int row, qreal x) const {
+    if(row<0 || row>=5) return nullptr;
+    WhiteDogs *nearest=nullptr;
+    for(int col=0;col<9;++col) {
+        auto *plant=dogMap[row*9+col];
+        if(plant && plant->getHp()>0 && plant->x()<x && (!nearest || plant->x()>nearest->x())) nearest=plant;
+    }
+    return nearest;
 }

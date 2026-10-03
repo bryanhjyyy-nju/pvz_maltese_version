@@ -38,6 +38,7 @@ public:
     void generateWhiteHeart(QPointF whitePos); //从小白中产出爱心
     void setAYellowDog(int r, int typeNum = 0); //在第r行产生一只小金毛
     void generateBullet(int r, int c); //产生子弹
+    WhiteDogs *plantAhead(int row, qreal x) const;
     QTimer *getGameTimer() const { return memGameTimer; } //获取gameTimer
     const QVector<MyItem *>& getZombieMap(int row) const { return zombieMap.at(row); }
 private:

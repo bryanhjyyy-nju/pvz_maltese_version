@@ -51,7 +51,7 @@ bool Bullet::checkCollision(){
         YellowDogs *yellowDog = dynamic_cast<YellowDogs*>(item);
 
         // 如果转换成功，并且它和 Bullet 在同一行，说明发生了有效碰撞
-        if (yellowDog && yellowDog->getItRow() == this->getItRow()) {
+        if (yellowDog && !yellowDog->isDying() && yellowDog->getItRow() == this->getItRow()) {
             // 在这里你可以保存目标，以便后续攻击
             targetZombie = yellowDog;
             return true; // 发现碰撞，返回 true

@@ -18,7 +18,7 @@ const QVector<Plant>& plants() {
 const QVector<Enemy>& enemies() {
     static const QVector<Enemy> values = {
         {"叉子金毛", ":/yellow/Image/forkYellow.gif", "基础敌人，沿本排前进并攻击接触到的小白。",300,50,25,8,0.55},
-        {"吉他金毛", ":/yellow/Image/guitarYellow.gif", "生命值较高、移动较慢；从第 4 关开始出现。",800,60,15,8,0.4},
+        {"吉他金毛", ":/yellow/Image/guitarYellow.gif", "第 4 关起出现。每 4 秒向本排前方 550 像素内的小白发射休止符，造成 15 伤害（近战的 1/4）；贴身时只啃食。",480,60,15,8,0.4},
         {"冲刺金毛", ":/yellow/Image/dashYellow.gif", "移动快、近战伤害高；从第 7 关开始出现。",400,80,40,10,0.5}
     };
     return values;
