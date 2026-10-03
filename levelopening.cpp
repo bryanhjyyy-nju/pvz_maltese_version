@@ -9,6 +9,8 @@
 #include <QMovie>
 #include <QRandomGenerator>
 #include <QPainter>
+#include <QBitmap>
+#include <QRegion>
 
 LevelOpening::LevelOpening(int number,MyGameScene *board,BattleBanner *text,QObject *parent)
     : QObject(parent),level(number),scene(board),banner(text),timeline(this) {
@@ -43,13 +45,23 @@ void LevelOpening::enter(Stage next) {
 void LevelOpening::buildPreview() {
     const auto types=WavePlanner::previewTypes(level,*QRandomGenerator::global());
     for(int i=0;i<types.size();++i) {
-        auto *image=scene->addPixmap(QPixmap()); image->setZValue(3);
+        const auto& enemy=GameCatalog::enemies()[types[i]];
+        const qreal scale=enemy.scale;
+        const QPixmap source(enemy.image);
+        const QPixmap firstFrame=source.scaled(source.size()*scale,Qt::KeepAspectRatio,Qt::SmoothTransformation);
+        auto *image=scene->addPixmap(firstFrame); image->setZValue(3);
+        image->setAcceptedMouseButtons(Qt::NoButton);
         image->setData(0,QString("enemyPreview")); image->setData(1,types[i]);
-        image->setPos(1605+(i%3)*140+QRandomGenerator::global()->bounded(-20,21),
-                      235+(i/3)*145+QRandomGenerator::global()->bounded(-18,19));
-        auto *movie=new QMovie(GameCatalog::enemies()[types[i]].image,QByteArray(),this);
-        connect(movie,&QMovie::frameChanged,this,[movie,image] {
-            image->setPixmap(movie->currentPixmap().scaled(115,115,Qt::KeepAspectRatio,Qt::SmoothTransformation));
+        // Align visible feet on the road; GIF canvases have different padding.
+        QRect visible=firstFrame.hasAlphaChannel() ? QRegion(firstFrame.mask()).boundingRect() : firstFrame.rect();
+        if(visible.isEmpty()) visible=firstFrame.rect();
+        const qreal ground=360+(i/3)*145+QRandomGenerator::global()->bounded(-14,15);
+        image->setPos(1595+(i%3)*150+QRandomGenerator::global()->bounded(-10,11),ground-visible.bottom());
+        auto *movie=new QMovie(enemy.image,QByteArray(),this);
+        movie->setCacheMode(QMovie::CacheAll);
+        connect(movie,&QMovie::frameChanged,this,[movie,image,scale] {
+            const QPixmap frame=movie->currentPixmap();
+            image->setPixmap(frame.scaled(frame.size()*scale,Qt::KeepAspectRatio,Qt::SmoothTransformation));
         });
         previewItems.append(image); previewMovies.append(movie); movie->start();
     }

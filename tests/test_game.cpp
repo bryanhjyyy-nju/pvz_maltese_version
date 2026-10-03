@@ -47,6 +47,30 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void previewMatchesActualEnemySize() {
+        PlayScene play(10); play.show();
+        auto *scene=play.findChild<MyGameScene*>(); auto *opening=play.findChild<LevelOpening*>();
+        const auto movies=opening->findChildren<QMovie*>(); QCOMPARE(movies.size(),12);
+        for(int frame : {0,1}) {
+            for(auto *movie : movies) { movie->setPaused(true); QVERIFY(movie->jumpToFrame(frame)); }
+            int checked=0; QSet<int> types;
+            for(auto *item : scene->items()) {
+                if(item->data(0).toString()!="enemyPreview") continue;
+                auto *preview=dynamic_cast<QGraphicsPixmapItem*>(item); QVERIFY(preview);
+                const int type=item->data(1).toInt(); types.insert(type);
+                YellowDogs actual(2,scene,type);
+                auto *movie=actual.findChild<QMovie*>(); movie->setPaused(true); QVERIFY(movie->jumpToFrame(frame));
+                QCOMPARE(preview->pixmap().size(),actual.pixmap().size());
+                QCOMPARE(preview->pixmap().toImage().convertToFormat(QImage::Format_ARGB32),actual.pixmap().toImage().convertToFormat(QImage::Format_ARGB32));
+                ++checked;
+            }
+            QCOMPARE(checked,12); QCOMPARE(types.size(),3);
+        }
+        auto *timeline=opening->findChild<QVariantAnimation*>("openingTimeline"); timeline->setCurrentTime(timeline->duration());
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(!folder.isEmpty()) QVERIFY(play.grab().save(folder+"/preview-battle-size.png"));
+        QVERIFY(scene->findChildren<YellowDogs*>().isEmpty()); QVERIFY(!scene->gameplayStarted());
+    }
     void skyHeartSpacingUsesLongerIntervals() {
         MyGameScene scene(3);
         auto *timer=scene.findChild<QTimer*>("skyHeartTimer"); QVERIFY(timer && timer->isActive());
