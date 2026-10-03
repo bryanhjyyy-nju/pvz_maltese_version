@@ -1,5 +1,5 @@
 #include "audiomanager.h"
-#include "mainscene.h"
+#include "gamewindow.h"
 
 #include <QApplication>
 
@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName("DogGarden");
     QCoreApplication::setApplicationName("PvZ_demo");
     AudioManager::instance();
-    MainScene w;
+    GameWindow w;
     w.show();
     return a.exec();
 }

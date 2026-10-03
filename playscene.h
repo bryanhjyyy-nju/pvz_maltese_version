@@ -2,7 +2,7 @@
 #define PLAYSCENE_H
 
 #include <QMainWindow>
-#include "gamewindow.h"
+#include "gamepage.h"
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QVector>
@@ -12,7 +12,7 @@
 #include "gamepause.h"
 
 
-class PlayScene : public GameWindow
+class PlayScene : public GamePage
 {
     Q_OBJECT
 public:
@@ -21,13 +21,13 @@ public:
     const int levelIndex;
 
     //构造函数：第几关
-    PlayScene(int levelNum);
+    PlayScene(int levelNum,QWidget *parent=nullptr);
+    void shutdown();
 
     void gamePaused();
     void gameContinued();
 
 protected:
-    void closeEvent(QCloseEvent *event) override;
     bool handleGameKey(QKeyEvent *event) override;
 
 private:

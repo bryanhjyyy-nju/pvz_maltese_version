@@ -22,7 +22,7 @@
 #include <QPainter>
 #include <QKeyEvent>
 
-MyGameScene::MyGameScene(int n,QMainWindow *parent)
+MyGameScene::MyGameScene(int n,QObject *parent)
     : QGraphicsScene(parent)
 {
     gameLevelNum = qBound(1,n,GameCatalog::LevelCount);

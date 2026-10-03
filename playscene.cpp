@@ -15,7 +15,8 @@
 #include <QMouseEvent>
 #include <QKeyEvent>
 
-PlayScene::PlayScene(int levelNum) :
+PlayScene::PlayScene(int levelNum,QWidget *parent) :
+    GamePage(parent),
     levelIndex(levelNum), //维护传进来的关卡号, 加载地图
     myGameScene(new MyGameScene(levelNum,this)),
     myGraphicsView(new QGraphicsView(myGameScene, this))
@@ -32,7 +33,6 @@ PlayScene::PlayScene(int levelNum) :
 
     //初始化游戏场景
     //设置固定大小
-    setFixedSize(1650,900);
 
     //设置窗口图标
     setWindowIcon(QIcon(":/white/Image/dogIcon.jpg"));
@@ -64,7 +64,9 @@ PlayScene::PlayScene(int levelNum) :
 
     //加载植物
     // 设置主窗口
-    setCentralWidget(myGraphicsView);  // 将视图设置为中心部件
+    myGraphicsView->setProperty("manualScale",true);
+    myGraphicsView->setGeometry(rect());
+    myGraphicsView->lower();
 
     connect(this, &PlayScene::gameLose, this, &PlayScene::finishGame);
     connect(this, &PlayScene::gameWin, this, &PlayScene::finishGame);
@@ -144,12 +146,12 @@ PlayScene::PlayScene(int levelNum) :
         preImageLabel->move(point-QPoint(preImageLabel->width()/2,preImageLabel->height()/2));
         preImageLabel->setVisible(true);
     });
-    connect(this,&GameWindow::canvasResized,this,&PlayScene::fitBattlefield);
-    connect(this,&GameWindow::displayModeChanging,this,[this] {
+    connect(this,&GamePage::canvasResized,this,&PlayScene::fitBattlefield);
+    connect(this,&GamePage::displayModeChanging,this,[this] {
         if(!paused && !finished) myGameScene->cancelSelection();
         stopShow();
     });
-    initializeWindowMode(QRect(20,760,250,44));
+    initializePage(QRect(20,760,250,44));
 }
 
 
@@ -409,12 +411,18 @@ void PlayScene::showAudioSettings() {
     if(!wasPaused) gameContinued();
 }
 
-void PlayScene::closeEvent(QCloseEvent *event) {
-    Q_UNUSED(event);
-    emit playSceneBack();
+void PlayScene::shutdown() {
+    gamePaused();
+    finished=true;
+    // Also stop activity created after the initial pause (e.g. deferred effects).
+    pausedActivity.pause(this);
+    if(pauseShortcut) pauseShortcut->setEnabled(false);
+    for(auto *dialog : findChildren<QDialog*>()) dialog->hide();
+    stopShow();
 }
 
 void PlayScene::fitBattlefield() {
+    myGraphicsView->setGeometry(rect());
     myGraphicsView->resetTransform();
     myGraphicsView->scale(canvasScale(),canvasScale());
     myGraphicsView->centerOn(myGameScene->sceneRect().center());

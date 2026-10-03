@@ -7,8 +7,8 @@ SOURCES += waveplanner.cpp
 HEADERS += waveplanner.h
 SOURCES += gameartwork.cpp
 HEADERS += gameartwork.h
-SOURCES += gamewindow.cpp
-HEADERS += gamewindow.h
+SOURCES += gamepage.cpp gamewindow.cpp
+HEADERS += gamepage.h gamewindow.h
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -66,8 +66,6 @@ HEADERS += \
     whitedogs.h \
     yellowdogs.h
 
-FORMS += \
-    mainscene.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

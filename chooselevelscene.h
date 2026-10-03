@@ -1,37 +1,22 @@
-#ifndef CHOOSELEVELSCENE_H
-#define CHOOSELEVELSCENE_H
-
-#include <QMainWindow>
-#include "gamewindow.h"
-#include "playscene.h"
-#include "progressstore.h"
-#include <QPushButton>
-
-class ChooseLevelScene : public GameWindow
-{
+#pragma once
+#include "gamepage.h"
+class ProgressStore;
+class QPushButton;
+class QLabel;
+class ChooseLevelScene : public GamePage {
     Q_OBJECT
 public:
-    explicit ChooseLevelScene(QWidget *parent = nullptr, const QString& progressPath = {});
-    ~ChooseLevelScene() override;
-
-    //重写绘图事件
+    explicit ChooseLevelScene(QWidget *parent=nullptr);
+    void refreshProgress(const ProgressStore& progress);
+protected:
     void paintEvent(QPaintEvent *) override;
-
-    PlayScene *play = nullptr;
-    void startLevel(int level);
-    void refreshProgress();
-    void continueGame();
-
+signals:
+    void levelRequested(int level);
+    void continueRequested();
+    void backRequested();
 private:
-    ProgressStore progress;
-    QPushButton *continueButton = nullptr;
-    QLabel *progressLabel = nullptr;
+    QPushButton *continueButton=nullptr;
+    QLabel *progressLabel=nullptr;
     void buildBackBtn();
     void buildLevelBtn();
-
-signals:
-    //自定义信号告诉主场景点击了返回
-    void chooseSceneBack();
 };
-
-#endif // CHOOSELEVELSCENE_H

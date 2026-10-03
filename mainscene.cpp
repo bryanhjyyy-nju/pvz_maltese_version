@@ -2,7 +2,6 @@
 #include "mainscene.h"
 #include "almanacdialog.h"
 #include "gameui.h"
-#include "ui_mainscene.h"
 #include <QPainter>
 #include "gameartwork.h"
 #include <QPushButton>
@@ -11,17 +10,8 @@
 #include <QLabel>
 #include <QTimer>
 
-MainScene::MainScene(QWidget *parent,const QString& progressPath)
-    : GameWindow(parent)
-    , ui(new Ui::MainScene)
+MainScene::MainScene(QWidget *parent) : GamePage(parent)
 {
-    ui->setupUi(this);
-
-    //配置主场景
-
-    //设置固定大小
-    setFixedSize(1650,900);
-
     //设置窗口图标
     setWindowIcon(QIcon(":/white/Image/dogIcon.jpg"));
 
@@ -29,7 +19,7 @@ MainScene::MainScene(QWidget *parent,const QString& progressPath)
     setWindowTitle("小白大战小金毛");
 
     //添加开始按钮
-    buildStartBtn(progressPath);
+    buildStartBtn();
 
     //添加退出游戏按钮
     buildQuitBtn();
@@ -39,9 +29,7 @@ MainScene::MainScene(QWidget *parent,const QString& progressPath)
     resume->setObjectName("resumeGame");
     resume->setGeometry(620, 795, 190, 48);
     connect(resume, &QPushButton::clicked, this, [this] {
-        hide();
-        chooseScene->show();
-        chooseScene->continueGame();
+        emit continueRequested();
     });
     auto *almanac = new QPushButton("植物 / 僵尸图鉴", this);
     GameUi::styleButton(almanac,"gold");
@@ -57,7 +45,7 @@ MainScene::MainScene(QWidget *parent,const QString& progressPath)
     //插入两个动画
     setGif(400,400,this->width() * 0.05,this->height() * 0.45);
     setGif(400,400,this->width() * 0.7,this->height() * 0.45);
-    initializeWindowMode(QRect(1170,30,200,44));
+    initializePage(QRect(1170,30,200,44));
 
 }
 
@@ -76,26 +64,14 @@ void MainScene::paintEvent(QPaintEvent *)
 
 }
 
-void MainScene::buildStartBtn(const QString& progressPath){
-    auto *startBtn = new QPushButton("开始游戏",this);
+void MainScene::buildStartBtn() {
+    auto *startBtn=new QPushButton("开始游戏",this);
     startBtn->setObjectName("startGame");
     GameUi::styleButton(startBtn,"sunshine");
     startBtn->setGeometry(610,495,430,84);
-
-    //实例化选择关卡的场景
-    chooseScene = new ChooseLevelScene(nullptr,progressPath);
-
-    //监听选择界面返回按钮信号
-    connect(chooseScene,&ChooseLevelScene::chooseSceneBack,this,[=](){
-        chooseScene->hide();
-        this->show();
-    });
-
     connect(startBtn,&QPushButton::clicked,this,[this] {
         AudioManager::instance().play("click");
-        hide();
-        chooseScene->refreshProgress();
-        chooseScene->show();
+        emit startRequested();
     });
 }
 
@@ -106,7 +82,7 @@ void MainScene::buildQuitBtn() {
     quitBtn->setGeometry(610,595,430,84);
     connect(quitBtn,&QPushButton::clicked,this,[this] {
         AudioManager::instance().play("click");
-        close();
+        emit quitRequested();
     });
 }
 
@@ -119,10 +95,4 @@ void MainScene::setGif(int w,int h,int x,int y){
     label->setScaledContents(true);
     label->move(x,y);
     movie->start();
-}
-
-MainScene::~MainScene()
-{
-    delete chooseScene;
-    delete ui;
 }

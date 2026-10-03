@@ -8,13 +8,10 @@
 #include <QDebug>
 #include <QTimer>
 #include <QLabel>
-#include "playscene.h"
+#include "progressstore.h"
 
-ChooseLevelScene::ChooseLevelScene(QWidget *parent, const QString& progressPath)
-    : GameWindow{parent}, progress(progressPath)
+ChooseLevelScene::ChooseLevelScene(QWidget *parent) : GamePage(parent)
 {
-    //设置固定大小
-    setFixedSize(1650,900);
 
     //设置窗口图标
     setWindowIcon(QIcon(":/white/Image/dogIcon.jpg"));
@@ -31,7 +28,7 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent, const QString& progressPath)
     GameUi::styleButton(continueButton);
     continueButton->setObjectName("continueGame");
     continueButton->setGeometry(620, 785, 400, 48);
-    connect(continueButton, &QPushButton::clicked, this, &ChooseLevelScene::continueGame);
+    connect(continueButton, &QPushButton::clicked, this, &ChooseLevelScene::continueRequested);
     progressLabel = new QLabel(this);
     progressLabel->setGeometry(280, 840, 1100, 45);
     progressLabel->setAlignment(Qt::AlignCenter);
@@ -43,8 +40,7 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent, const QString& progressPath)
         AlmanacDialog dialog(this);
         dialog.exec();
     });
-    refreshProgress();
-    initializeWindowMode(QRect(1170,30,200,44));
+    initializePage(QRect(1170,30,200,44));
 }
 
 void ChooseLevelScene::paintEvent(QPaintEvent *){
@@ -85,7 +81,7 @@ void ChooseLevelScene::buildBackBtn(){
 
         //延时返回
         QTimer::singleShot(300,this,[=](){
-            emit this->chooseSceneBack();
+            emit backRequested();
         });
     });
 }
@@ -102,7 +98,7 @@ void ChooseLevelScene::buildLevelBtn(){
         connect(levelBtn,&MyPushButton::clicked,this,[=](){
             // qDebug() << i + 1;
 
-            startLevel(i + 1);
+            emit levelRequested(i+1);
         });
 
         //显示文字：第 i 关
@@ -127,52 +123,11 @@ void ChooseLevelScene::buildLevelBtn(){
     }
 }
 
-void ChooseLevelScene::refreshProgress() {
-    progress.load();
+void ChooseLevelScene::refreshProgress(const ProgressStore& progress) {
     continueButton->setEnabled(progress.hasProgress());
     continueButton->setText(QString("继续游戏 · 第 %1 关").arg(progress.resumeLevel()));
     progressLabel->setText(progress.error().isEmpty()
         ? QString("最高通过：%1 / 10 关 · 自动记录关卡进度；继续游戏会从该关开局。%2")
             .arg(progress.highestCompleted()).arg(progress.highestCompleted() == 10 ? "  已全部通关！" : "")
         : progress.error());
-}
-
-void ChooseLevelScene::continueGame() {
-    refreshProgress();
-    if(progress.hasProgress()) startLevel(progress.resumeLevel());
-}
-
-void ChooseLevelScene::startLevel(int level) {
-    if(play) return;
-    if(!progress.startLevel(level))
-        QMessageBox::warning(this, "存档未写入", progress.error());
-    play = new PlayScene(level);
-    connect(play, &PlayScene::gameWin, this, [this, level] {
-        if(!progress.completeLevel(level))
-            QMessageBox::warning(play, "存档未写入", progress.error());
-    });
-    connect(play, &PlayScene::playSceneBack, this, [this] {
-        if(!play) return;
-        AudioManager::instance().setBattle(false);
-        play->hide();
-        play->deleteLater();
-        play = nullptr;
-        refreshProgress();
-        show();
-    });
-    connect(play, &PlayScene::mainMenuRequested, this, [this] {
-        if(!play) return;
-        AudioManager::instance().setBattle(false);
-        play->hide();
-        play->deleteLater();
-        play = nullptr;
-        refreshProgress();
-        emit chooseSceneBack();
-    });
-    hide();
-    play->show();
-}
-
-ChooseLevelScene::~ChooseLevelScene() {
-    delete play;
 }

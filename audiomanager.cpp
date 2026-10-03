@@ -34,14 +34,15 @@ AudioManager::AudioManager(QObject *parent) : QObject(parent) {
 }
 void AudioManager::play(const QString& name) {
     auto *sound = m_effects.value(name,nullptr);
-    if(!sound || m_effectsVolume == 0 || sound->status() != QSoundEffect::Ready) return;
+    if(m_stopped || !sound || m_effectsVolume == 0 || sound->status() != QSoundEffect::Ready) return;
     sound->setVolume(m_effectsVolume/100.0);
     // Avoid restarting a sound on every simultaneous collision.
     if(!sound->isPlaying()) sound->play();
 }
-void AudioManager::setBattle(bool battle) { m_inBattle = battle; m_paused = false; updateMusic(); }
+void AudioManager::setBattle(bool battle) { m_stopped=false; m_inBattle = battle; m_paused = false; updateMusic(); }
 void AudioManager::setPaused(bool paused) { m_paused = paused; updateMusic(); }
 void AudioManager::updateMusic() {
+    if(m_stopped) return;
     auto *active = m_inBattle ? m_battle : m_menu;
     auto *inactive = m_inBattle ? m_menu : m_battle;
     inactive->stop();
@@ -92,4 +93,10 @@ void AudioManager::showSettings(QWidget *parent) {
     connect(buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
     layout.addRow(buttons);
     dialog.exec();
+}
+
+void AudioManager::stopAll() {
+    m_stopped=true;
+    m_menu->stop(); m_battle->stop();
+    for(auto *sound : m_effects) sound->stop();
 }

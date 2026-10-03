@@ -7,6 +7,7 @@ class QWidget;
 class AudioManager : public QObject {
 public:
     static AudioManager& instance();
+    void stopAll();
     void play(const QString& name);
     void setBattle(bool battle);
     void setPaused(bool paused);
@@ -21,5 +22,5 @@ private:
     QSoundEffect *m_menu, *m_battle;
     QHash<QString,QSoundEffect*> m_effects;
     int m_musicVolume = 30, m_effectsVolume = 60;
-    bool m_inBattle = false, m_paused = false;
+    bool m_inBattle = false, m_paused = false, m_stopped = false;
 };

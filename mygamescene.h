@@ -1,7 +1,7 @@
 #ifndef MYGAMESCENE_H
 #define MYGAMESCENE_H
 
-#include <QMainWindow>
+#include <QObject>
 #include <QGraphicsScene>
 #include "map.h"
 #include <QGraphicsTextItem>
@@ -16,7 +16,7 @@ class MyGameScene : public QGraphicsScene
 {
     Q_OBJECT
 public:
-    explicit MyGameScene(int n = 1,QMainWindow *parent = nullptr);
+    explicit MyGameScene(int n = 1,QObject *parent = nullptr);
 
     ~MyGameScene() override = default;
 

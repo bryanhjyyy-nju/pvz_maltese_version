@@ -1,140 +1,125 @@
 #include "gamewindow.h"
-#include "gameui.h"
+#include "gamepage.h"
+#include "mainscene.h"
+#include "chooselevelscene.h"
+#include "playscene.h"
+#include "audiomanager.h"
 #include <QApplication>
-#include <QAbstractButton>
+#include <QCloseEvent>
 #include <QDialog>
-#include <QFontInfo>
 #include <QKeyEvent>
-#include <QLabel>
-#include <QPainter>
-#include <QPushButton>
-#include <QRegularExpression>
-#include <QResizeEvent>
-#include <QVariant>
+#include <QMessageBox>
+#include <QStackedWidget>
 
-namespace {
-bool preferredFullScreen=false;
-QString scaledStyle(const QString& original,qreal scale) {
-    static const QRegularExpression pixels("(\\d+(?:\\.\\d+)?)px");
-    QString result;
-    int offset=0;
-    auto matches=pixels.globalMatch(original);
-    while(matches.hasNext()) {
-        const auto match=matches.next();
-        result+=original.mid(offset,match.capturedStart()-offset);
-        result+=QString::number(qRound(match.captured(1).toDouble()*scale))+"px";
-        offset=match.capturedEnd();
-    }
-    return result+original.mid(offset);
+GameWindow::GameWindow(QWidget *parent,const QString& progressPath)
+    : QMainWindow(parent), pages(new QStackedWidget(this)),
+      home(new MainScene(pages)), levels(new ChooseLevelScene(pages)), progress(progressPath) {
+    setCentralWidget(pages);
+    resize(logicalSize());
+    setMinimumSize(825,450);
+    setWindowIcon(QIcon(":/white/Image/dogIcon.jpg"));
+    pages->addWidget(home);
+    pages->addWidget(levels);
+    connectPage(home);
+    connectPage(levels);
+    connect(home,&MainScene::startRequested,this,&GameWindow::showLevels);
+    connect(home,&MainScene::continueRequested,this,&GameWindow::continueGame);
+    connect(home,&MainScene::quitRequested,this,&QWidget::close);
+    connect(levels,&ChooseLevelScene::levelRequested,this,&GameWindow::startLevel);
+    connect(levels,&ChooseLevelScene::continueRequested,this,&GameWindow::continueGame);
+    connect(levels,&ChooseLevelScene::backRequested,this,&GameWindow::showMenu);
+    qApp->installEventFilter(this);
+    showMenu();
 }
-QSize scaledSize(const QSize& size,qreal scale) {
-    return QSize(qBound(0,qRound(size.width()*scale),QWIDGETSIZE_MAX),
-                 qBound(0,qRound(size.height()*scale),QWIDGETSIZE_MAX));
+GamePage *GameWindow::currentPage() const { return qobject_cast<GamePage*>(pages->currentWidget()); }
+void GameWindow::connectPage(GamePage *page) {
+    connect(page,&GamePage::fullScreenRequested,this,&GameWindow::toggleFullScreen);
+    page->setDisplayState(isFullScreen(),isMaximized());
 }
+void GameWindow::discardBattle() {
+    if(!battle) return;
+    auto *old=battle;
+    battle=nullptr;
+    old->disconnect(this);
+    old->shutdown();
+    pages->removeWidget(old);
+    old->deleteLater();
 }
-GameWindow::GameWindow(QWidget *parent) : QMainWindow(parent) { qApp->installEventFilter(this); }
-bool GameWindow::fullScreenEnabled() { return preferredFullScreen; }
-qreal GameWindow::canvasScale() const {
-    return qMin(width()/1650.0,height()/900.0);
+void GameWindow::showMenu() {
+    if(closing) return;
+    discardBattle();
+    AudioManager::instance().setBattle(false);
+    pages->setCurrentWidget(home);
+    setWindowTitle("小白大战小金毛");
 }
-QPointF GameWindow::canvasOffset() const {
-    const auto size=QSizeF(logicalSize())*canvasScale();
-    return QPointF((width()-size.width())/2,(height()-size.height())/2);
+void GameWindow::showLevels() {
+    if(closing) return;
+    discardBattle();
+    AudioManager::instance().setBattle(false);
+    progress.load();
+    levels->refreshProgress(progress);
+    pages->setCurrentWidget(levels);
+    setWindowTitle("小白大战小金毛 · 选择关卡");
 }
-QPoint GameWindow::canvasPoint(const QPointF& logical) const {
-    return (canvasOffset()+logical*canvasScale()).toPoint();
+void GameWindow::startLevel(int level) {
+    if(closing || battle || level<1 || level>10) return;
+    if(!progress.startLevel(level)) QMessageBox::warning(this,"存档未写入",progress.error());
+    battle=new PlayScene(level,pages);
+    pages->addWidget(battle);
+    connectPage(battle);
+    connect(battle,&PlayScene::gameWin,this,[this,level] {
+        if(!progress.completeLevel(level)) QMessageBox::warning(this,"存档未写入",progress.error());
+    });
+    connect(battle,&PlayScene::playSceneBack,this,&GameWindow::showLevels);
+    connect(battle,&PlayScene::mainMenuRequested,this,&GameWindow::showMenu);
+    pages->setCurrentWidget(battle);
+    setWindowTitle(QString("小白大战小金毛 · 第 %1 关").arg(level));
 }
-void GameWindow::initializeWindowMode(const QRect& buttonRect) {
-    screenButton=new QPushButton("全屏 [F11]",this);
-    screenButton->setObjectName("fullScreenButton");
-    GameUi::styleButton(screenButton,"gold");
-    screenButton->setGeometry(buttonRect);
-    connect(screenButton,&QPushButton::clicked,this,&GameWindow::toggleFullScreen);
-    for(auto *widget : findChildren<QWidget*>(QString(),Qt::FindDirectChildrenOnly)) {
-        if(widget==centralWidget() || widget->isWindow() || widget->property("manualScale").toBool()) continue;
-        widget->ensurePolished();
-        Overlay saved;
-        saved.widget=widget; saved.geometry=widget->geometry();
-        saved.minimum=widget->minimumSize(); saved.maximum=widget->maximumSize();
-        saved.font=widget->font(); saved.style=widget->styleSheet();
-        if(auto *button=qobject_cast<QAbstractButton*>(widget)) saved.iconSize=button->iconSize();
-        if(auto *label=qobject_cast<QLabel*>(widget))
-            if(!label->movie()) saved.pixmap=label->pixmap(Qt::ReturnByValue);
-        overlays.append(saved);
-    }
-    initialized=true;
-    layoutOverlays();
-}
-void GameWindow::prepareCanvasPaint(QPainter& painter) const {
-    painter.fillRect(rect(),QColor("#20291c"));
-    painter.translate(canvasOffset());
-    painter.scale(canvasScale(),canvasScale());
+void GameWindow::continueGame() {
+    progress.load();
+    if(progress.hasProgress()) startLevel(progress.resumeLevel());
 }
 void GameWindow::setFullScreenEnabled(bool enabled) {
-    preferredFullScreen=enabled;
-    applyWindowMode(enabled);
-}
-void GameWindow::toggleFullScreen() { setFullScreenEnabled(!isFullScreen()); }
-void GameWindow::applyWindowMode(bool enabled) {
-    if(enabled==isFullScreen()) return;
-    emit displayModeChanging();
+    if(enabled==isFullScreen() && !(isMaximized() && !enabled)) return;
+    if(auto *page=currentPage()) emit page->displayModeChanging();
     if(enabled) {
-        windowedGeometry=geometry();
-        setMinimumSize(0,0); setMaximumSize(QWIDGETSIZE_MAX,QWIDGETSIZE_MAX);
-        QMainWindow::showFullScreen();
+        windowedGeometry=isMaximized() ? normalGeometry() : geometry();
+        showFullScreen();
     } else {
-        QMainWindow::showNormal();
-        setFixedSize(logicalSize());
-        if(windowedGeometry.isValid()) move(windowedGeometry.topLeft());
+        const auto restore=isFullScreen() && windowedGeometry.isValid() ? windowedGeometry : normalGeometry();
+        showNormal();
+        if(restore.isValid()) setGeometry(restore);
     }
-    layoutOverlays();
+    updateDisplayState();
 }
-void GameWindow::show() {
-    applyWindowMode(preferredFullScreen);
-    QMainWindow::show();
+void GameWindow::toggleFullScreen() { setFullScreenEnabled(!(isFullScreen() || isMaximized())); }
+void GameWindow::updateDisplayState() {
+    for(int i=0;i<pages->count();++i)
+        static_cast<GamePage*>(pages->widget(i))->setDisplayState(isFullScreen(),isMaximized());
 }
-void GameWindow::layoutOverlays() {
-    if(!initialized) return;
-    const auto scale=canvasScale();
-    for(const auto& saved : overlays) {
-        auto *widget=saved.widget.data();
-        if(!widget) continue;
-        widget->setMinimumSize(0,0); widget->setMaximumSize(QWIDGETSIZE_MAX,QWIDGETSIZE_MAX);
-        QFont font=saved.font;
-        font.setPixelSize(qMax(1,qRound(QFontInfo(saved.font).pixelSize()*scale)));
-        widget->setFont(scale==1 ? saved.font : font);
-        widget->setStyleSheet(scale==1 ? saved.style : scaledStyle(saved.style,scale));
-        widget->setMinimumSize(scaledSize(saved.minimum,scale));
-        widget->setMaximumSize(scaledSize(saved.maximum,scale));
-        widget->setGeometry(QRect(canvasPoint(saved.geometry.topLeft()),scaledSize(saved.geometry.size(),scale)));
-        if(auto *button=qobject_cast<QAbstractButton*>(widget)) button->setIconSize(scaledSize(saved.iconSize,scale));
-        if(auto *label=qobject_cast<QLabel*>(widget))
-            if(!saved.pixmap.isNull()) label->setPixmap(saved.pixmap.scaled(scaledSize(saved.pixmap.size(),scale),Qt::KeepAspectRatio,Qt::SmoothTransformation));
+void GameWindow::changeEvent(QEvent *event) {
+    QMainWindow::changeEvent(event);
+    if(event->type()==QEvent::WindowStateChange) {
+        if(auto *page=currentPage()) emit page->displayModeChanging();
+        updateDisplayState();
     }
-    screenButton->setText(isFullScreen() ? "退出全屏 [F11]" : "全屏 [F11]");
-    for(auto *dialog : findChildren<QDialog*>())
-        if(dialog->isVisible()) dialog->move(mapToGlobal(rect().center())-dialog->rect().center());
-    emit canvasResized();
-    update();
-}
-void GameWindow::resizeEvent(QResizeEvent *event) {
-    QMainWindow::resizeEvent(event);
-    layoutOverlays();
-}
-void GameWindow::showEvent(QShowEvent *event) {
-    QMainWindow::showEvent(event);
-    layoutOverlays();
 }
 bool GameWindow::eventFilter(QObject *watched,QEvent *event) {
-    if(event->type()!=QEvent::KeyPress || !initialized) return QMainWindow::eventFilter(watched,event);
-    auto *key=static_cast<QKeyEvent*>(event);
+    if(event->type()!=QEvent::KeyPress) return QMainWindow::eventFilter(watched,event);
     auto *widget=qobject_cast<QWidget*>(watched);
     while(widget && widget!=this) widget=widget->parentWidget();
     if(!widget) return false;
+    auto *key=static_cast<QKeyEvent*>(event);
     if(key->key()==Qt::Key_F11) {
         if(!key->isAutoRepeat()) toggleFullScreen();
         return true;
     }
-    return handleGameKey(key);
+    return currentPage() && currentPage()->processGameKey(key);
 }
-bool GameWindow::handleGameKey(QKeyEvent *) { return false; }
+void GameWindow::closeEvent(QCloseEvent *event) {
+    closing=true;
+    if(battle) battle->shutdown();
+    for(auto *dialog : findChildren<QDialog*>()) dialog->hide();
+    AudioManager::instance().stopAll();
+    event->accept();
+}

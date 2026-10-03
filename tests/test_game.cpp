@@ -4,6 +4,8 @@
 #include "playscene.h"
 #include "almanacdialog.h"
 #include "mainscene.h"
+#include "gamewindow.h"
+#include "chooselevelscene.h"
 #include "gamepause.h"
 #include <QTabWidget>
 #include <QGraphicsView>
@@ -29,6 +31,7 @@ class GameTests : public QObject {
     QTemporaryDir settingsDirectory;
 private slots:
     void initTestCase() {
+        QApplication::setQuitOnLastWindowClosed(false);
         QCoreApplication::setOrganizationName("PvZTests");
         QCoreApplication::setApplicationName("PvZTests");
         QSettings::setDefaultFormat(QSettings::IniFormat);
@@ -91,14 +94,14 @@ private slots:
     }
     void spacePauseMenu() {
         QTemporaryDir dir;
-        ChooseLevelScene picker(nullptr,dir.filePath("progress.json"));
-        QSignalSpy home(&picker,&ChooseLevelScene::chooseSceneBack);
+        GameWindow picker(nullptr,dir.filePath("progress.json"));
+        picker.show();
         picker.startLevel(4);
-        auto *view = picker.play->findChild<QGraphicsView*>();
+        auto *view = picker.playPage()->findChild<QGraphicsView*>();
         view->setFocus();
         QTest::qWait(50);
         QTest::keyClick(view,Qt::Key_Space);
-        auto *menu = picker.play->findChild<PauseDialog*>();
+        auto *menu = picker.playPage()->findChild<PauseDialog*>();
         QVERIFY(menu); QVERIFY(menu->isVisible());
         QCOMPARE(Card::currentState(),GameState::Paused);
         QTest::qWait(50);
@@ -118,8 +121,8 @@ private slots:
         QCOMPARE(Card::currentState(),GameState::Normal);
         QTest::keyClick(view,Qt::Key_Space);
         QTest::mouseClick(menu->findChild<QPushButton*>("mainMenu"),Qt::LeftButton);
-        QCOMPARE(home.count(),1);
-        QVERIFY(!picker.play);
+        QCOMPARE(picker.currentPage(),static_cast<GamePage*>(picker.homePage()));
+        QVERIFY(!picker.playPage());
         QCOMPARE(ProgressStore(dir.filePath("progress.json")).resumeLevel(),4);
     }
     void mouseShovel() {
@@ -211,24 +214,25 @@ private slots:
     void continueFlow() {
         QTemporaryDir dir;
         const auto path = dir.filePath("progress.json");
-        ChooseLevelScene picker(nullptr,path);
+        GameWindow picker(nullptr,path);
+        picker.show();
         picker.startLevel(1);
-        QVERIFY(picker.play);
+        QVERIFY(picker.playPage());
         QCOMPARE(ProgressStore(path).resumeLevel(),1);
-        picker.play->gameWin();
+        picker.playPage()->gameWin();
         QCOMPARE(ProgressStore(path).resumeLevel(),2);
-        picker.play->playSceneBack();
-        QVERIFY(!picker.play);
+        picker.playPage()->playSceneBack();
+        QVERIFY(!picker.playPage());
         picker.continueGame();
-        QVERIFY(picker.play);
-        QCOMPARE(picker.play->levelIndex,2);
-        picker.play->gameLose();
-        picker.play->close();
-        QVERIFY(!picker.play);
+        QVERIFY(picker.playPage());
+        QCOMPARE(picker.playPage()->levelIndex,2);
+        picker.playPage()->gameLose();
+        picker.playPage()->playSceneBack();
+        QVERIFY(!picker.playPage());
         QCOMPARE(ProgressStore(path).resumeLevel(),2);
         picker.continueGame();
-        QCOMPARE(picker.play->levelIndex,2);
-        picker.play->close();
+        QCOMPARE(picker.playPage()->levelIndex,2);
+        picker.playPage()->playSceneBack();
     }
     void independentLiveHealthOverlays() {
         PlayScene play(8);
@@ -276,22 +280,27 @@ private slots:
         for(auto *unit : scene->findChildren<WhiteDogs*>()) QVERIFY(unit->isHealthVisible());
     }
     void cartoonMenuButtons() {
-        MainScene menu;
-        menu.show();
-        QCOMPARE(menu.windowTitle(),QString("小白大战小金毛"));
-        auto *start=menu.findChild<QPushButton*>("startGame");
-        auto *quit=menu.findChild<QPushButton*>("quitGame");
+        QTemporaryDir dir;
+        GameWindow root(nullptr,dir.filePath("progress.json"));
+        root.show();
+        auto *menu=root.homePage();
+        QCOMPARE(root.windowTitle(),QString("小白大战小金毛"));
+        auto *start=menu->findChild<QPushButton*>("startGame");
+        auto *quit=menu->findChild<QPushButton*>("quitGame");
         QVERIFY(start); QVERIFY(quit);
         QCOMPARE(start->text(),QString("开始游戏"));
         QCOMPARE(quit->text(),QString("退出游戏"));
         QVERIFY(start->icon().isNull()); QVERIFY(quit->icon().isNull());
         QCOMPARE(start->property("color").toString(),QString("sunshine"));
+        const auto nativeId=root.winId();
         QTest::mouseClick(start,Qt::LeftButton);
-        QVERIFY(!menu.isVisible()); QVERIFY(menu.chooseScene->isVisible());
-        menu.chooseScene->chooseSceneBack();
-        QVERIFY(menu.isVisible());
+        QVERIFY(!menu->isVisible()); QVERIFY(root.levelPage()->isVisible());
+        QCOMPARE(root.winId(),nativeId);
+        QCOMPARE(root.levelPage()->window(),static_cast<QWidget*>(&root));
+        root.levelPage()->backRequested();
+        QVERIFY(menu->isVisible());
         QTest::mouseClick(quit,Qt::LeftButton);
-        QVERIFY(!menu.isVisible());
+        QVERIFY(!root.isVisible());
     }
     void progressRoundTrip() {
         QTemporaryDir dir;
@@ -527,32 +536,33 @@ private slots:
     }
     void fullScreenNavigationAndInput() {
         QTemporaryDir dir;
-        MainScene menu(nullptr,dir.filePath("progress.json"));
+        GameWindow menu(nullptr,dir.filePath("progress.json"));
         menu.show(); QTest::qWait(40);
         QTest::keyClick(&menu,Qt::Key_F11);
         QTRY_VERIFY(menu.isFullScreen());
-        QVERIFY(GameWindow::fullScreenEnabled());
+
         const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
         if(!folder.isEmpty()) QVERIFY(menu.grab().save(folder+"/menu-fullscreen.png"));
-        QTest::mouseClick(menu.findChild<QPushButton*>("startGame"),Qt::LeftButton);
-        auto *picker=menu.chooseScene;
-        QTRY_VERIFY(picker->isFullScreen());
-        picker->startLevel(8);
-        auto *play=picker->play;
-        QTRY_VERIFY(play->isFullScreen());
+        QTest::mouseClick(menu.homePage()->findChild<QPushButton*>("startGame"),Qt::LeftButton);
+        QVERIFY(menu.levelPage()->isVisible());
+        menu.startLevel(8);
+        auto *play=menu.playPage();
+        QTRY_VERIFY(menu.isFullScreen());
         auto *view=play->findChild<QGraphicsView*>();
         auto *scene=play->findChild<MyGameScene*>();
+        menu.setFullScreenEnabled(false);
         for(const auto& size : {QSize(1920,1080),QSize(1280,720),QSize(2560,1440)}) {
-            play->resize(size); QTest::qWait(25);
+            menu.resize(size); QTest::qWait(25);
             QCOMPARE(view->transform().m11(),play->canvasScale());
             const auto point=view->mapFromScene(QPointF(440,490));
             QVERIFY(view->viewport()->rect().contains(point));
             QVERIFY(QLineF(view->mapToScene(point),QPointF(440,490)).length()<2);
         }
-        // QWidget::resize may clear the native full-screen flag; restore the
-        // real window mode after checking several synthetic viewport sizes.
-        play->setFullScreenEnabled(true);
-        QTRY_VERIFY(play->isFullScreen());
+        menu.resize(GameWindow::logicalSize());
+        QTest::qWait(25);
+        menu.setFullScreenEnabled(true);
+        QTRY_VERIFY(menu.isFullScreen());
+        QTest::qWait(50); // Allow the platform to deliver its final full-screen geometry.
         view->setFocus();
         QTest::keyClick(view,Qt::Key_H);
         auto cards=play->findChildren<Card*>();
@@ -587,23 +597,87 @@ private slots:
         QTest::keyClick(pause,Qt::Key_H);
         QVERIFY(scene->plantHealthVisible());
         QTest::keyClick(pause,Qt::Key_F11);
-        QTRY_VERIFY(!play->isFullScreen());
-        QCOMPARE(play->size(),GameWindow::logicalSize());
+        QTRY_VERIFY(!menu.isFullScreen());
+        QTRY_COMPARE(play->size(),GameWindow::logicalSize());
         QCOMPARE(Card::currentState(),GameState::Paused);
         QVERIFY(pause->isVisible());
         QTest::keyClick(pause,Qt::Key_Space);
         QCOMPARE(Card::currentState(),GameState::Normal);
         QTest::mouseClick(play->findChild<QPushButton*>("fullScreenButton"),Qt::LeftButton);
-        QTRY_VERIFY(play->isFullScreen());
+        QTRY_VERIFY(menu.isFullScreen());
         QTest::keyClick(view,Qt::Key_F11);
-        QTRY_VERIFY(!play->isFullScreen());
+        QTRY_VERIFY(!menu.isFullScreen());
         const auto scale=view->transform().m11();
         QCOMPARE(scale,1.0);
         play->mainMenuRequested();
         QTRY_VERIFY(menu.isVisible());
         QVERIFY(!menu.isFullScreen());
         QCOMPARE(menu.size(),GameWindow::logicalSize());
-        QCOMPARE(menu.findChild<QPushButton*>("startGame")->geometry(),QRect(610,495,430,84));
+        QCOMPARE(menu.homePage()->findChild<QPushButton*>("startGame")->geometry(),QRect(610,495,430,84));
+    }
+    void nativeMaximizeAndFullScreenButton() {
+        QTemporaryDir dir;
+        GameWindow root(nullptr,dir.filePath("progress.json"));
+        root.show(); QTest::qWait(40);
+        QVERIFY(root.windowFlags().testFlag(Qt::WindowMaximizeButtonHint));
+        QVERIFY(root.maximumWidth()>root.width());
+        auto *button=root.homePage()->findChild<QPushButton*>("fullScreenButton");
+        QTest::mouseClick(button,Qt::LeftButton);
+        QTRY_VERIFY(root.isFullScreen()); QTest::qWait(40);
+        QTest::mouseClick(button,Qt::LeftButton);
+        QTRY_VERIFY(!root.isFullScreen());
+        QTRY_COMPARE(root.size(),GameWindow::logicalSize());
+        root.resize(1200,680); root.move(80,70); QTest::qWait(30);
+        const auto geometry=root.geometry();
+        root.showMaximized(); QTRY_VERIFY(root.isMaximized());
+        QTest::qWait(40);
+        QCOMPARE(button->text(),QString("还原窗口 [F11]"));
+        QTest::mouseClick(button,Qt::LeftButton);
+        QTRY_VERIFY(!root.isMaximized());
+        QTRY_COMPARE(root.geometry(),geometry);
+        QTest::keyClick(&root,Qt::Key_F11);
+        QTRY_VERIFY(root.isFullScreen()); QTest::qWait(40);
+        QTest::keyClick(&root,Qt::Key_F11);
+        QTRY_COMPARE(root.geometry(),geometry);
+    }
+    void closeExitsApplication_data() {
+        QTest::addColumn<int>("page");
+        QTest::newRow("home") << 0;
+        QTest::newRow("levels") << 1;
+        QTest::newRow("battle") << 2;
+        QTest::newRow("paused-battle") << 3;
+    }
+    void closeExitsApplication() {
+        QFETCH(int,page);
+        QTemporaryDir dir;
+        GameWindow root(nullptr,dir.filePath("progress.json"));
+        root.show();
+        const auto nativeId=root.winId();
+        if(page==1) root.showLevels();
+        if(page>=2) root.startLevel(4);
+        QCOMPARE(root.winId(),nativeId);
+        QCOMPARE(root.currentPage()->window(),static_cast<QWidget*>(&root));
+        if(page==3) {
+            auto *view=root.playPage()->findChild<QGraphicsView*>();
+            view->setFocus(); QTest::qWait(30);
+            QTest::keyClick(view,Qt::Key_Space);
+            QVERIFY(root.playPage()->findChild<PauseDialog*>()->isVisible());
+        }
+        QTimer watchdog;
+        connect(&watchdog,&QTimer::timeout,qApp,[] { qApp->exit(99); });
+        watchdog.setSingleShot(true); watchdog.start(2000);
+        QSignalSpy closed(qApp,&QApplication::lastWindowClosed);
+        QApplication::setQuitOnLastWindowClosed(true);
+        QTimer::singleShot(20,&root,&QWidget::close);
+        const int result=qApp->exec();
+        QApplication::setQuitOnLastWindowClosed(false);
+        QCOMPARE(result,0);
+        QCOMPARE(closed.count(),1);
+        QVERIFY(!root.isVisible());
+        for(auto *dialog : root.findChildren<QDialog*>()) QVERIFY(!dialog->isVisible());
+        if(root.playPage())
+            for(auto *timer : root.playPage()->findChildren<QTimer*>()) QVERIFY(!timer->isActive());
+        for(auto *sound : AudioManager::instance().findChildren<QSoundEffect*>()) QVERIFY(!sound->isPlaying());
     }
     void enemyLimit() {
         MyGameScene scene(1);
