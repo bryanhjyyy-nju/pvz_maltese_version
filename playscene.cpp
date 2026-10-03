@@ -339,7 +339,7 @@ void PlayScene::suspendToMenu() {
 }
 
 void PlayScene::showAlmanac() {
-    if(finished || (openingActive && !tutorial)) return;
+    if(finished || (openingActive && !tutorial && !paused)) return;
     const bool wasPaused = paused;
     gamePaused();
     AlmanacDialog dialog(pauseMenu && pauseMenu->isVisible() ? static_cast<QWidget*>(pauseMenu) : this);
@@ -349,7 +349,7 @@ void PlayScene::showAlmanac() {
 }
 
 void PlayScene::showAudioSettings() {
-    if(finished || (openingActive && !tutorial)) return;
+    if(finished || (openingActive && !tutorial && !paused)) return;
     const bool wasPaused = paused;
     gamePaused();
     AudioManager::instance().showSettings(pauseMenu && pauseMenu->isVisible() ? static_cast<QWidget*>(pauseMenu) : this);

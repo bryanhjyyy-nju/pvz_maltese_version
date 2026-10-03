@@ -32,7 +32,6 @@ GameWindow::GameWindow(QWidget *parent,const QString& progressPath,bool openingE
     connect(home,&MainScene::saveSettingsRequested,this,&GameWindow::showSaveSettings);
     connect(home,&MainScene::quitRequested,this,&QWidget::close);
     connect(levels,&ChooseLevelScene::levelRequested,this,&GameWindow::startLevel);
-    connect(levels,&ChooseLevelScene::continueRequested,this,&GameWindow::continueGame);
     connect(levels,&ChooseLevelScene::backRequested,this,&GameWindow::showMenu);
     qApp->installEventFilter(this);
     showMenu();
@@ -47,6 +46,7 @@ void GameWindow::discardBattle() {
     auto *old=battle;
     battle=nullptr;
     old->disconnect(this);
+    old->findChild<MyGameScene*>()->disconnect(this);
     old->shutdown();
     pages->removeWidget(old);
     old->deleteLater();
@@ -131,6 +131,7 @@ void GameWindow::startEndless() {
 }
 void GameWindow::showSaveSettings() {
     QDialog dialog(this); dialog.setWindowTitle("存档管理"); dialog.setObjectName("saveSettingsDialog");
+    GameUi::apply(&dialog); dialog.setMinimumWidth(520);
     auto *layout=new QVBoxLayout(&dialog);
     auto *description=new QLabel("新存档会清空关卡进度、当前游戏和无尽纪录。\n全解锁会开放全部关卡及无尽模式。",&dialog);
     layout->addWidget(description);

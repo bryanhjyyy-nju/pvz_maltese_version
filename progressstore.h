@@ -27,7 +27,6 @@ public:
     QString error() const { return m_error; }
     QString filePath() const { return m_path; }
 private:
-    bool save(int resumeLevel, int highestCompleted);
     QString m_path, m_error;
     int m_resumeLevel = 1, m_highestCompleted = 0;
     bool m_hasProgress = false;

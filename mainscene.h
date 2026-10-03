@@ -14,8 +14,6 @@ signals:
     void endlessRequested();
     void saveSettingsRequested();
 private:
-    void buildStartBtn();
-    void buildQuitBtn();
     void setGif(int w,int h,int x,int y);
     class QPushButton *resumeButton=nullptr,*endlessButton=nullptr;
     class QLabel *recordLabel=nullptr;

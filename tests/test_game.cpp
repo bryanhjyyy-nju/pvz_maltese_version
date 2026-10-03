@@ -47,6 +47,36 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void firstLevelHasNoShovelOrDefeatedCounter() {
+        for(int level : {1,2}) {
+            PlayScene play(level,nullptr,false); play.show();
+            auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
+            bool hasShovel=false;
+            for(auto *item : scene->items()) {
+                if(item->toolTip().startsWith("可爱铲子")) hasShovel=true;
+                QVERIFY(!dynamic_cast<QGraphicsTextItem*>(item));
+            }
+            QCOMPARE(hasShovel,level==2);
+            view->setFocus(); QTest::keyClick(view,Qt::Key_R);
+            QCOMPARE(Card::currentState(),level==2 ? GameState::Shoveling : GameState::Normal);
+            QVERIFY(!play.findChild<QPushButton*>("backToLevels"));
+        }
+    }
+    void savedOpeningResumesPaused() {
+        QTemporaryDir dir; const auto path=dir.filePath("progress.json");
+        ProgressStore saved(path); QVERIFY(saved.startLevel(1));
+        GameWindow root(nullptr,path); root.show(); root.continueGame();
+        auto *play=root.playPage(); QVERIFY(play && play->isPaused());
+        auto *opening=play->findChild<LevelOpening*>(); auto *timeline=opening->findChild<QVariantAnimation*>("openingTimeline");
+        QCOMPARE(timeline->state(),QAbstractAnimation::Paused);
+        const auto time=timeline->currentTime(); QTest::qWait(80); QCOMPARE(timeline->currentTime(),time);
+        auto *menu=play->findChild<PauseDialog*>(); QVERIFY(menu && menu->isVisible());
+        QTimer::singleShot(30,menu,[menu] { auto *dialog=menu->findChild<AlmanacDialog*>(); QVERIFY(dialog); dialog->reject(); });
+        QTest::mouseClick(menu->findChild<QPushButton*>("almanac"),Qt::LeftButton);
+        QVERIFY(play->isPaused()); QVERIFY(menu->isVisible());
+        play->gameContinued(); QCOMPARE(timeline->state(),QAbstractAnimation::Running);
+        root.close();
+    }
     void victoryRewardsAndDefeatSpotlight() {
         const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
         for(int level : {1,7,8,10}) {
@@ -289,6 +319,9 @@ private slots:
         click(QPointF(1240,50));
         QCOMPARE(Card::currentState(),GameState::Shoveling);
         QTest::mouseMove(view->viewport(),view->mapFromScene(QPointF(580,500)));
+        const auto position=view->mapFromScene(QPointF(580,500));
+        QMouseEvent movement(QEvent::MouseMove,QPointF(position),Qt::NoButton,Qt::NoButton,Qt::NoModifier);
+        QApplication::sendEvent(view->viewport(),&movement);
         QTRY_VERIFY(shovel->pos()!=GameArtwork::shovelHome());
         click(QPointF(1240,50));
         QCOMPARE(Card::currentState(),GameState::Normal);
@@ -465,7 +498,8 @@ private slots:
         QCOMPARE(ProgressStore(path).resumeLevel(),3);
         QVERIFY(store.completeLevel(3));
         QCOMPARE(ProgressStore(path).resumeLevel(),4);
-        QVERIFY(store.completeLevel(10));
+        QVERIFY(!store.completeLevel(10));
+        for(int level=4;level<=10;++level) QVERIFY(store.completeLevel(level));
         QCOMPARE(ProgressStore(path).resumeLevel(),10);
         QVERIFY(store.startLevel(1));
         QCOMPARE(ProgressStore(path).highestCompleted(),10);
@@ -1010,6 +1044,15 @@ private slots:
         scene->setAYellowDog(2); QVERIFY(scene->findChildren<YellowDogs*>().isEmpty());
         timeline->setCurrentTime(timeline->duration());
         QCOMPARE(opening->stage(),LevelOpening::Stage::Preview);
+        int decorative=0;
+        for(auto *item : scene->items()) {
+            QVERIFY(!dynamic_cast<QGraphicsTextItem*>(item));
+            QVERIFY(!dynamic_cast<QGraphicsRectItem*>(item));
+            if(item->data(0).toString()=="enemyPreview") {
+                ++decorative; QVERIFY(item->pos().x()>=1580 && item->pos().x()<1930);
+            }
+        }
+        QCOMPARE(decorative,GameCatalog::level(level).maxEnemyType==0 ? 5 : 12);
         QVERIFY(view->mapToScene(view->viewport()->rect().center()).x()>1200);
         const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
         if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+QString("/preview-level%1.png").arg(level)));
@@ -1019,6 +1062,10 @@ private slots:
         QCOMPARE(opening->stage(),LevelOpening::Stage::Reveal);
         if(level==3) for(int row=1;row<=3;++row) QCOMPARE(scene->lawn()->rowReveal(row),1.0);
         timeline->setCurrentTime(timeline->duration()/2);
+        if(level==3) {
+            for(int row=1;row<=3;++row) QCOMPARE(scene->lawn()->rowReveal(row),1.0);
+            QCOMPARE(scene->lawn()->rowReveal(0),.5); QCOMPARE(scene->lawn()->rowReveal(4),.5);
+        }
         if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+QString("/unroll-level%1.png").arg(level)));
         root.resize(1920,1080); QTest::qWait(20);
         QCOMPARE(view->transform().m11(),play->canvasScale());

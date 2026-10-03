@@ -42,14 +42,12 @@ bool ProgressStore::load() {
         unfinished=object.value("unfinished").toBool(); endlessActive=object.value("endlessActive").toBool();
         bestWave=object.value("endlessBest").toInt(); checkpoint=object.value("endlessCheckpoint").toInt();
         if((unfinished && !isUnlocked(resume)) || (endlessActive && (!endlessUnlocked() || unfinished))) {
-            m_hasProgress=false; m_highestCompleted=0; unfinished=false; endlessActive=false;
+            m_hasProgress=false; m_resumeLevel=1; m_highestCompleted=0;
+            unfinished=false; endlessActive=false; bestWave=0; checkpoint=1;
             m_error="存档解锁状态无效。"; return false;
         }
     }
     return true;
-}
-bool ProgressStore::save(int resume, int completed) {
-    return writeState(resume,completed,unfinished,endlessActive,bestWave,checkpoint);
 }
 bool ProgressStore::writeState(int resume,int completed,bool active,bool endless,int best,int wave) {
     m_error.clear();
@@ -71,7 +69,7 @@ bool ProgressStore::startLevel(int level) {
     return writeState(level,m_highestCompleted,true,false,bestWave,checkpoint);
 }
 bool ProgressStore::completeLevel(int level) {
-    if(level < 1 || level > GameCatalog::LevelCount) { m_error = "无效关卡。"; return false; }
+    if(!isUnlocked(level)) { m_error = "关卡尚未解锁。"; return false; }
     return writeState(qMin(level+1,GameCatalog::LevelCount),qMax(level,m_highestCompleted),false,false,bestWave,checkpoint);
 }
 int ProgressStore::unlockedLevel() const { return qMin(10,m_highestCompleted+1); }
