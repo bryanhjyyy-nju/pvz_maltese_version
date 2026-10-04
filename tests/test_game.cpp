@@ -1316,7 +1316,7 @@ private slots:
                         sum+=GameCatalog::enemies()[type].weight;
                         if(level==10) ++counts[type];
                     }
-                    if(index<stats.waveRules.size()) {
+                    if(index<stats.waveRules.size() && stats.waveRules[index].weight>0) {
                         const auto& rule=stats.waveRules[index];
                         QCOMPARE(sum,rule.weight);
                         QVERIFY(wave.count(1)>=rule.minGuitars); QVERIFY(wave.count(2)>=rule.minDashes);
@@ -1384,6 +1384,8 @@ private slots:
                     const int remaining=waveTimer->remainingTime(); GamePause pause; pause.pause(&scene);
                     QTest::qWait(70); QVERIFY(!waveTimer->isActive()); pause.resume();
                     QVERIFY(qAbs(waveTimer->remainingTime()-remaining)<50);
+                } else if(level==7 && (wave==2 || wave==3)) {
+                    QVERIFY(waveTimer->interval()>=18000 && waveTimer->interval()<=22000);
                 } else if(wave<waves) {
                     QVERIFY(waveTimer->interval()>=GameCatalog::level(level).minInterval);
                     QVERIFY(waveTimer->interval()<=GameCatalog::level(level).maxInterval);
@@ -1417,24 +1419,30 @@ private slots:
         QTest::addColumn<int>("level");
         for(const char *column : {"weights","guitars","dashes","maxTypes","minGaps","maxGaps"})
             QTest::addColumn<QVector<int>>(column);
+        QTest::newRow("level-seven") << 7
+            << QVector<int>({1,3,4,4,12,14})
+            << QVector<int>({0,0,0,0,1,1}) << QVector<int>({0,0,0,0,0,0})
+            << QVector<int>({0,0,2,2,2,2})
+            << QVector<int>({22000,25000,18000,18000,25000,42000})
+            << QVector<int>({22000,30000,22000,22000,30000,50000});
         QTest::newRow("level-eight") << 8
             << QVector<int>({1,2,3,5,7,12,15})
             << QVector<int>({0,0,0,1,1,0,0}) << QVector<int>({0,0,0,0,0,1,1})
             << QVector<int>({0,0,2,2,2,2,2})
-            << QVector<int>({25000,25000,36000,38000,40000,44000,48000})
-            << QVector<int>({25000,30000,44000,46000,48000,52000,58000});
+            << QVector<int>({25000,25000,22000,22000,22000,44000,48000})
+            << QVector<int>({25000,30000,28000,28000,28000,52000,58000});
         QTest::newRow("level-nine") << 9
             << QVector<int>({1,2,3,6,10,16,20})
             << QVector<int>({0,0,0,1,1,0,0}) << QVector<int>({0,0,0,0,0,2,2})
             << QVector<int>({0,0,0,2,2,2,2})
-            << QVector<int>({25000,27000,42000,45000,48000,52000,58000})
-            << QVector<int>({25000,32000,50000,54000,58000,62000,68000});
+            << QVector<int>({25000,27000,24000,24000,24000,52000,58000})
+            << QVector<int>({25000,32000,30000,30000,30000,62000,68000});
         QTest::newRow("level-ten") << 10
             << QVector<int>({1,1,2,7,11,15,19,23})
             << QVector<int>({0,0,0,1,1,1,1,1}) << QVector<int>({0,0,0,0,0,1,1,1})
             << QVector<int>({0,0,0,2,2,2,2,2})
-            << QVector<int>({28000,27000,40000,44000,48000,52000,58000,62000})
-            << QVector<int>({28000,32000,48000,52000,58000,62000,68000,72000});
+            << QVector<int>({28000,27000,24000,24000,24000,24000,58000,62000})
+            << QVector<int>({28000,32000,30000,30000,30000,30000,68000,72000});
     }
     void configuredCampaignWaves() {
         QFETCH(int,level); QFETCH(QVector<int>,weights); QFETCH(QVector<int>,guitars);

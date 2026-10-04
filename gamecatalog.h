@@ -37,7 +37,7 @@ struct LateWaves {
     int minIntervalMs=0, maxIntervalMs=0; // Gap from the penultimate to final wave.
 };
 struct Wave {
-    int weight;
+    int weight=0; // Zero keeps the default roster and only overrides its interval.
     int minGuitars=0, minDashes=0;
     int maxEnemyType=-1; // -1 inherits the level's unlocked types.
     // Start-to-start gap from the preceding wave; zero uses the level default.

@@ -55,7 +55,7 @@ WavePlanner::Plan WavePlanner::create(int number, QRandomGenerator& random) {
     Plan plan;
     const bool gradualOpening=number>=2 && number<=8;
     for(int wave=0;wave<level.waves;++wave) {
-        if(wave<level.waveRules.size()) {
+        if(wave<level.waveRules.size() && level.waveRules[wave].weight>0) {
             plan.append(configuredWave(level.waveRules[wave],number,random));
             continue;
         }
