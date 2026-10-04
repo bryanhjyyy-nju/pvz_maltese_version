@@ -14,6 +14,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include "gameui.h"
+#include "battlesnapshot.h"
 
 GameWindow::GameWindow(QWidget *parent,const QString& progressPath,bool openingEnabled)
     : QMainWindow(parent), pages(new QStackedWidget(this)),
@@ -84,7 +85,15 @@ void GameWindow::startLevel(int level) {
 }
 void GameWindow::continueGame() {
     if(!progress.hasUnfinishedLevel()) return;
-    if(!battle) startLevel(progress.resumeLevel());
+    if(!battle) {
+        const auto snapshot=progress.battleSnapshot();
+        if(snapshot.isEmpty()) startLevel(progress.resumeLevel());
+        else {
+            battle=new PlayScene(progress.resumeLevel(),pages,false);
+            BattleSnapshot::restore(*battle,snapshot);
+            connectBattle(false);
+        }
+    }
     if(battle) {
         AudioManager::instance().setBattle(true);
         pages->setCurrentWidget(battle);
@@ -134,7 +143,9 @@ void GameWindow::startEndless() {
     if(!battle || !battle->endlessMode) {
         discardBattle();
         if(!continuing && !progress.startEndless()) { QMessageBox::warning(this,"存档未写入",progress.error()); return; }
-        battle=new PlayScene(10,pages,playOpening,true,progress.endlessCheckpoint());
+        const auto snapshot=continuing ? progress.battleSnapshot() : QJsonObject{};
+        battle=new PlayScene(10,pages,snapshot.isEmpty() && playOpening,true,progress.endlessCheckpoint());
+        if(!snapshot.isEmpty()) BattleSnapshot::restore(*battle,snapshot);
         connectBattle(true);
     }
     AudioManager::instance().setBattle(true);
@@ -205,6 +216,27 @@ bool GameWindow::eventFilter(QObject *watched,QEvent *event) {
     return currentPage() && currentPage()->processGameKey(key);
 }
 void GameWindow::closeEvent(QCloseEvent *event) {
+    if(battle && !battle->isFinished()) {
+        const auto snapshot=BattleSnapshot::capture(*battle);
+        if(!snapshot.isEmpty() && !progress.saveBattle(snapshot)) {
+            battle->showPauseMenu();
+            event->ignore();
+            // Report after the close event returns, avoiding a nested modal
+            // event loop while Qt is still deciding the window's visibility.
+            const auto error=progress.error();
+            QTimer::singleShot(0,this,[this,error] {
+                auto *dialog=new QDialog(this);
+                dialog->setObjectName("battleSaveError"); dialog->setWindowTitle("存档未写入");
+                dialog->setAttribute(Qt::WA_DeleteOnClose); GameUi::apply(dialog);
+                auto *layout=new QVBoxLayout(dialog);
+                auto *message=new QLabel(error,dialog); message->setWordWrap(true); layout->addWidget(message);
+                auto *back=new QPushButton("返回暂停界面",dialog); GameUi::styleButton(back,"gold"); layout->addWidget(back);
+                connect(back,&QPushButton::clicked,dialog,&QDialog::accept);
+                dialog->setMinimumWidth(420); dialog->open();
+            });
+            return;
+        }
+    }
     closing=true;
     if(battle) battle->shutdown();
     for(auto *dialog : findChildren<QDialog*>()) dialog->hide();

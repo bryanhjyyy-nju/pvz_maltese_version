@@ -9,6 +9,7 @@
 class Card : public QPushButton
 {
     Q_OBJECT
+    friend class BattleSnapshot;
     Q_PROPERTY(float coolProgress READ coolProgress WRITE setCoolProgress)
 
 public:

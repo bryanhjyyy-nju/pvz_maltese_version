@@ -16,6 +16,7 @@ class Lawn;
 class MyGameScene : public QGraphicsScene
 {
     Q_OBJECT
+    friend class BattleSnapshot;
 public:
     explicit MyGameScene(int n = 1,QObject *parent = nullptr,bool deferStart=false,bool endless=false,int firstWave=1);
     enum class InputMode { Blocked,Normal,PlantPractice,HeartPractice,ShovelPractice };

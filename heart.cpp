@@ -106,7 +106,8 @@ void Heart::hasDisappear(){
     fadeAnim->setStartValue(opacity());
     fadeAnim->setEndValue(0.0);
     fadeAnim->setDuration(1000);
-    fadeAnim->start(QPropertyAnimation::DeleteWhenStopped);
+    fadeAnim->setObjectName("heartFadeAnimation");
+    fadeAnim->start(); // The heart owns this animation through its final removal.
 
     //链接信号和槽
     connect(fadeAnim, &QPropertyAnimation::finished, this,[=](){

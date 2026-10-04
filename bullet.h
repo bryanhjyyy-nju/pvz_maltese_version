@@ -11,6 +11,7 @@
 class Bullet : public QObject,public QGraphicsPixmapItem
 {
     Q_OBJECT
+    friend class BattleSnapshot;
     Q_PROPERTY(QPointF pos READ pos WRITE setPos)
 
 public:

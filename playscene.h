@@ -14,6 +14,7 @@
 class PlayScene : public GamePage
 {
     Q_OBJECT
+    friend class BattleSnapshot;
 public:
 
     //内部成员记录关卡号

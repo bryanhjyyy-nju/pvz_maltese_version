@@ -123,7 +123,15 @@
 
 `gamecatalog.h` 中 `EndlessBigWaveWeightStep` / `EndlessSmallWaveWeightStep` 控制每轮大波 / 小波预算增量；`EndlessIntervalCapWave` 控制间隔定型波次。四个 `Endless*Spawn*Ms` 常量控制出怪窗口。周期与阶段规则由上述函数共同实现，改动时同步更新测试。
 
-大波在 `MyGameScene::spawnWave()` 中发出 `bigWaveApproaching`，`PlayScene` 使用 `BattleBanner` 显示“一大波小金毛即将来袭”并播放现有 `finalWave` 警示音效。场景按出怪计划逐只推进，最后一只生成时启动下一波休息计时，不等待清场。所有时间使用 `GameTimer`，暂停与速度切换保留剩余时间，恢复大波检查点会重新显示提示并生成该波。
+大波在 `MyGameScene::spawnWave()` 中发出 `bigWaveApproaching`，`PlayScene` 使用 `BattleBanner` 显示“一大波小金毛即将来袭”并播放现有 `finalWave` 警示音效。场景按出怪计划逐只推进，最后一只生成时启动下一波休息计时，不等待清场。所有时间使用 `GameTimer`，暂停与速度切换保留剩余时间。恢复战场存档会继续尚未生成的单位及提示 / 休息进度；没有快照的旧大波检查点会重新提示并生成整波。
+
+## 战场存档
+
+`GameWindow::closeEvent()` 在未结束的战斗中调用 `BattleSnapshot::capture()`，先暂停，再读取单位、资源、卡片、波次计划、剩余计时和动画进度。`ProgressStore::saveBattle()` 把快照与解锁进度一起原子写入版本 3 的 `progress.json`。写入失败时取消关闭，保留暂停中的本局并显示错误。
+
+继续游戏时先创建没有开场动画的 `PlayScene`，`BattleSnapshot::restore()` 重建单位与信号连接，再恢复活动和场景索引，最后显示暂停菜单。计时使用剩余游戏时间，动画记录是否原本运行；例如死亡金毛的静止 GIF 不会被恢复逻辑启动。冲锋小白占用的草格与移动后的空草格分别保存，避免覆盖同格的新小白。
+
+快照的 `format` 独立于进度文件版本，目前为 1。新增单位内部活动时，需要同步更新快照读取、重建与验证规则；不要保存 Qt 对象指针。开始新关卡、重开、失败、胜利或清空存档会清掉旧战场。开场 / 教程尚未进入战斗时，以及无快照的版本 1 / 2 存档，沿用关卡检查点。
 
 ## 改完如何检查
 

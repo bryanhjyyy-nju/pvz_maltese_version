@@ -9,6 +9,7 @@
 class YellowDogs : public MyItem
 {
     Q_OBJECT
+    friend class BattleSnapshot;
     Q_PROPERTY(qreal hitFlash READ hitFlash WRITE setHitFlash)
     Q_PROPERTY(qreal biteProgress READ biteProgress WRITE setBiteProgress)
     Q_PROPERTY(qreal deathProgress READ deathProgress WRITE setDeathProgress)

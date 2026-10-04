@@ -1,7 +1,8 @@
 #pragma once
 #include <QString>
+#include <QJsonObject>
 
-// Saves level checkpoints, not an in-progress battlefield.
+// Saves unlocked progress and an optional complete battlefield atomically.
 class ProgressStore {
 public:
     explicit ProgressStore(QString filePath = {});
@@ -14,6 +15,8 @@ public:
     bool startEndless();
     bool recordEndlessWave(int wave);
     bool finishEndless();
+    bool saveBattle(const QJsonObject& snapshot);
+    QJsonObject battleSnapshot() const { return battlefield; }
     int unlockedLevel() const;
     bool isUnlocked(int level) const;
     bool hasUnfinishedLevel() const { return unfinished; }
@@ -32,5 +35,6 @@ private:
     bool m_hasProgress = false;
     bool unfinished=false,endlessActive=false;
     int bestWave=0,checkpoint=1;
-    bool writeState(int resume,int completed,bool active,bool endless,int best,int wave);
+    QJsonObject battlefield;
+    bool writeState(int resume,int completed,bool active,bool endless,int best,int wave,const QJsonObject& snapshot={});
 };

@@ -45,6 +45,10 @@ void GameTimer::setIntervalPreservingProgress(int gameMilliseconds) {
     else if(running) scheduleRemaining(fraction*nominalInterval);
 }
 void GameTimer::start(int gameMilliseconds) { setInterval(gameMilliseconds); start(); }
+void GameTimer::restoreTiming(int interval,bool active,double remaining) {
+    stop(); setInterval(interval);
+    if(active) scheduleRemaining(remaining);
+}
 void GameTimer::stop() { paused=false; partial=false; QTimer::stop(); }
 void GameTimer::scheduleRemaining(double gameMilliseconds) {
     partial=true;

@@ -1,6 +1,8 @@
 QT       += core gui multimedia
 SOURCES += gamespeed.cpp
 HEADERS += gamespeed.h
+SOURCES += battlesnapshot.cpp
+HEADERS += battlesnapshot.h
 SOURCES += spriteanimation.cpp
 HEADERS += spriteanimation.h
 SOURCES += lawn.cpp

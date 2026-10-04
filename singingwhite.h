@@ -8,6 +8,7 @@
 class SingingWhite : public WhiteDogs
 {
     Q_OBJECT
+    friend class BattleSnapshot;
 public:
     explicit SingingWhite(int r, int c,MyGameScene *myScene);
     void shootBullet(int r, int c);

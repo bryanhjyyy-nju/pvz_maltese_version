@@ -1,5 +1,6 @@
 #include "progressstore.h"
 #include "gamecatalog.h"
+#include "battlesnapshot.h"
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -17,6 +18,7 @@ bool ProgressStore::load() {
     m_error.clear();
     m_resumeLevel = 1; m_highestCompleted = 0; m_hasProgress = false;
     unfinished=false; endlessActive=false; bestWave=0; checkpoint=1;
+    battlefield={};
     QFile file(m_path);
     if(!file.exists()) return true;
     if(!file.open(QIODevice::ReadOnly)) { m_error = file.errorString(); return false; }
@@ -26,13 +28,13 @@ bool ProgressStore::load() {
     const int resume = object.value("resumeLevel").toInt(-1);
     const int completed = object.value("highestCompleted").toInt(-1);
     if(parseError.error != QJsonParseError::NoError || !document.isObject()
-        || (object.value("version").toInt(-1)!=1 && object.value("version").toInt(-1)!=2) || resume < 1
+        || (object.value("version").toInt(-1)<1 || object.value("version").toInt(-1)>3) || resume < 1
         || resume > GameCatalog::LevelCount || completed < 0 || completed > GameCatalog::LevelCount) {
         m_error = "存档格式无效；可重新选择关卡开始。";
         return false;
     }
     m_resumeLevel = resume; m_highestCompleted = completed; m_hasProgress = true;
-    if(object.value("version").toInt()==2) {
+    if(object.value("version").toInt()>=2) {
         if(!object.value("unfinished").isBool() || !object.value("endlessActive").isBool()
             || !object.value("endlessBest").isDouble() || !object.value("endlessCheckpoint").isDouble()
             || object.value("endlessBest").toInt(-1)<0 || object.value("endlessCheckpoint").toInt(0)<1) {
@@ -47,21 +49,26 @@ bool ProgressStore::load() {
             m_error="存档解锁状态无效。"; return false;
         }
     }
+    const auto saved=object["battle"].toObject();
+    if((unfinished || endlessActive) && BattleSnapshot::isValid(saved)
+        && saved["endless"].toBool()==endlessActive && saved["level"].toInt()==(endlessActive ? 10 : m_resumeLevel))
+        battlefield=saved;
     return true;
 }
-bool ProgressStore::writeState(int resume,int completed,bool active,bool endless,int best,int wave) {
+bool ProgressStore::writeState(int resume,int completed,bool active,bool endless,int best,int wave,const QJsonObject& snapshot) {
     m_error.clear();
     if(!QDir().mkpath(QFileInfo(m_path).absolutePath())) {
         m_error = "无法创建存档目录。"; return false;
     }
     QSaveFile file(m_path);
     if(!file.open(QIODevice::WriteOnly)) { m_error = file.errorString(); return false; }
-    const QJsonObject object{{"version",2},{"resumeLevel",resume},{"highestCompleted",completed},
-        {"unfinished",active},{"endlessActive",endless},{"endlessBest",best},{"endlessCheckpoint",wave}};
+    const QJsonObject object{{"version",3},{"resumeLevel",resume},{"highestCompleted",completed},
+        {"unfinished",active},{"endlessActive",endless},{"endlessBest",best},{"endlessCheckpoint",wave},{"battle",snapshot}};
     const auto bytes = QJsonDocument(object).toJson();
     if(file.write(bytes) != bytes.size() || !file.commit()) { m_error = file.errorString(); return false; }
     m_resumeLevel = resume; m_highestCompleted = completed; m_hasProgress = true;
     unfinished=active; endlessActive=endless; bestWave=best; checkpoint=wave;
+    battlefield=snapshot;
     return true;
 }
 bool ProgressStore::startLevel(int level) {
@@ -76,7 +83,15 @@ int ProgressStore::unlockedLevel() const { return qMin(10,m_highestCompleted+1);
 bool ProgressStore::isUnlocked(int level) const { return level>=1 && level<=unlockedLevel(); }
 bool ProgressStore::finishAttempt() { return writeState(m_resumeLevel,m_highestCompleted,false,false,bestWave,checkpoint); }
 bool ProgressStore::reset() { return writeState(1,0,false,false,0,1); }
-bool ProgressStore::unlockAll() { return writeState(m_resumeLevel,10,unfinished,endlessActive,bestWave,checkpoint); }
+bool ProgressStore::unlockAll() { return writeState(m_resumeLevel,10,unfinished,endlessActive,bestWave,checkpoint,battlefield); }
+bool ProgressStore::saveBattle(const QJsonObject& snapshot) {
+    if(!BattleSnapshot::isValid(snapshot) || !(unfinished || endlessActive)
+        || snapshot["level"].toInt()!=(endlessActive ? 10 : m_resumeLevel)
+        || snapshot["endless"].toBool()!=endlessActive) {
+        m_error="战场存档无效。"; return false;
+    }
+    return writeState(m_resumeLevel,m_highestCompleted,unfinished,endlessActive,bestWave,checkpoint,snapshot);
+}
 bool ProgressStore::startEndless() {
     if(!endlessUnlocked()) { m_error="通过第十关后解锁无尽模式。"; return false; }
     return writeState(m_resumeLevel,m_highestCompleted,false,true,bestWave,1);

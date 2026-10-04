@@ -44,6 +44,10 @@
 #include "heart.h"
 #include "bullet.h"
 #include "battleresult.h"
+#include "battlesnapshot.h"
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QDir>
 
 class GameTests : public QObject {
     Q_OBJECT
@@ -1585,6 +1589,197 @@ private slots:
         QVERIFY(!store.startLevel(1));
         QVERIFY(!store.error().isEmpty());
         QVERIFY(!store.hasProgress());
+    }
+    void closedBattleRestoresBoardPaused_data() {
+        QTest::addColumn<bool>("endless"); QTest::addColumn<bool>("closePaused");
+        QTest::newRow("campaign-playing") << false << false;
+        QTest::newRow("campaign-paused") << false << true;
+        QTest::newRow("endless-playing") << true << false;
+        QTest::newRow("endless-paused") << true << true;
+    }
+    void closedBattleRestoresBoardPaused() {
+        QFETCH(bool,endless); QFETCH(bool,closePaused);
+        QTemporaryDir dir; const auto path=unlockedPath(dir);
+        QJsonObject snapshot;
+        {
+            GameWindow root(nullptr,path,false); root.show();
+            if(endless) root.startEndless(); else root.startLevel(8);
+            auto *play=root.playPage(); auto *scene=play->findChild<MyGameScene*>();
+            auto *view=play->findChild<QGraphicsView*>(); scene->addHeart(10000); play->setSpeedMultiplier(2);
+            for(int type=0;type<8;++type) {
+                scene->setChosenNum(type); Card::setGameState(GameState::PrePlace);
+                QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,
+                    view->mapFromScene(QPointF(440+121*(type%4),202+145*(type/4))));
+            }
+            QCOMPARE(scene->findChildren<WhiteDogs*>().size(),8);
+            auto *wall=scene->findChild<WallWhite*>(); wall->cutHp(123);
+            auto *wave=scene->findChild<GameTimer*>("waveTimer");
+            auto *stagger=scene->findChild<GameTimer*>("waveStaggerTimer");
+            QMetaObject::invokeMethod(wave,"timeout",Qt::DirectConnection);
+            // Include all enemy types, an accelerated dash and a dying dog.
+            scene->setAYellowDog(4,1); scene->setAYellowDog(3,2); scene->setAYellowDog(4,0);
+            auto *dash=static_cast<YellowDogs*>(scene->getZombieMap(3).last()); dash->getAttacked(dash->getHp()/2+1);
+            static_cast<YellowDogs*>(scene->getZombieMap(4).last())->getAttacked(100000);
+            scene->generateSkyHeart(); scene->generateWhiteHeart(QPointF(850,350));
+            scene->generateBullet(2,2); new EnemyProjectile(scene,4,QPointF(1400,650),81);
+            scene->togglePlantHealth(); scene->toggleEnemyHealth(); QTest::qWait(65);
+            // Select an available card, then close from playing or paused.
+            auto *card=play->findChild<Card*>("plantCard1"); emit card->cooldownFinished();
+            QTest::mouseClick(card,Qt::LeftButton); QCOMPARE(Card::currentState(),GameState::PrePlace);
+            if(closePaused) play->showPauseMenu();
+            QVERIFY(root.close()); snapshot=ProgressStore(path).battleSnapshot();
+            QVERIFY2(BattleSnapshot::isValid(snapshot),qPrintable(QString::fromUtf8(QJsonDocument(snapshot).toJson())));
+            QVERIFY(!snapshot.isEmpty());
+            QVERIFY(!wave->isActive()); QVERIFY(!stagger->isActive());
+        }
+        // Rebuild all objects from the disk file, with no in-memory page reuse.
+        GameWindow restored(nullptr,path,true); restored.show();
+        if(endless) restored.startEndless(); else restored.continueGame();
+        auto *play=restored.playPage(); QVERIFY(play); QVERIFY(play->isPaused());
+        QVERIFY(play->findChild<PauseDialog*>()->isVisible()); QCOMPARE(play->speedMultiplier(),2);
+        QVERIFY(!play->findChild<LevelOpening*>());
+        auto *scene=play->findChild<MyGameScene*>(); QCOMPARE(scene->wavesStarted(),snapshot["scene"].toObject()["nextWave"].toInt());
+        QCOMPARE(scene->getRestHeart(),snapshot["scene"].toObject()["hearts"].toInt());
+        QCOMPARE(scene->findChild<WallWhite*>()->getHp(),3877);
+        const auto again=BattleSnapshot::capture(*play);
+        for(const auto& key : {"plants","enemies","hearts","bullets","notes"}) {
+            const auto before=snapshot[key].toArray(),after=again[key].toArray(); QCOMPARE(after.size(),before.size());
+            for(int i=0;i<before.size();++i) {
+                QCOMPARE(after[i].toObject()["pos"],before[i].toObject()["pos"]);
+                QCOMPARE(after[i].toObject()["hp"],before[i].toObject()["hp"]);
+                QCOMPARE(after[i].toObject()["type"],before[i].toObject()["type"]);
+            }
+        }
+        QCOMPARE(again["cards"].toArray()[0].toObject()["progress"],snapshot["cards"].toArray()[0].toObject()["progress"]);
+        auto *enemy=scene->getZombieMap(3).last(); const auto pos=enemy->pos(); const int hearts=scene->getRestHeart();
+        QTest::qWait(150); QCOMPARE(enemy->pos(),pos); QCOMPARE(scene->getRestHeart(),hearts);
+        for(auto *timer : play->findChildren<GameTimer*>()) QVERIFY(!timer->isActive());
+        const auto frozen=BattleSnapshot::capture(*play);
+        QCOMPARE(frozen["scene"].toObject()["pendingIndex"],again["scene"].toObject()["pendingIndex"]);
+        play->gameContinued(); QCOMPARE(Card::currentState(),GameState::PrePlace);
+        QTRY_VERIFY_WITH_TIMEOUT(enemy->x()<pos.x(),500);
+        QTRY_VERIFY_WITH_TIMEOUT(scene->findChildren<YellowDogs*>().size()<snapshot["enemies"].toArray().size(),1000);
+        QVERIFY(scene->findChild<Heart*>()->findChild<QPropertyAnimation*>("heartFallAnimation")->state()==QAbstractAnimation::Running);
+        // Pending units and rest retain their saved remaining timing.
+        auto *stagger=scene->findChild<GameTimer*>("waveStaggerTimer");
+        while(stagger->isActive()) QMetaObject::invokeMethod(stagger,"timeout",Qt::DirectConnection);
+        QCOMPARE(scene->wavesStarted(),snapshot["scene"].toObject()["nextWave"].toInt());
+        if(endless) QVERIFY(scene->findChild<GameTimer*>("waveTimer")->isActive());
+        QVERIFY(restored.close()); QVERIFY(!ProgressStore(path).battleSnapshot().isEmpty());
+    }
+    void battleSnapshotRejectsCorruptionAndClearsOnNewGame() {
+        QTemporaryDir dir; const auto path=unlockedPath(dir);
+        GameWindow root(nullptr,path,false); root.show(); root.startLevel(3); QVERIFY(root.close());
+        ProgressStore store(path); const auto valid=store.battleSnapshot(); QVERIFY(BattleSnapshot::isValid(valid));
+        auto broken=valid; auto scene=broken["scene"].toObject(); scene["pendingIndex"]=-1; broken["scene"]=scene;
+        QVERIFY(!store.saveBattle(broken)); QCOMPARE(ProgressStore(path).battleSnapshot(),valid);
+        broken=valid; auto cards=broken["cards"].toArray(); auto card=cards[0].toObject();
+        card["activity"]=QJsonObject{{"timers",QJsonArray{}},{"animations",QJsonArray{}}}; cards[0]=card; broken["cards"]=cards;
+        QVERIFY(!BattleSnapshot::isValid(broken));
+        // A damaged optional snapshot keeps unlocked progress and the legacy checkpoint.
+        QFile file(path); QVERIFY(file.open(QIODevice::ReadOnly)); auto json=QJsonDocument::fromJson(file.readAll()).object(); file.close();
+        json["battle"]=broken; QVERIFY(file.open(QIODevice::WriteOnly)); file.write(QJsonDocument(json).toJson()); file.close();
+        ProgressStore damaged(path); QCOMPARE(damaged.highestCompleted(),10); QVERIFY(damaged.hasUnfinishedLevel());
+        QVERIFY(damaged.battleSnapshot().isEmpty()); QVERIFY(damaged.saveBattle(valid));
+        QVERIFY(damaged.unlockAll()); QCOMPARE(ProgressStore(path).battleSnapshot(),valid);
+        QVERIFY(damaged.startLevel(2)); QVERIFY(ProgressStore(path).battleSnapshot().isEmpty());
+        QVERIFY(damaged.reset()); QVERIFY(ProgressStore(path).battleSnapshot().isEmpty());
+    }
+    void savedHeartsKeepAllLifecycleStages() {
+        PlayScene original(8,nullptr,false); auto *scene=original.findChild<MyGameScene*>();
+        QVector<Heart*> hearts;
+        for(int i=0;i<4;++i) {
+            auto *heart=new Heart(QPointF(500+i*150,250),QPointF(500+i*150,450),scene,QEasingCurve::Linear,scene);
+            scene->addItem(heart); hearts.append(heart);
+        }
+        hearts[0]->findChild<QPropertyAnimation*>("heartFallAnimation")->setCurrentTime(700);
+        for(int i=1;i<3;++i) {
+            auto *fall=hearts[i]->findChild<QPropertyAnimation*>("heartFallAnimation"); fall->setCurrentTime(fall->duration());
+            QMetaObject::invokeMethod(hearts[i]->findChild<GameTimer*>(),"timeout",Qt::DirectConnection);
+            auto *blink=hearts[i]->findChild<QPropertyAnimation*>("heartBlinkAnimation");
+            blink->setCurrentTime(i==1 ? 250 : blink->duration()*2);
+        }
+        auto *fade=hearts[2]->findChild<QPropertyAnimation*>("heartFadeAnimation"); QVERIFY(fade); fade->setCurrentTime(250);
+        Heart::curMousePos=hearts[3]->sceneBoundingRect().center(); scene->sceneClicked();
+        auto *collect=hearts[3]->findChild<QPropertyAnimation*>("heartCollectAnimation"); QCOMPARE(collect->state(),QAbstractAnimation::Running);
+        collect->setCurrentTime(200);
+        const auto saved=BattleSnapshot::capture(original); QVERIFY(BattleSnapshot::isValid(saved));
+        PlayScene restored(8,nullptr,false); QVERIFY(BattleSnapshot::restore(restored,saved));
+        auto *board=restored.findChild<MyGameScene*>(); const auto loaded=board->findChildren<Heart*>(); QCOMPARE(loaded.size(),4);
+        for(int i=0;i<4;++i) {
+            QCOMPARE(loaded[i]->pos(),hearts[i]->pos()); QCOMPARE(loaded[i]->opacity(),hearts[i]->opacity());
+            for(auto *a : loaded[i]->findChildren<QPropertyAnimation*>()) QVERIFY(a->state()!=QAbstractAnimation::Running);
+        }
+        const int before=board->getRestHeart(); restored.gameContinued();
+        QTRY_COMPARE_WITH_TIMEOUT(board->getRestHeart(),before+25,900);
+        QTRY_COMPARE_WITH_TIMEOUT(board->findChildren<Heart*>().size(),2,1400);
+        QVERIFY(loaded[0]->findChild<QPropertyAnimation*>("heartFallAnimation")->state()==QAbstractAnimation::Running);
+    }
+    void restoredLastDeathFinishesCampaignOnce() {
+        QTemporaryDir dir; const auto path=unlockedPath(dir);
+        {
+            GameWindow root(nullptr,path,false); root.show(); root.startLevel(3);
+            auto *scene=root.playPage()->findChild<MyGameScene*>(); auto *wave=scene->findChild<GameTimer*>("waveTimer");
+            auto *stagger=scene->findChild<GameTimer*>("waveStaggerTimer");
+            while(scene->wavesStarted()<GameCatalog::level(3).waves) {
+                QMetaObject::invokeMethod(wave,"timeout",Qt::DirectConnection);
+                while(stagger->isActive()) QMetaObject::invokeMethod(stagger,"timeout",Qt::DirectConnection);
+            }
+            const auto enemies=scene->findChildren<YellowDogs*>();
+            for(int i=0;i<enemies.size()-1;++i) enemies[i]->getAttacked(100000);
+            QTRY_COMPARE_WITH_TIMEOUT(scene->findChildren<YellowDogs*>().size(),1,1000);
+            auto *last=enemies.last(); last->getAttacked(100000);
+            last->findChildren<QPropertyAnimation*>().last()->setCurrentTime(200);
+            QVERIFY(root.close()); QVERIFY(!ProgressStore(path).battleSnapshot().isEmpty());
+        }
+        GameWindow root(nullptr,path,true); root.show(); root.continueGame(); auto *play=root.playPage();
+        auto *scene=play->findChild<MyGameScene*>(); QSignalSpy win(scene,&MyGameScene::gameWin);
+        QVERIFY(play->isPaused()); QCOMPARE(scene->findChildren<YellowDogs*>().size(),1);
+        QVERIFY(scene->findChild<YellowDogs*>()->isDying());
+        QTest::qWait(120); QCOMPARE(win.count(),0);
+        play->gameContinued(); QTRY_COMPARE_WITH_TIMEOUT(win.count(),1,700);
+        QTest::qWait(100); QCOMPARE(win.count(),1); QVERIFY(play->isFinished());
+        QVERIFY(!ProgressStore(path).hasUnfinishedLevel()); QVERIFY(ProgressStore(path).battleSnapshot().isEmpty());
+        QVERIFY(root.close()); QVERIFY(ProgressStore(path).battleSnapshot().isEmpty());
+    }
+    void restoredBigWaveRetainsWarningAndRemainingSpawnDelay() {
+        QTemporaryDir dir; const auto path=unlockedPath(dir); ProgressStore store(path);
+        QVERIFY(store.startEndless()); QVERIFY(store.recordEndlessWave(5));
+        int remaining=0; QJsonObject saved;
+        {
+            GameWindow root(nullptr,path,false); root.show(); root.startEndless(); auto *play=root.playPage();
+            play->gameContinued(); play->setSpeedMultiplier(2); auto *scene=play->findChild<MyGameScene*>();
+            QMetaObject::invokeMethod(scene->findChild<GameTimer*>("waveTimer"),"timeout",Qt::DirectConnection);
+            QTest::qWait(60); remaining=scene->findChild<GameTimer*>("waveStaggerTimer")->remainingTime();
+            QVERIFY(root.close()); saved=ProgressStore(path).battleSnapshot();
+        }
+        GameWindow root(nullptr,path,true); root.show(); root.startEndless(); auto *play=root.playPage();
+        auto *scene=play->findChild<MyGameScene*>(); auto *banner=play->findChild<BattleBanner*>();
+        QVERIFY(play->isPaused()); QCOMPARE(scene->wavesStarted(),5); QVERIFY(scene->findChildren<YellowDogs*>().isEmpty());
+        QVERIFY(banner->isVisible()); QCOMPARE(banner->accessibleName(),QString("一大波小金毛即将来袭"));
+        auto *animation=banner->findChild<QVariantAnimation*>("bannerAnimation"); const int time=animation->currentTime();
+        QTest::qWait(100); QCOMPARE(animation->currentTime(),time);
+        play->gameContinued(); auto *stagger=scene->findChild<GameTimer*>("waveStaggerTimer");
+        QVERIFY(qAbs(stagger->remainingTime()-remaining)<60);
+        QTRY_COMPARE_WITH_TIMEOUT(scene->findChildren<YellowDogs*>().size(),1,1000);
+        while(stagger->isActive()) QMetaObject::invokeMethod(stagger,"timeout",Qt::DirectConnection);
+        int weight=0; for(auto *enemy : scene->findChildren<YellowDogs*>()) weight+=GameCatalog::enemies()[enemy->typeIndex()].weight;
+        QCOMPARE(weight,10); QCOMPARE(scene->wavesStarted(),5);
+        QCOMPARE(scene->findChild<GameTimer*>("waveTimer")->gameInterval(),40000);
+        QVERIFY(root.close());
+    }
+    void failedBattleSaveKeepsWindowAndBattlePaused() {
+        QTemporaryDir dir; const auto path=unlockedPath(dir); GameWindow root(nullptr,path,false);
+        root.show(); root.startLevel(2); auto *play=root.playPage(); auto *scene=play->findChild<MyGameScene*>();
+        scene->setAYellowDog(2); const auto pos=scene->getZombieMap(2).first()->pos();
+        QVERIFY(QFile::remove(path)); QVERIFY(QDir().mkdir(path));
+        QVERIFY(!root.close()); QVERIFY(root.isVisible()); QVERIFY(play->isPaused());
+        QTRY_VERIFY_WITH_TIMEOUT(root.findChild<QDialog*>("battleSaveError"),500);
+        auto *error=root.findChild<QDialog*>("battleSaveError"); QVERIFY(error->isVisible());
+        QVERIFY(!error->findChild<QLabel*>()->text().isEmpty());
+        QTest::mouseClick(error->findChild<QPushButton*>(),Qt::LeftButton);
+        QCOMPARE(scene->getZombieMap(2).first()->pos(),pos);
+        QVERIFY(QDir().rmdir(path)); QVERIFY(root.close()); QVERIFY(!ProgressStore(path).battleSnapshot().isEmpty());
     }
     void gridBoundaries() {
         Map map(9,5,QSize(121,145),QPointF(380,130));

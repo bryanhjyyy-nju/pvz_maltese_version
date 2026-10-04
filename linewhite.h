@@ -11,6 +11,7 @@
 class LineWhite : public WhiteDogs
 {
     Q_OBJECT
+    friend class BattleSnapshot;
 public:
     explicit LineWhite(int row, int col, MyGameScene *myScene, QPointF cPos);
 

@@ -8,6 +8,7 @@
 class DblSingWhite : public WhiteDogs
 {
     Q_OBJECT
+    friend class BattleSnapshot;
 public:
     explicit DblSingWhite(int r, int c,MyGameScene *myScene);
     void shootBullet(int r, int c);

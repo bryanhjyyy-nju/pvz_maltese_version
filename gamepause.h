@@ -12,6 +12,7 @@ class GamePause {
 public:
     void pause(QObject *root);
     void resume();
+    bool resumesAnimation(QAbstractAnimation *animation) const { return animations.contains(animation); }
 private:
     struct TimerState { QPointer<QTimer> timer; int remaining, interval; };
     QVector<TimerState> timers;

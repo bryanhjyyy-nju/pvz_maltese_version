@@ -3,6 +3,7 @@
 // A short lived, pause-aware particle burst. It never participates in combat.
 class CombatEffect : public QGraphicsObject {
     Q_OBJECT
+    friend class BattleSnapshot;
     Q_PROPERTY(qreal progress READ progress WRITE setProgress)
 public:
     enum Kind { Bite, Hit, Plant, Uproot };

@@ -3,6 +3,7 @@
 class MyGameScene;
 class EnemyProjectile : public QGraphicsObject {
     Q_OBJECT
+    friend class BattleSnapshot;
 public:
     EnemyProjectile(MyGameScene *scene, int row, const QPointF& origin, int damage);
     QRectF boundingRect() const override { return QRectF(0,0,48,56); }

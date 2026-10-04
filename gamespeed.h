@@ -29,6 +29,9 @@ public:
     void setInterval(int gameMilliseconds);
     void setIntervalPreservingProgress(int gameMilliseconds);
     int gameInterval() const { return nominalInterval; }
+    bool willResume() const { return isActive() || paused; }
+    double remainingGameTime() const { return paused ? pausedRemaining : qMax(0,remainingTime())*multiplier(); }
+    void restoreTiming(int interval,bool active,double remaining);
     void start();
     void start(int gameMilliseconds);
     void stop();
@@ -60,6 +63,7 @@ public:
         nominalDuration=gameMilliseconds;
         Base::setDuration(wallDuration());
     }
+    int gameDuration() const { return nominalDuration; }
     void setDurationPreservingProgress(int gameMilliseconds) {
         nominalDuration=gameMilliseconds;
         applySpeed();

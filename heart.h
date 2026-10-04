@@ -12,6 +12,7 @@
 class Heart : public QObject,public QGraphicsPixmapItem
 {
     Q_OBJECT
+    friend class BattleSnapshot;
     Q_PROPERTY(QPointF pos READ pos WRITE setPos)
     Q_PROPERTY(qreal opacity READ opacity WRITE setOpacity)
 

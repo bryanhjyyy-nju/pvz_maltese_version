@@ -4,6 +4,7 @@
 
 class BattleBanner : public QWidget {
     Q_OBJECT
+    friend class BattleSnapshot;
 public:
     explicit BattleBanner(QWidget *parent,GameSpeed *clock=nullptr);
     void announce(const QString& text,const QString& sound,bool withFlash=true);
