@@ -6,6 +6,7 @@ public:
     explicit PauseDialog(QWidget *parent);
 signals:
     void resumeRequested();
+    void restartRequested();
     void mainMenuRequested();
     void almanacRequested();
     void audioRequested();

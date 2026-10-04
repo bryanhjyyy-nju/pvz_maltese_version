@@ -17,6 +17,7 @@ public:
     void startLevel(int level);
     void continueGame();
     void startEndless();
+    void restartGame();
     void showSaveSettings();
     void setFullScreenEnabled(bool enabled);
     void toggleFullScreen();

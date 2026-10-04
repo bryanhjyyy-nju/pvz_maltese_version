@@ -238,10 +238,11 @@ void PlayScene::stopShow(){
 
 void PlayScene::gamePaused() {
     if(paused || finished) return;
+    interactionBeforePause = Card::currentState();
+    previewBeforePause = preImageLabel->isVisible();
     paused = true;
-    myGameScene->cancelSelection();
-    stopShow();
     Card::setGameState(GameState::Paused);
+    stopShow();
     pausedActivity.pause(this);
     pauseButton->setText("继续 [空格]");
     AudioManager::instance().setPaused(true);
@@ -253,7 +254,10 @@ void PlayScene::gameContinued() {
     paused = false;
     if(pauseMenu) pauseMenu->hide();
     if(pauseShortcut) pauseShortcut->setEnabled(true);
-    Card::setGameState(GameState::Normal);
+    Card::setGameState(interactionBeforePause);
+    myGraphicsView->setMouseTracking(interactionBeforePause==GameState::PrePlace || interactionBeforePause==GameState::Shoveling);
+    fitBattlefield();
+    preImageLabel->setVisible(previewBeforePause);
     pauseButton->setText("暂停 [空格]");
     myGraphicsView->setFocus();
     AudioManager::instance().setPaused(false);
@@ -324,6 +328,7 @@ void PlayScene::showPauseMenu() {
     if(!pauseMenu) {
         pauseMenu = new PauseDialog(this);
         connect(pauseMenu,&PauseDialog::resumeRequested,this,&PlayScene::gameContinued);
+        connect(pauseMenu,&PauseDialog::restartRequested,this,&PlayScene::restartRequested);
         connect(pauseMenu,&PauseDialog::mainMenuRequested,this,&PlayScene::mainMenuRequested);
         connect(pauseMenu,&PauseDialog::almanacRequested,this,&PlayScene::showAlmanac);
         connect(pauseMenu,&PauseDialog::audioRequested,this,&PlayScene::showAudioSettings);

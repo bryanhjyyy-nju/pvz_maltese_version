@@ -61,6 +61,60 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void pausePreservesPlantAndShovelSelection() {
+        QTemporaryDir dir; GameWindow root(nullptr,unlockedPath(dir),false);
+        root.show(); root.startLevel(4);
+        auto *play=root.playPage(); auto *scene=play->findChild<MyGameScene*>();
+        auto *view=play->findChild<QGraphicsView*>(); auto *preview=play->findChild<QLabel*>("plantPreview");
+        auto cards=play->findChildren<Card*>(); QVERIFY(cards.size()>1);
+        QTest::mouseClick(cards.at(1),Qt::LeftButton);
+        scene->mouseMovedTo(QPointF(440,490));
+        QCOMPARE(Card::currentState(),GameState::PrePlace); QVERIFY(preview->isVisible());
+        const auto selected=Card::selectedWhite(); const int chosen=scene->getChosenNum();
+        play->showPauseMenu(); QVERIFY(!preview->isVisible());
+        auto *menu=play->findChild<PauseDialog*>();
+        QTest::mouseClick(menu->findChild<QPushButton*>("mainMenu"),Qt::LeftButton);
+        root.continueGame(); root.resize(1280,720); QTest::qWait(30);
+        QTest::mouseClick(menu->findChild<QPushButton*>("resume"),Qt::LeftButton);
+        QCOMPARE(Card::currentState(),GameState::PrePlace); QCOMPARE(Card::selectedWhite(),selected);
+        QCOMPARE(scene->getChosenNum(),chosen); QVERIFY(preview->isVisible()); QVERIFY(view->hasMouseTracking());
+        auto click=[&](QPointF pos) { QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(pos)); };
+        click(QPointF(440,490)); QCOMPARE(scene->findChildren<WhiteDogs*>().size(),1);
+        scene->toggleShovel(); QCOMPARE(Card::currentState(),GameState::Shoveling);
+        QGraphicsItem *shovel=nullptr;
+        for(auto *item : scene->items()) if(item->toolTip().startsWith("可爱铲子")) shovel=item;
+        QVERIFY(shovel); shovel->setPos(600,450); const auto position=shovel->pos();
+        play->showPauseMenu(); play->showPauseMenu();
+        QCOMPARE(shovel->pos(),position);
+        play->gameContinued();
+        QCOMPARE(Card::currentState(),GameState::Shoveling); QVERIFY(shovel->pos()!=GameArtwork::shovelHome());
+        QVERIFY(view->hasMouseTracking()); click(QPointF(440,490));
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        QVERIFY(scene->findChildren<WhiteDogs*>().isEmpty());
+    }
+    void pauseRestartResetsCurrentBattle() {
+        QTemporaryDir dir; const auto path=unlockedPath(dir);
+        GameWindow root(nullptr,path,false); root.show(); root.startLevel(4);
+        QPointer<PlayScene> old=root.playPage(); auto *scene=old->findChild<MyGameScene*>();
+        scene->setAYellowDog(2); old->showPauseMenu();
+        auto *menu=old->findChild<PauseDialog*>(); auto *restart=menu->findChild<QPushButton*>("restart");
+        QVERIFY(restart && restart->isVisible());
+        for(auto *button : menu->findChildren<QPushButton*>()) QVERIFY(menu->rect().contains(button->mapTo(menu,QPoint())+button->rect().bottomRight()));
+        QTest::mouseClick(restart,Qt::LeftButton);
+        QVERIFY(root.playPage()!=old); QCOMPARE(root.playPage()->levelIndex,4);
+        QVERIFY(!root.playPage()->isPaused()); QCOMPARE(Card::currentState(),GameState::Normal);
+        QVERIFY(root.playPage()->findChild<MyGameScene*>()->findChildren<YellowDogs*>().isEmpty());
+        for(auto *timer : scene->findChildren<QTimer*>()) QVERIFY(!timer->isActive());
+        QCOMPARE(ProgressStore(path).highestCompleted(),10);
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete); QVERIFY(old.isNull());
+        root.playPage()->showPauseMenu(); root.startEndless(); old=root.playPage();
+        auto *endlessScene=old->findChild<MyGameScene*>(); endlessScene->waveStarted(8,0);
+        QCOMPARE(ProgressStore(path).endlessBest(),8); old->showPauseMenu();
+        QTest::mouseClick(old->findChild<PauseDialog*>()->findChild<QPushButton*>("restart"),Qt::LeftButton);
+        QVERIFY(root.playPage()!=old); QVERIFY(root.playPage()->endlessMode); QVERIFY(!root.playPage()->isPaused());
+        QCOMPARE(ProgressStore(path).endlessCheckpoint(),1); QCOMPARE(ProgressStore(path).endlessBest(),8);
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete); QVERIFY(old.isNull());
+    }
     void gameTextUsesSmallWhiteAndGoldenDogs() {
         MainScene home; ChooseLevelScene levels;
         QCOMPARE(home.findChild<QPushButton*>("menuAlmanac")->text(),QString("小白 / 金毛图鉴"));

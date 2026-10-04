@@ -18,7 +18,8 @@ PauseDialog::PauseDialog(QWidget *parent) : QDialog(parent) {
     panel->setProperty("panel",true);
     outer->addWidget(panel);
     auto *layout = new QVBoxLayout(panel);
-    layout->setContentsMargins(30,20,30,20);
+    layout->setContentsMargins(30,14,30,14);
+    layout->setSpacing(7);
     auto *title = new QLabel("休息一下！",panel);
     title->setAlignment(Qt::AlignCenter);
     title->setStyleSheet("font-size:30px; font-weight:bold; color:#805024;");
@@ -26,12 +27,13 @@ PauseDialog::PauseDialog(QWidget *parent) : QDialog(parent) {
     auto add = [&](const QString& text, const char *name, const QString& color, void(PauseDialog::*signal)()) {
         auto *button = new QPushButton(text,panel);
         button->setObjectName(name);
-        button->setMinimumHeight(52);
+        button->setMinimumHeight(44);
         GameUi::styleButton(button,color);
         layout->addWidget(button);
         connect(button,&QPushButton::clicked,this,signal);
     };
     add("继续游戏  [空格]","resume","green",&PauseDialog::resumeRequested);
+    add("重新开始本局","restart","gold",&PauseDialog::restartRequested);
     add("小白 / 金毛图鉴","almanac","gold",&PauseDialog::almanacRequested);
     add("声音设置","audio","gold",&PauseDialog::audioRequested);
     add("返回主菜单","mainMenu","red",&PauseDialog::mainMenuRequested);

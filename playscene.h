@@ -37,6 +37,8 @@ protected:
 private:
     GamePause pausedActivity;
     bool paused = false;
+    GameState interactionBeforePause = GameState::Normal;
+    bool previewBeforePause = false;
     bool finished = false;
     bool openingActive=false;
     qreal cameraOffset=0;
@@ -73,6 +75,7 @@ private:
     void stopShow();
 
 signals:
+    void restartRequested();
     void nextLevelRequested(int level);
     void mainMenuRequested();
     void playSceneBack();

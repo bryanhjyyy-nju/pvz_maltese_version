@@ -114,6 +114,18 @@ void GameWindow::connectBattle(bool endless) {
     connect(battle,&PlayScene::playSceneBack,this,&GameWindow::showLevels);
     connect(battle,&PlayScene::nextLevelRequested,this,&GameWindow::startLevel);
     connect(battle,&PlayScene::mainMenuRequested,this,&GameWindow::showMenu);
+    connect(battle,&PlayScene::restartRequested,this,&GameWindow::restartGame);
+}
+void GameWindow::restartGame() {
+    if(closing || !battle || !battle->isPaused() || battle->isFinished()) return;
+    if(!battle->endlessMode) { startLevel(battle->levelIndex); return; }
+    if(!progress.startEndless()) { QMessageBox::warning(this,"存档未写入",progress.error()); return; }
+    discardBattle();
+    battle=new PlayScene(10,pages,playOpening,true,1);
+    connectBattle(true);
+    AudioManager::instance().setBattle(true);
+    pages->setCurrentWidget(battle);
+    setWindowTitle("小白大战小金毛 · 无尽模式");
 }
 void GameWindow::startEndless() {
     if(closing || !progress.endlessUnlocked()) return;
