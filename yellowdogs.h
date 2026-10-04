@@ -48,13 +48,13 @@ protected:
     WhiteDogs *targetWhiteDog;
     int atkPower = 10;
     bool m_isGamePaused = false;
-    QPropertyAnimation *tempBackAnim;
+    GamePropertyAnimation *tempBackAnim;
     MyGameScene *battleScene;
     int enemyType;
     qreal m_hitFlash=0, m_biteProgress=1, m_deathProgress=0;
     QPixmap flashFrame;
     qint64 flashSourceKey=0;
-    QPropertyAnimation *hitAnimation, *biteAnimation, *deathAnimation;
+    GamePropertyAnimation *hitAnimation, *biteAnimation, *deathAnimation;
 
 signals:
     void isAttacked();

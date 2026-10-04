@@ -3,6 +3,7 @@
 #include <QAbstractAnimation>
 #include <QPixmap>
 #include <QSharedPointer>
+#include "gamespeed.h"
 
 struct SpriteClip;
 
@@ -16,6 +17,7 @@ public:
     int currentFrameNumber() const { return frame; }
     QPixmap currentPixmap() const;
     bool jumpToFrame(int index);
+    void setGameSpeed(GameSpeed *clock);
 signals:
     void frameChanged(int index);
 protected:
@@ -23,4 +25,7 @@ protected:
 private:
     QSharedPointer<const SpriteClip> clip;
     int frame=-1;
+    int multiplier=1;
+    QMetaObject::Connection speedConnection;
+    void changeSpeed(int previous,int current);
 };

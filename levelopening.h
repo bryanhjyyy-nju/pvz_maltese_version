@@ -1,6 +1,6 @@
 #pragma once
 #include <QObject>
-#include <QVariantAnimation>
+#include "gamespeed.h"
 #include <QVector>
 class MyGameScene;
 class BattleBanner;
@@ -24,7 +24,7 @@ private:
     int level;
     MyGameScene *scene;
     BattleBanner *banner;
-    QVariantAnimation timeline;
+    GameVariantAnimation timeline;
     Stage current=Stage::Stopped;
     QVector<QGraphicsItem*> previewItems;
     QVector<SpriteAnimation*> previewMovies;

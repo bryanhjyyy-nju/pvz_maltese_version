@@ -9,11 +9,11 @@ GameState Card::cardGameState=GameState::Normal;
 QString Card::cardSelectedWhite;
 int Card::curRestHeart=50;
 
-Card::Card(int number) : coolTime(0),heartCost(0),cardIndex(number) {
+Card::Card(int number,GameSpeed *clock) : coolTime(0),heartCost(0),cardIndex(number) {
     artwork.load(":/others/Image/card.png");
     setFixedSize(artwork.size()*1.21);
     setFocusPolicy(Qt::NoFocus);
-    memCoolTimer=new QTimer(this);
+    memCoolTimer=new GameTimer(this,clock);
     memCoolTimer->setInterval(100);
     connect(memCoolTimer,&QTimer::timeout,this,[this] {
         setCoolProgress(memCoolProgress+100.0f/qMax(1,coolTime));

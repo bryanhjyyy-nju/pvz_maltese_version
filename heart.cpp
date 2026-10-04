@@ -10,7 +10,7 @@
 
 QPointF Heart::curMousePos = QPointF(0, 0);
 
-Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCurve::Type type, QObject *parent,bool tutorial,int fallDurationMs):QObject(parent), memEndPos(endPos)
+Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCurve::Type type, QObject *parent,bool tutorial,int fallDurationMs):QObject(parent), gameClock(gameScene->gameSpeed()),memEndPos(endPos)
 {
     setPixmap(GameArtwork::cuteHeart());
     setOpacity(1.0);
@@ -21,7 +21,7 @@ Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCu
     setAcceptedMouseButtons(Qt::LeftButton);
 
     //创建下落动画
-    memFallAnim = new QPropertyAnimation(this, "pos", this);
+    memFallAnim = new GamePropertyAnimation(gameClock,this, "pos", this);
     memFallAnim->setObjectName("heartFallAnimation");
     memFallAnim->setDuration(qMax(1,fallDurationMs));
     memFallAnim->setStartValue(startPos);
@@ -29,13 +29,13 @@ Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCu
     memFallAnim->setEasingCurve(type);
 
     //创建收集动画
-    memCollectAnim = new QPropertyAnimation(this, "pos", this);
+    memCollectAnim = new GamePropertyAnimation(gameClock,this, "pos", this);
     memCollectAnim->setObjectName("heartCollectAnimation");
     memCollectAnim->setDuration(800);
     memCollectAnim->setEasingCurve(QEasingCurve::InQuad);
 
     //创建爱心消失计时器
-    memDisappearTimer = new QTimer(this);
+    memDisappearTimer = new GameTimer(this,gameClock);
     memDisappearTimer->setInterval(3500);
     memDisappearTimer->setSingleShot(true);
 
@@ -46,7 +46,7 @@ Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCu
     connect(memFallAnim, &QPropertyAnimation::finished, this, &Heart::hasReachedGround);
 
     //倒计时结束链接已经消失
-    memBlinkAnim = new QPropertyAnimation(this,"opacity",this);
+    memBlinkAnim = new GamePropertyAnimation(gameClock,this,"opacity",this);
     memBlinkAnim->setObjectName("heartBlinkAnimation");
     memBlinkAnim->setDuration(500);
     memBlinkAnim->setStartValue(1.0);
@@ -102,7 +102,7 @@ void Heart::hasReachedGround(){
 void Heart::hasDisappear(){
     isCollectable = false;
     isDisappearing = true;
-    QPropertyAnimation *fadeAnim = new QPropertyAnimation(this, "opacity", this);
+    auto *fadeAnim = new GamePropertyAnimation(gameClock,this, "opacity", this);
     fadeAnim->setStartValue(opacity());
     fadeAnim->setEndValue(0.0);
     fadeAnim->setDuration(1000);

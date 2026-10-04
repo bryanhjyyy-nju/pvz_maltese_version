@@ -136,7 +136,7 @@ PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening,bool endless,
     });
     connect(this,&GamePage::canvasResized,this,&PlayScene::fitBattlefield);
     initializePage(QRect(20,760,250,44));
-    banner=new BattleBanner(this);
+    banner=new BattleBanner(this,myGameScene->gameSpeed());
     connect(myGameScene,&MyGameScene::finalWaveApproaching,this,[this] {
         banner->announce("最后一波小金毛即将来袭！","finalWave",false);
     });
@@ -188,7 +188,7 @@ void PlayScene::setCardsInBar(){
     for(int i = 0; i < (levelIndex < 8 ? levelIndex : 8); i++){
         const auto& plant = GameCatalog::plants().at(i);
         //设置卡牌
-        Card *card = new Card(i);
+        Card *card = new Card(i,myGameScene->gameSpeed());
         card->setParent(this);
         card->setObjectName(QString("plantCard%1").arg(i));
         card->move(470 + i * (card->width() + 5.5), 10);
@@ -277,9 +277,22 @@ void PlayScene::finishGame() {
     finished = true;
     Card::setGameState(GameState::GameOver);
     pauseButton->setEnabled(false);
+    speedButton->setEnabled(false);
 }
 
 void PlayScene::buildPauseBtn() {
+    speedButton = new QPushButton("速度：1×",this);
+    speedButton->setObjectName("battleSpeed");
+    speedButton->setCheckable(true);
+    speedButton->setFocusPolicy(Qt::NoFocus);
+    speedButton->setToolTip("切换原速 / 二倍速");
+    speedButton->setGeometry(20,160,170,44);
+    GameUi::styleButton(speedButton,"gold");
+    connect(speedButton,&QPushButton::clicked,this,[this](bool doubled) { setSpeedMultiplier(doubled ? 2 : 1); });
+    connect(myGameScene->gameSpeed(),&GameSpeed::speedChanged,this,[this](int,int multiplier) {
+        speedButton->setChecked(multiplier==2);
+        speedButton->setText(QString("速度：%1×").arg(multiplier));
+    });
     pauseButton = new QPushButton("暂停 [空格]",this);
     pauseButton->setObjectName("pauseBattle");
     GameUi::styleButton(pauseButton);
@@ -318,6 +331,11 @@ void PlayScene::buildPauseBtn() {
         wave->setText(total==0 ? QString("无尽模式 · 第 %1 波\n守住你的草坪！").arg(current) : QString("第 %1 / %2 波\n守住你的草坪！").arg(current).arg(total));
     });
     connect(myGameScene,&MyGameScene::healthVisibilityChanged,this,updateHelp);
+}
+
+void PlayScene::setSpeedMultiplier(int multiplier) {
+    if(finished) return;
+    myGameScene->gameSpeed()->setMultiplier(multiplier);
 }
 
 void PlayScene::togglePauseMenu() {
@@ -405,13 +423,14 @@ void PlayScene::showResult(bool won) {
     if(tutorial) tutorial->hide();
     setBattleHudVisible(false);
     pauseShortcut->setEnabled(false);
-    result=new BattleResult(won,levelIndex,myGameScene->defeatPosition(),this);
+    result=new BattleResult(won,levelIndex,myGameScene->defeatPosition(),this,myGameScene->gameSpeed());
     connect(result,&BattleResult::returnRequested,this,&PlayScene::playSceneBack);
     connect(result,&BattleResult::nextRequested,this,[this] { emit nextLevelRequested(levelIndex+1); });
 }
 
 void PlayScene::setBattleHudVisible(bool visible) {
     for(auto *widget : findChildren<QWidget*>(QString(),Qt::FindDirectChildrenOnly)) {
+        if(widget==speedButton && !finished) continue;
         if(widget->property("manualScale").toBool() || widget->isWindow()
             || widget->objectName()=="backToLevels" || widget->objectName()=="fullScreenButton") continue;
         widget->setVisible(visible);

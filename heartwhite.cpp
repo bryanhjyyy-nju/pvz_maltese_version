@@ -4,11 +4,12 @@
 
 HeartWhite::HeartWhite(MyGameScene *myScene):WhiteDogs(":/white/Image/heartWhite.gif", 1.2)
 {
+    setGameSpeed(myScene->gameSpeed());
     const auto& stats = GameCatalog::plants().at(1);
     hp = stats.health;
     heartCost = stats.cost;
 
-    whiteDogTimer = new QTimer(this);
+    whiteDogTimer = new GameTimer(this,myScene->gameSpeed());
     connect(whiteDogTimer,&QTimer::timeout,this,[this](){
         emit heartGenerated(this->pos());
     });

@@ -73,6 +73,166 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void speedTimerPreservesRemainingTimeAndPause() {
+        QObject root; GameSpeed clock(&root);
+        GameTimer timer(&root,&clock),idle(&root,&clock);
+        timer.start(400); idle.setInterval(500);
+        QSignalSpy ticks(&timer,&QTimer::timeout);
+        QTest::qWait(100); const int remaining=timer.remainingTime();
+        clock.setMultiplier(2);
+        QVERIFY(qAbs(timer.remainingTime()-remaining/2)<12);
+        QCOMPARE(timer.gameInterval(),400); QCOMPARE(idle.interval(),250); QVERIFY(!idle.isActive());
+        const int fasterRemaining=timer.remainingTime();
+        for(int i=0;i<8;++i) { clock.setMultiplier(1); clock.setMultiplier(2); }
+        QVERIFY(qAbs(timer.remainingTime()-fasterRemaining)<15);
+        GamePause pause; pause.pause(&root); QVERIFY(!timer.isActive());
+        clock.setMultiplier(1); QTest::qWait(100); QCOMPARE(ticks.count(),0);
+        pause.resume(); QVERIFY(qAbs(timer.remainingTime()-fasterRemaining*2)<30);
+        QTRY_COMPARE_WITH_TIMEOUT(ticks.count(),1,500); QCOMPARE(timer.interval(),400);
+        // A gameplay callback can replace an interval after a partial tick.
+        clock.setMultiplier(2);
+        connect(&timer,&QTimer::timeout,&root,[&] { timer.setInterval(900); });
+        QTRY_COMPARE_WITH_TIMEOUT(ticks.count(),2,300);
+        QCOMPARE(timer.gameInterval(),900); QCOMPARE(timer.interval(),450);
+        timer.stop(); clock.setMultiplier(1); QVERIFY(!timer.isActive()); QCOMPARE(timer.interval(),900);
+        clock.setMultiplier(2);
+        GameTimer single(&root,&clock); single.setSingleShot(true); single.start(160);
+        QSignalSpy once(&single,&QTimer::timeout);
+        QTRY_COMPARE_WITH_TIMEOUT(once.count(),1,200); QVERIFY(!single.isActive());
+        QTest::qWait(100); QCOMPARE(once.count(),1);
+    }
+    void speedAnimationPreservesPositionLoopsAndPausedState() {
+        GameSpeed clock;
+        GameVariantAnimation animation(&clock); animation.setDuration(1000); animation.setLoopCount(3);
+        animation.setStartValue(0.0); animation.setEndValue(100.0);
+        QSignalSpy finished(&animation,&QAbstractAnimation::finished);
+        animation.start(); animation.setCurrentTime(2700);
+        clock.setMultiplier(2);
+        QCOMPARE(animation.duration(),500); QCOMPARE(animation.currentTime(),1350);
+        QCOMPARE(animation.currentLoop(),2); QCOMPARE(animation.currentValue().toDouble(),70.0);
+        QCOMPARE(animation.state(),QAbstractAnimation::Running); QCOMPARE(finished.count(),0);
+        animation.pause(); clock.setMultiplier(1);
+        QCOMPARE(animation.currentTime(),2700); QCOMPARE(animation.currentValue().toDouble(),70.0);
+        QCOMPARE(animation.state(),QAbstractAnimation::Paused);
+        animation.resume(); animation.setCurrentTime(3000); QCOMPARE(finished.count(),1);
+        QCOMPARE(animation.state(),QAbstractAnimation::Stopped);
+        SpriteAnimation sprite(GameCatalog::enemies()[2].image,GameCatalog::enemies()[2].scale);
+        sprite.setGameSpeed(&clock); const int originalDuration=sprite.duration();
+        sprite.start(); sprite.setCurrentTime(10); const int frame=sprite.currentFrameNumber();
+        clock.setMultiplier(2); QCOMPARE(sprite.currentFrameNumber(),frame);
+        QCOMPARE(sprite.duration(),(originalDuration+1)/2); QCOMPARE(sprite.currentTime(),5);
+        sprite.pause(); clock.setMultiplier(1);
+        QCOMPARE(sprite.state(),QAbstractAnimation::Paused); QCOMPARE(sprite.duration(),originalDuration);
+        QCOMPARE(sprite.currentFrameNumber(),frame); QCOMPARE(sprite.currentTime(),10);
+    }
+    void speedButtonScalesBattleAndNewObjects() {
+        PlayScene play(10,nullptr,false); play.resize(1280,720); play.show();
+        auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
+        auto *button=play.findChild<QPushButton*>("battleSpeed"); QVERIFY(button); QVERIFY(button->isVisible());
+        QCOMPARE(play.speedMultiplier(),1); QVERIFY(!button->isChecked());
+        scene->addHeart(1500);
+        // Include every plant's sprite, shooters, producers, burst gap and charge.
+        const int types[]={0,1,5,6,3,2,4,7};
+        for(int i=0;i<8;++i) {
+            scene->setChosenNum(types[i]); Card::setGameState(GameState::PrePlace);
+            QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,
+                view->mapFromScene(QPointF(440+(i/5)*242,202+(i%5)*145)));
+        }
+        QCOMPARE(scene->findChildren<WhiteDogs*>().size(),8);
+        scene->setAYellowDog(2,1); scene->generateSkyHeart(); scene->generateBullet(2,0);
+        const auto animations=play.findChildren<QAbstractAnimation*>(); QVector<int> durations;
+        for(auto *animation : animations) durations.append(animation->duration());
+        auto *enemy=scene->findChild<YellowDogs*>(); auto *heart=scene->findChild<Heart*>();
+        const QPointF enemyPosition=enemy->pos(),heartPosition=heart->pos();
+        QTest::mouseClick(button,Qt::LeftButton); QCOMPARE(play.speedMultiplier(),2);
+        QVERIFY(button->isChecked()); QVERIFY(button->text().contains("2×"));
+        for(int i=0;i<animations.size();++i) QCOMPARE(animations[i]->duration(),(durations[i]+1)/2);
+        QVERIFY(QLineF(enemyPosition,enemy->pos()).length()<2); QVERIFY(QLineF(heartPosition,heart->pos()).length()<2);
+        const auto timers=play.findChildren<GameTimer*>(); QVERIFY(timers.size()>15);
+        for(auto *timer : timers) {
+            QVERIFY(timer->interval()>0);
+            QVERIFY2(timer->interval()<=qMax(1,(timer->gameInterval()+1)/2),
+                qPrintable(QString("%1 / %2: wall=%3 game=%4").arg(timer->objectName(),timer->parent()->metaObject()->className())
+                    .arg(timer->interval()).arg(timer->gameInterval())));
+        }
+        auto *producer=scene->findChild<AllHeartWhite*>();
+        QCOMPARE(producer->findChild<GameTimer*>("doubleHeartTimer")->gameInterval(),12000);
+        auto *doubleSinger=scene->findChild<DblSingWhite*>();
+        QCOMPARE(doubleSinger->findChild<QTimer*>("doubleBurstTimer")->interval(),800);
+        QCOMPARE(doubleSinger->findChild<QTimer*>("doubleSecondShotTimer")->interval(),90);
+        scene->generateSkyHeart(); auto *newHeart=scene->findChildren<Heart*>().back();
+        QCOMPARE(newHeart->findChild<QPropertyAnimation*>("heartFallAnimation")->duration(),4000);
+        QCOMPARE(newHeart->findChild<QPropertyAnimation*>("heartCollectAnimation")->duration(),400);
+        QCOMPARE(newHeart->findChild<QPropertyAnimation*>("heartBlinkAnimation")->duration(),250);
+        QCOMPARE(newHeart->findChild<QTimer*>()->interval(),1750);
+        scene->setAYellowDog(1,1); auto *newEnemy=scene->findChildren<YellowDogs*>().back();
+        QCOMPARE(newEnemy->findChild<QTimer*>("guitarRangedTimer")->interval(),1000);
+        QCOMPARE(newEnemy->findChild<QPropertyAnimation*>("enemyMovement")->duration(),500);
+        newEnemy->shootNote(); auto *projectile=scene->findChild<EnemyProjectile*>(); QVERIFY(projectile);
+        QCOMPARE(projectile->findChild<QTimer*>()->interval(),15);
+        const int projectileDuration=projectile->findChild<QPropertyAnimation*>()->duration();
+        Card::setGameState(GameState::PrePlace); Card::setSelectedWhite("heartWhite");
+        play.gamePaused(); const QPointF pausedPosition=newEnemy->pos(); const float cooldown=play.findChild<Card*>()->coolProgress();
+        play.setSpeedMultiplier(1); QTest::qWait(100);
+        QCOMPARE(newEnemy->pos(),pausedPosition); QCOMPARE(play.findChild<Card*>()->coolProgress(),cooldown);
+        QVERIFY(!scene->getGameTimer()->isActive());
+        QVERIFY(qAbs(projectile->findChild<QPropertyAnimation*>()->duration()-projectileDuration*2)<=1);
+        play.setSpeedMultiplier(2); play.gameContinued();
+        QCOMPARE(play.speedMultiplier(),2); QCOMPARE(Card::currentState(),GameState::PrePlace);
+        QCOMPARE(Card::selectedWhite(),QString("heartWhite"));
+        QTRY_VERIFY_WITH_TIMEOUT(play.findChild<Card*>()->coolProgress()>cooldown,200);
+        QTest::mouseClick(button,Qt::LeftButton); QCOMPARE(play.speedMultiplier(),1);
+        QCOMPARE(newHeart->findChild<QPropertyAnimation*>("heartFallAnimation")->duration(),8000);
+        QCOMPARE(newEnemy->findChild<QPropertyAnimation*>("enemyMovement")->duration(),1000);
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(!folder.isEmpty()) { play.setSpeedMultiplier(2); QVERIFY(play.grab().save(folder+"/battle-double-speed.png")); }
+    }
+    void doubleSpeedHeartLifecycleUsesCurrentRate() {
+        PlayScene play(8,nullptr,false); auto *scene=play.findChild<MyGameScene*>();
+        play.setSpeedMultiplier(2); scene->generateSkyHeart();
+        auto *heart=scene->findChild<Heart*>(); auto *fall=heart->findChild<QPropertyAnimation*>("heartFallAnimation");
+        fall->setCurrentTime(fall->duration());
+        auto *expiry=heart->findChild<QTimer*>(); QCOMPARE(expiry->interval(),1750); QVERIFY(expiry->isActive());
+        QMetaObject::invokeMethod(expiry,"timeout"); auto *blink=heart->findChild<QPropertyAnimation*>("heartBlinkAnimation");
+        QCOMPARE(blink->duration(),250); QCOMPARE(blink->loopCount(),2);
+        blink->setCurrentTime(blink->totalDuration());
+        const auto animations=heart->findChildren<QPropertyAnimation*>(); QCOMPARE(animations.size(),4);
+        auto *fade=animations.back(); QCOMPARE(fade->duration(),500);
+        fade->setCurrentTime(350); const qreal opacity=heart->opacity();
+        play.setSpeedMultiplier(1); QCOMPARE(fade->duration(),1000);
+        QCOMPARE(fade->state(),QAbstractAnimation::Running); QVERIFY(qAbs(heart->opacity()-opacity)<.005);
+    }
+    void doubleSpeedOpeningWarningsAndResult() {
+        PlayScene openingPlay(3); openingPlay.show();
+        auto *button=openingPlay.findChild<QPushButton*>("battleSpeed"); QVERIFY(button->isVisible());
+        QTest::mouseClick(button,Qt::LeftButton);
+        auto *opening=openingPlay.findChild<LevelOpening*>();
+        auto *timeline=opening->findChild<QVariantAnimation*>("openingTimeline"); QCOMPARE(timeline->duration(),500);
+        timeline->setCurrentTime(350); const auto value=timeline->currentValue();
+        openingPlay.setSpeedMultiplier(1); QCOMPARE(timeline->currentValue(),value);
+        openingPlay.setSpeedMultiplier(2);
+        completeOpening(&openingPlay); QVERIFY(openingPlay.findChild<MyGameScene*>()->gameplayStarted());
+        QCOMPARE(openingPlay.speedMultiplier(),2);
+        PlayScene endless(10,nullptr,false,true,5); endless.show(); endless.setSpeedMultiplier(2);
+        auto *scene=endless.findChild<MyGameScene*>(); auto *wave=scene->findChild<QTimer*>("waveTimer");
+        auto *stagger=scene->findChild<QTimer*>("waveStaggerTimer");
+        QMetaObject::invokeMethod(wave,"timeout"); QCOMPARE(scene->wavesStarted(),5);
+        QCOMPARE(stagger->interval(),900); QVERIFY(scene->findChildren<YellowDogs*>().isEmpty());
+        auto *banner=endless.findChild<BattleBanner*>()->findChild<QVariantAnimation*>("bannerAnimation");
+        QCOMPARE(banner->duration(),900); const int remaining=stagger->remainingTime();
+        endless.gamePaused(); endless.setSpeedMultiplier(1); QTest::qWait(60);
+        QVERIFY(!stagger->isActive()); endless.gameContinued();
+        QVERIFY(qAbs(stagger->remainingTime()-remaining*2)<35);
+        endless.setSpeedMultiplier(2);
+        QTRY_VERIFY_WITH_TIMEOUT(!scene->findChildren<YellowDogs*>().isEmpty(),1100);
+        QCOMPARE(stagger->interval(),450);
+        // Victory presentation also follows the chosen rate; the next battle starts at 1x.
+        PlayScene victory(8,nullptr,false); QCOMPARE(victory.speedMultiplier(),1); victory.setSpeedMultiplier(2);
+        emit victory.gameWin(); auto *result=victory.findChild<BattleResult*>(); QVERIFY(result);
+        QCOMPARE(result->findChild<QVariantAnimation*>("resultAnimation")->duration(),1800);
+        QVERIFY(!victory.findChild<QPushButton*>("battleSpeed")->isEnabled());
+        PlayScene fresh(8,nullptr,false); QCOMPARE(fresh.speedMultiplier(),1);
+    }
     void heartsStayCompleteDuringBattlefieldUpdates() {
         if(QGuiApplication::platformName()!="windows") QSKIP("Checks the native Windows backing store without forcing a render.");
         PlayScene play(8,nullptr,false); play.resize(950,518); play.move(30,30); play.show();

@@ -3,6 +3,7 @@
 
 LineWhite::LineWhite(int row, int col, MyGameScene *myScene, QPointF cPos):WhiteDogs(":/white/Image/lineWhite.gif",0.45),battleScene(myScene)
 {
+    setGameSpeed(myScene->gameSpeed());
     const auto& stats = GameCatalog::plants().at(3);
     hp = stats.health;
     heartCost = stats.cost;
@@ -10,7 +11,7 @@ LineWhite::LineWhite(int row, int col, MyGameScene *myScene, QPointF cPos):White
     setItPos(row, col);
     WhiteDogs *tempPtr = this;
     setPos(cPos - QPointF(tempPtr->pixmap().width() / 2.0, tempPtr->pixmap().height() / 2.0));
-    movingAnim = new QPropertyAnimation(this, "pos", this);
+    movingAnim = new GamePropertyAnimation(myScene->gameSpeed(),this, "pos", this);
     movingAnim->setObjectName("chargeMovement");
     movingAnim->setDuration(1000);
     // movingAnim->setLoopCount(-1);

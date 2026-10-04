@@ -13,7 +13,7 @@
 #include <QRegion>
 
 LevelOpening::LevelOpening(int number,MyGameScene *board,BattleBanner *text,QObject *parent)
-    : QObject(parent),level(number),scene(board),banner(text),timeline(this) {
+    : QObject(parent),level(number),scene(board),banner(text),timeline(board->gameSpeed(),this) {
     setObjectName("levelOpening"); timeline.setObjectName("openingTimeline");
     timeline.setStartValue(0.0); timeline.setEndValue(1.0);
     connect(&timeline,&QVariantAnimation::valueChanged,this,[this](const QVariant& value) {
@@ -48,6 +48,7 @@ void LevelOpening::buildPreview() {
         const auto& enemy=GameCatalog::enemies()[types[i]];
         const qreal scale=enemy.scale;
         auto *movie=new SpriteAnimation(enemy.image,scale,this);
+        movie->setGameSpeed(scene->gameSpeed());
         const QPixmap firstFrame=movie->currentPixmap();
         auto *image=scene->addPixmap(firstFrame); image->setZValue(3);
         image->setAcceptedMouseButtons(Qt::NoButton);

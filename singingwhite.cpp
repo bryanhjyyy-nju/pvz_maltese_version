@@ -5,12 +5,13 @@
 
 SingingWhite::SingingWhite(int r, int c,MyGameScene *myScene):WhiteDogs(":/white/Image/singingWhite.gif")
 {
+    setGameSpeed(myScene->gameSpeed());
     const auto& stats = GameCatalog::plants().at(0);
     hp = stats.health;
     heartCost = stats.cost;
     isZombieOnYourLawn = false;
     setItPos(r,c);
-    whiteDogTimer = new QTimer(this);
+    whiteDogTimer = new GameTimer(this,myScene->gameSpeed());
     connect(this, &SingingWhite::bulletShot,myScene, &MyGameScene::generateBullet);
     connect(whiteDogTimer,&QTimer::timeout,this,[=](){
         emit bulletShot(r,c);

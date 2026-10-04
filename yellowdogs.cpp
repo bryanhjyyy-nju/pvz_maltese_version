@@ -19,11 +19,11 @@ YellowDogs::YellowDogs(int row, MyGameScene *scene, int type,int difficultyWave)
     initialSpeed=speed;
     setPos(QRandomGenerator::global()->bounded(180)+1589-pixmap().width()/2,
            130+145*(row+.5)-pixmap().height()/2);
-    tempBackAnim = new QPropertyAnimation(this,"pos",this);
+    tempBackAnim = new GamePropertyAnimation(battleScene->gameSpeed(),this,"pos",this);
     tempBackAnim->setObjectName("enemyKnockback");
     tempBackAnim->setDuration(200);
     connect(tempBackAnim,&QPropertyAnimation::finished,this,[this] { if(!removed) startMoving(); });
-    movingAnim = new QPropertyAnimation(this,"pos",this);
+    movingAnim = new GamePropertyAnimation(battleScene->gameSpeed(),this,"pos",this);
     movingAnim->setObjectName("enemyMovement");
     movingAnim->setDuration(1000);
     connect(movingAnim,&QPropertyAnimation::finished,this,[this] {
@@ -34,7 +34,7 @@ YellowDogs::YellowDogs(int row, MyGameScene *scene, int type,int difficultyWave)
     });
     connect(this,&MyItem::healthChanged,this,&YellowDogs::updateDashSpeed);
     auto animation = [this](const char *property, int duration) {
-        auto *result = new QPropertyAnimation(this,property,this);
+        auto *result = new GamePropertyAnimation(battleScene->gameSpeed(),this,property,this);
         result->setDuration(duration);
         return result;
     };
@@ -49,7 +49,7 @@ YellowDogs::YellowDogs(int row, MyGameScene *scene, int type,int difficultyWave)
         else if(tempBackAnim->state()!=QAbstractAnimation::Running) startMoving();
     });
     if(enemyType == 1) {
-        auto *rangedTimer = new QTimer(this);
+        auto *rangedTimer = new GameTimer(this,battleScene->gameSpeed());
         rangedTimer->setObjectName("guitarRangedTimer");
         connect(rangedTimer,&QTimer::timeout,this,&YellowDogs::shootNote);
         rangedTimer->start(GameCatalog::GuitarShotIntervalMs);
@@ -61,6 +61,7 @@ void YellowDogs::initArgues(int type) {
     speed = stats.minSpeed+QRandomGenerator::global()->bounded(stats.speedRange);
     atkPower = stats.attack;
     setupGifAnimation(stats.image,stats.scale);
+    setGameSpeed(battleScene->gameSpeed());
 }
 void YellowDogs::updateDashSpeed(int health) {
     if(enemyType!=2 || removed || dashAccelerated || health<=0 || health*2>=initialHealth) return;

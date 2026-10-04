@@ -9,6 +9,7 @@
 #include <QPainter>
 #include <QPropertyAnimation>
 #include <QTimer>
+#include "gamespeed.h"
 
 class MyItem : public QObject,public QGraphicsPixmapItem
 {
@@ -30,6 +31,7 @@ public:
     // void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
 
     void setItPos(int r, int c); //设置所在行，所在列
+    void setGameSpeed(GameSpeed *clock) { if(movie) movie->setGameSpeed(clock); }
     int getItRow() const { return itRow; }
     int getItCol() const { return itCol; }
     int getHp() const { return hp; } //返回血量的函数
@@ -46,7 +48,7 @@ protected:
     int itCol = 0; //所在列
     qreal speed = 0.0; //设置速度
     bool memIsMoving = false;
-    QPropertyAnimation *movingAnim = nullptr; //设置移动动画
+    GamePropertyAnimation *movingAnim = nullptr; //设置移动动画
     void setupGifAnimation(const QString& gifPath, qreal scale = 1.0); //加载动画
     void applyDamage(int damage);
     void updateHealthLabel();

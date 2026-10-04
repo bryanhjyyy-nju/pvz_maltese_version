@@ -26,6 +26,7 @@
 MyGameScene::MyGameScene(int n,QObject *parent,bool deferStart,bool endless,int firstWave)
     : QGraphicsScene(parent),endlessMode(endless)
 {
+    speedClock=new GameSpeed(this);
     gameLevelNum = qBound(1,n,GameCatalog::LevelCount);
     m_isGameOver = false;
     m_zombiesSpawned = 0;
@@ -85,12 +86,12 @@ void MyGameScene::drawBackground(QPainter *painter,const QRectF& rect) {
 }
 
 void MyGameScene::setupTimers() {
-    memGameTimer = new QTimer(this);
+    memGameTimer = new GameTimer(this,gameSpeed());
     memGameTimer->setInterval(100);
-    memLongGameTimer = new QTimer(this);
+    memLongGameTimer = new GameTimer(this,gameSpeed());
     memLongGameTimer->setInterval(500);
 
-    memSkyHeartTimer = new QTimer(this);
+    memSkyHeartTimer = new GameTimer(this,gameSpeed());
     memSkyHeartTimer->setObjectName("skyHeartTimer");
     connect(memSkyHeartTimer,&QTimer::timeout,this,[this] {
         generateSkyHeart();
@@ -98,13 +99,13 @@ void MyGameScene::setupTimers() {
     });
     memSkyHeartTimer->setInterval(QRandomGenerator::global()->bounded(GameCatalog::SkyHeartMinIntervalMs,GameCatalog::SkyHeartMaxIntervalMs+1));
 
-    memYellowDogsTimer = new QTimer(this);
+    memYellowDogsTimer = new GameTimer(this,gameSpeed());
     memYellowDogsTimer->setTimerType(Qt::PreciseTimer); // Preserve long wave gaps accurately across pause.
     memYellowDogsTimer->setObjectName("waveTimer");
 
     connect(memYellowDogsTimer, &QTimer::timeout, this, &MyGameScene::spawnWave);
 
-    waveStaggerTimer = new QTimer(this);
+    waveStaggerTimer = new GameTimer(this,gameSpeed());
     waveStaggerTimer->setObjectName("waveStaggerTimer");
     connect(waveStaggerTimer,&QTimer::timeout,this,[this] {
         waveStaggerTimer->setInterval(900);
@@ -382,6 +383,7 @@ void MyGameScene::placePlant(int row, int col,bool charge) {
 
     myDog->setPos(centerLoc - QPointF(myDog->pixmap().width() / 2.0, myDog->pixmap().height() / 2.0));
     myDog->setParent(this);
+    myDog->setGameSpeed(gameSpeed());
     addItem(myDog);
 
     dogMap[row * 9 + col] = myDog;

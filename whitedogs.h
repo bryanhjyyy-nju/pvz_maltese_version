@@ -15,7 +15,7 @@ public:
 
     void cutHp(int atk){ applyDamage(atk); }
 
-    void setTimer(QTimer *timer){ whiteDogTimer = timer; }
+    void setTimer(GameTimer *timer){ whiteDogTimer = timer; }
 
     virtual int getAtkType(){ return 0; }
 
@@ -25,7 +25,7 @@ public:
 
 protected:
     int heartCost = 0;
-    QTimer *whiteDogTimer = nullptr;
+    GameTimer *whiteDogTimer = nullptr;
     // qreal myScale = 1.0;
 
 

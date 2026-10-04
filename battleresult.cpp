@@ -17,8 +17,8 @@ void cartoonText(QPainter& painter,const QString& text,qreal y,int size,const QC
     painter.setPen(Qt::NoPen); painter.drawPath(path);
 }
 }
-BattleResult::BattleResult(bool victory,int number,const QPointF& losingEnemy,QWidget *parent)
-    : QWidget(parent),won(victory),level(number),enemy(losingEnemy),timeline(this) {
+BattleResult::BattleResult(bool victory,int number,const QPointF& losingEnemy,QWidget *parent,GameSpeed *clock)
+    : QWidget(parent),won(victory),level(number),enemy(losingEnemy),timeline(clock,this) {
     setObjectName("battleResult"); setProperty("manualScale",true);
     timeline.setObjectName("resultAnimation"); timeline.setStartValue(0.0); timeline.setEndValue(1.0);
     timeline.setDuration(won ? 3600 : 5400);

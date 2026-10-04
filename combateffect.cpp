@@ -9,7 +9,7 @@ CombatEffect::CombatEffect(MyGameScene *scene, const QPointF& center, Kind kind)
     setZValue(15);
     setAcceptedMouseButtons(Qt::NoButton);
     scene->addItem(this);
-    auto *animation = new QPropertyAnimation(this,"progress",this);
+    auto *animation = new GamePropertyAnimation(scene->gameSpeed(),this,"progress",this);
     animation->setDuration(kind == Bite ? 300 : 450);
     animation->setStartValue(0.0); animation->setEndValue(1.0);
     connect(animation,&QPropertyAnimation::finished,this,[this] {

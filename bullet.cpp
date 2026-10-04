@@ -17,7 +17,7 @@ Bullet::Bullet(int r, int c, QTimer *gameTimer)
         }
         if(x() > 1700){ disappear(); }
     });
-    memMovingAnim = new QPropertyAnimation(this, "pos", this);
+    memMovingAnim = new GamePropertyAnimation(GameSpeed::forObject(gameTimer),this, "pos", this);
     memMovingAnim->setDuration(qMax(1,qRound((1701-x())/speed*1000)));
     memMovingAnim->setEasingCurve(QEasingCurve::Linear);
     memMovingAnim->setStartValue(pos());

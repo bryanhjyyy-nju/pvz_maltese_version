@@ -3,14 +3,15 @@
 
 DblSingWhite::DblSingWhite(int r, int c,MyGameScene *myScene) : WhiteDogs(":/white/Image/dblSingWhite.gif",0.35)
 {
+    setGameSpeed(myScene->gameSpeed());
     const auto& stats = GameCatalog::plants().at(6);
     hp = stats.health;
     heartCost = stats.cost;
     isZombieOnYourLawn = false;
     setItPos(r,c);
-    whiteDogTimer = new QTimer(this);
+    whiteDogTimer = new GameTimer(this,myScene->gameSpeed());
     whiteDogTimer->setObjectName("doubleBurstTimer");
-    secondShotTimer = new QTimer(this);
+    secondShotTimer = new GameTimer(this,myScene->gameSpeed());
     secondShotTimer->setObjectName("doubleSecondShotTimer");
     secondShotTimer->setSingleShot(true);
     secondShotTimer->setInterval(GameCatalog::DoubleShotGapMs);

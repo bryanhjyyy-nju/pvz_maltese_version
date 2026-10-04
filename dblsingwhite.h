@@ -19,7 +19,7 @@ public:
 
 protected:
     bool isZombieOnYourLawn;
-    QTimer *secondShotTimer=nullptr;
+    GameTimer *secondShotTimer=nullptr;
 
 signals:
     void bulletShot(int r,int c);

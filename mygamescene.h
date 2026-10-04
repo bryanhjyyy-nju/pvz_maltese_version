@@ -45,6 +45,7 @@ public:
     Lawn *lawn() const { return grass; }
     QPointF defeatPosition() const { return losingPosition; }
     bool isEndless() const { return endlessMode; }
+    GameSpeed *gameSpeed() const { return speedClock; }
 
     int getRestHeart() const { return restHeart; } // 得到剩余爱心的数值
 
@@ -61,6 +62,7 @@ public:
     const QVector<MyItem *>& getZombieMap(int row) const { return zombieMap.at(row); }
     const QVector<WhiteDogs*>& plantsInRow(int row) const { return plantRows.at(row); }
 private:
+    GameSpeed *speedClock=nullptr;
     QPixmap background;
     void drawBackground(QPainter *painter,const QRectF& rect) override;
     int gameLevelNum = 0;
@@ -90,17 +92,17 @@ private:
     int nextWave = 0;
     int pendingIndex = 0;
     std::array<int,5> waveRowCounts{};
-    QTimer *waveStaggerTimer = nullptr;
+    GameTimer *waveStaggerTimer = nullptr;
     WhiteDogs *createPlant(int row, int col, const QPointF& center);
     void placePlant(int row, int col,bool charge=true);
     void addHeartItem(class Heart *heart);
     void finishGame(bool won);
 
 
-    QTimer *memSkyHeartTimer; //天空中的爱心生成计时器
-    QTimer *memYellowDogsTimer; //小金毛计时器
-    QTimer *memGameTimer; //游戏总的计时器
-    QTimer *memLongGameTimer; //0.5秒更新一次的计时器
+    GameTimer *memSkyHeartTimer; //天空中的爱心生成计时器
+    GameTimer *memYellowDogsTimer; //小金毛计时器
+    GameTimer *memGameTimer; //游戏总的计时器
+    GameTimer *memLongGameTimer; //0.5秒更新一次的计时器
 
     void checkWinCondition(); // 检查胜利条件的私有函数
 

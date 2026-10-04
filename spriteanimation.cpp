@@ -36,18 +36,30 @@ SpriteAnimation::SpriteAnimation(const QString& path,qreal scale,QObject *parent
     : QAbstractAnimation(parent),clip(loadClip(path,scale)) {
     setLoopCount(-1);
 }
-int SpriteAnimation::duration() const { return clip->frameEnds.isEmpty() ? 1 : clip->frameEnds.back(); }
+int SpriteAnimation::duration() const { return clip->frameEnds.isEmpty() ? 1 : qMax(1,(clip->frameEnds.back()+multiplier-1)/multiplier); }
 int SpriteAnimation::frameCount() const { return clip->frames.size(); }
 QPixmap SpriteAnimation::currentPixmap() const { return clip->frames.isEmpty() ? QPixmap() : clip->frames[qMax(0,frame)]; }
 bool SpriteAnimation::jumpToFrame(int index) {
     if(index<0 || index>=frameCount()) return false;
-    setCurrentTime(index==0 ? 0 : clip->frameEnds[index-1]);
+    setCurrentTime(index==0 ? 0 : (clip->frameEnds[index-1]+multiplier-1)/multiplier);
     return true;
 }
 void SpriteAnimation::updateCurrentTime(int time) {
     if(clip->frames.isEmpty()) return;
+    time*=multiplier;
     const int next=qMin(int(std::upper_bound(clip->frameEnds.cbegin(),clip->frameEnds.cend(),time)-clip->frameEnds.cbegin()),frameCount()-1);
     if(next==frame) return;
     frame=next;
     emit frameChanged(frame);
+}
+void SpriteAnimation::setGameSpeed(GameSpeed *clock) {
+    QObject::disconnect(speedConnection);
+    changeSpeed(multiplier,clock ? clock->multiplier() : 1);
+    if(clock) speedConnection=connect(clock,&GameSpeed::speedChanged,this,&SpriteAnimation::changeSpeed);
+}
+void SpriteAnimation::changeSpeed(int previous,int current) {
+    if(multiplier==current) return;
+    const int elapsed=currentTime();
+    multiplier=current;
+    setCurrentTime(qRound(double(elapsed)*previous/current));
 }

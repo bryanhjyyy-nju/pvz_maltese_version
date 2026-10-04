@@ -14,11 +14,11 @@ EnemyProjectile::EnemyProjectile(MyGameScene *scene, int row, const QPointF& ori
     setZValue(8);
     setAcceptedMouseButtons(Qt::NoButton);
     scene->addItem(this);
-    auto *movement = new QPropertyAnimation(this,"pos",this);
+    auto *movement = new GamePropertyAnimation(scene->gameSpeed(),this,"pos",this);
     movement->setDuration(qMax(1,qRound((x()-300)/220.0*1000)));
     movement->setStartValue(pos()); movement->setEndValue(QPointF(300,y()));
     connect(movement,&QPropertyAnimation::finished,this,&EnemyProjectile::disappear);
-    auto *collisionTimer = new QTimer(this);
+    auto *collisionTimer = new GameTimer(this,scene->gameSpeed());
     connect(collisionTimer,&QTimer::timeout,this,&EnemyProjectile::checkCollision);
     collisionTimer->start(30);
     movement->start();

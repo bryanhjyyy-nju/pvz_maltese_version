@@ -41,11 +41,12 @@ private slots:
     void hasDisappear(); //消失动画完成
 
 private:
+    GameSpeed *gameClock;
     QPointF memEndPos; //下落终点位置记录
-    QPropertyAnimation *memCollectAnim; //爱心收集动画
-    QPropertyAnimation *memFallAnim; //爱心下落动画
-    QPropertyAnimation *memBlinkAnim; //到期前闪烁两次，期间仍可收集
-    QTimer* memDisappearTimer; //爱心消失计时器
+    GamePropertyAnimation *memCollectAnim; //爱心收集动画
+    GamePropertyAnimation *memFallAnim; //爱心下落动画
+    GamePropertyAnimation *memBlinkAnim; //到期前闪烁两次，期间仍可收集
+    GameTimer* memDisappearTimer; //爱心消失计时器
     bool isCollectable = true;
     bool isDisappearing = false;
 };

@@ -5,6 +5,7 @@
 #include <QPixmap>
 #include "gamestate.h"
 #include "cardstate.h"
+#include "gamespeed.h"
 class Card : public QPushButton
 {
     Q_OBJECT
@@ -15,7 +16,7 @@ public:
     int coolTime;       // 冷却时间（毫秒）
     int heartCost;      // 阳光消耗
     //实现构造函数
-    Card(int cardNum);
+    Card(int cardNum,GameSpeed *clock=nullptr);
 
     //返回冷却状态
     bool isCooling(){ return coolingState; }
@@ -58,7 +59,7 @@ private:
     bool coolingState = false; //记录是否正在冷却
     bool memHeartIsEnough = true; //判断爱心是否足够
     float memCoolProgress = 0.0f; // 冷却进度 (0.0-1.0)
-    QTimer *memCoolTimer = nullptr; //冷却计时器
+    GameTimer *memCoolTimer = nullptr; //冷却计时器
     CardState cardState = CardState::Normal;
 
     void mousePressEvent(QMouseEvent *e) override; //重写鼠标点击事件

@@ -24,7 +24,7 @@ public:
 
 
 protected:
-    QPropertyAnimation *memMovingAnim;
+    GamePropertyAnimation *memMovingAnim;
     YellowDogs *targetZombie = nullptr;
     int itRow = 0;
     int speed = 300;

@@ -4,7 +4,7 @@
 #include <QPainterPath>
 #include <QtMath>
 
-BattleBanner::BattleBanner(QWidget *parent) : QWidget(parent),animation(this) {
+BattleBanner::BattleBanner(QWidget *parent,GameSpeed *clock) : QWidget(parent),animation(clock,this) {
     setObjectName("battleBanner"); setProperty("manualScale",true);
     setAttribute(Qt::WA_TransparentForMouseEvents);
     animation.setObjectName("bannerAnimation");

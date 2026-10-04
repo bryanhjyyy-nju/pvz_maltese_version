@@ -27,6 +27,8 @@ public:
     bool isFinished() const { return finished; }
     void showPauseMenu();
     void suspendToMenu();
+    int speedMultiplier() const { return myGameScene->gameSpeed()->multiplier(); }
+    void setSpeedMultiplier(int multiplier);
 
     void gamePaused();
     void gameContinued();
@@ -51,6 +53,7 @@ private:
     void beginGameplay();
     void setBattleHudVisible(bool visible);
     QPushButton *pauseButton = nullptr;
+    QPushButton *speedButton = nullptr;
     class PauseDialog *pauseMenu = nullptr;
     class QShortcut *pauseShortcut = nullptr;
     void togglePauseMenu();

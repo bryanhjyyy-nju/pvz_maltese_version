@@ -5,6 +5,11 @@
 void GamePause::pause(QObject *root) {
     for(auto *timer : root->findChildren<QTimer*>()) {
         if(!timer->isActive()) continue;
+        if(auto *gameTimer=qobject_cast<GameTimer*>(timer)) {
+            gameTimers.append(gameTimer);
+            gameTimer->pauseGame();
+            continue;
+        }
         const auto original = timer->property("resumeOriginalInterval");
         timers.append({timer,qMax(1,timer->remainingTime()),original.isValid() ? original.toInt() : timer->interval()});
         timer->stop();
@@ -21,6 +26,7 @@ void GamePause::pause(QObject *root) {
     }
 }
 void GamePause::resume() {
+    for(auto timer : gameTimers) if(timer) timer->resumeGame();
     for(const auto& saved : timers) {
         if(!saved.timer) continue;
         auto *timer = saved.timer.data();
@@ -42,5 +48,5 @@ void GamePause::resume() {
     }
     for(auto animation : animations) if(animation) animation->resume();
     for(auto movie : movies) if(movie) movie->setPaused(false);
-    timers.clear(); animations.clear(); movies.clear();
+    timers.clear(); gameTimers.clear(); animations.clear(); movies.clear();
 }
