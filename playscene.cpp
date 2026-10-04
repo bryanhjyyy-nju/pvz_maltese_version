@@ -77,7 +77,9 @@ PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening,bool endless,
     myGraphicsView->setFrameShape(QFrame::NoFrame);
     myGraphicsView->setBackgroundBrush(Qt::NoBrush);
     myGameScene->setBackgroundBrush(QColor("#20291c"));
-    myGraphicsView->setViewportUpdateMode(QGraphicsView::MinimalViewportUpdate);
+    // Hearts move and fade over animated sprites. Repaint the whole battlefield
+    // so fragmented dirty regions cannot leave only part of a heart visible.
+    myGraphicsView->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
     myGraphicsView->setCacheMode(QGraphicsView::CacheBackground);
     myGraphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     myGraphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);

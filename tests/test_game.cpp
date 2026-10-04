@@ -35,6 +35,7 @@
 #include <QFontInfo>
 #include <QMovie>
 #include <QImageReader>
+#include <QScreen>
 #include "lawn.h"
 #include "levelopening.h"
 #include "battlebanner.h"
@@ -71,6 +72,55 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void heartsStayCompleteDuringBattlefieldUpdates() {
+        if(QGuiApplication::platformName()!="windows") QSKIP("Checks the native Windows backing store without forcing a render.");
+        PlayScene play(8,nullptr,false); play.resize(950,518); play.move(30,30); play.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&play));
+        auto *scene=play.findChild<MyGameScene*>();
+        auto *view=play.findChild<QGraphicsView*>();
+        for(auto *timer : scene->findChildren<QTimer*>()) timer->stop();
+        QVector<Heart*> hearts;
+        for(int row=0;row<5;++row) for(int column=0;column<6;++column) {
+            const QPointF position(430+column*155,180+row*135);
+            auto *heart=new Heart(position,position+QPointF(27,45),scene,QEasingCurve::Linear,scene,true);
+            scene->addItem(heart); hearts.append(heart);
+        }
+        for(int row=0;row<5;++row) {
+            scene->setAYellowDog(row,1);
+            auto *enemy=scene->getZombieMap(row).back();
+            enemy->stopMoving(); enemy->setPos(550,180+row*135);
+            for(auto *timer : enemy->findChildren<QTimer*>()) timer->stop();
+        }
+        QTest::qWait(100);
+        auto capture=[&] { return play.screen()->grabWindow(play.winId()).toImage(); };
+        for(int frame=0;frame<30;++frame) {
+            for(int i=0;i<hearts.size();++i) {
+                hearts[i]->setPos(430+(i%6)*155+frame*.37,180+(i/6)*135+frame*.43);
+                hearts[i]->setOpacity(frame%7==0 ? .35 : 1.0);
+            }
+            // An unrelated tiny dirty area must not replace the heart's paint area.
+            scene->update(QRectF(710+frame,320+frame,4,4));
+            QTest::qWait(25);
+            const QImage partial=capture();
+            view->viewport()->repaint();
+            const QImage complete=capture();
+            QVERIFY(!partial.isNull()); QCOMPARE(partial.size(),complete.size());
+            int changed=0;
+            for(auto *heart : hearts) {
+                QRect area=view->mapFromScene(heart->sceneBoundingRect()).boundingRect();
+                area.translate(view->viewport()->mapTo(&play,QPoint()));
+                area=area.intersected(partial.rect());
+                int pinkPixels=0;
+                for(int y=area.top();y<=area.bottom();++y) for(int x=area.left();x<=area.right();++x) {
+                    const QColor a=partial.pixelColor(x,y),b=complete.pixelColor(x,y);
+                    if(qAbs(a.red()-b.red())+qAbs(a.green()-b.green())+qAbs(a.blue()-b.blue())>40) ++changed;
+                    if(a.red()>180 && a.red()-a.green()>40 && a.blue()-a.green()>15) ++pinkPixels;
+                }
+                if(heart->opacity()==1.0) QVERIFY2(pinkPixels>area.width()*area.height()*.35,"The heart must contain its whole pink body, not just a corner.");
+            }
+            QVERIFY2(changed<40,qPrintable(QString("Frame %1: %2 heart pixels were missing until full repaint").arg(frame).arg(changed)));
+        }
+    }
     void cachedBackgroundRetainsGrassAcrossResizeAndCamera() {
         PlayScene play(8,nullptr,false); play.resize(1650,900); play.show();
         auto *view=play.findChild<QGraphicsView*>();
