@@ -140,6 +140,9 @@ PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening,bool endless,
     connect(myGameScene,&MyGameScene::finalWaveApproaching,this,[this] {
         banner->announce("最后一波小金毛即将来袭！","finalWave",false);
     });
+    connect(myGameScene,&MyGameScene::bigWaveApproaching,this,[this] {
+        banner->announce("一大波小金毛即将来袭","finalWave",false);
+    });
     if(withOpening) {
         openingActive=true; Card::setGameState(GameState::Paused);
         setBattleHudVisible(false); pauseShortcut->setEnabled(false);

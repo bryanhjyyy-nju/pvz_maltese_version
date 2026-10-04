@@ -835,6 +835,101 @@ private slots:
             }
         }
     }
+    void endlessWaveAnnouncements_data() {
+        QTest::addColumn<int>("wave"); QTest::addColumn<int>("count"); QTest::addColumn<bool>("big");
+        QTest::newRow("small-four") << 4 << 2 << false;
+        QTest::newRow("first-big") << 5 << 5 << true;
+        QTest::newRow("second-big") << 10 << 8 << true;
+        QTest::newRow("settled-big") << 15 << 10 << true;
+        QTest::newRow("settled-small") << 16 << 4 << false;
+        QTest::newRow("fourth-big") << 20 << 10 << true;
+        QTest::newRow("growing-big") << 25 << 11 << true;
+    }
+    void endlessWaveAnnouncements() {
+        QFETCH(int,wave); QFETCH(int,count); QFETCH(bool,big);
+        PlayScene play(10,nullptr,false,true,wave); play.show();
+        auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
+        auto *timer=scene->findChild<QTimer*>("waveTimer"),*stagger=scene->findChild<QTimer*>("waveStaggerTimer");
+        auto *banner=play.findChild<BattleBanner*>(); auto *animation=banner->findChild<QVariantAnimation*>("bannerAnimation");
+        QSignalSpy warning(scene,&MyGameScene::bigWaveApproaching),final(scene,&MyGameScene::finalWaveApproaching),win(scene,&MyGameScene::gameWin);
+        const auto before=play.grab().toImage();
+        QMetaObject::invokeMethod(timer,"timeout",Qt::DirectConnection);
+        QCOMPARE(scene->wavesStarted(),wave); QVERIFY(!timer->isActive());
+        QCOMPARE(warning.count(),big ? 1 : 0); QCOMPARE(final.count(),0);
+        if(big) {
+            QVERIFY(scene->findChildren<YellowDogs*>().isEmpty());
+            QVERIFY(banner->isVisible()); QCOMPARE(banner->accessibleName(),QString("一大波小金毛即将来袭"));
+            QVERIFY(banner->testAttribute(Qt::WA_TransparentForMouseEvents));
+            QVERIFY(scene->getGameTimer()->isActive()); QCOMPARE(stagger->interval(),1800);
+            animation->setCurrentTime(450);
+            QCOMPARE(play.grab().toImage().pixelColor(1000,700),before.pixelColor(1000,700));
+            const auto point=view->viewport()->mapTo(&play,view->mapFromScene(QPointF(805,450)));
+            auto *target=play.childAt(point); QCOMPARE(target,view->viewport());
+            auto *card=play.findChild<Card*>("plantCard0"); emit card->cooldownFinished();
+            QTest::mouseClick(card,Qt::LeftButton); QCOMPARE(Card::currentState(),GameState::PrePlace);
+            QTest::mouseClick(target,Qt::LeftButton,Qt::NoModifier,target->mapFrom(&play,point));
+            QCOMPARE(scene->findChildren<WhiteDogs*>().size(),1);
+            scene->toggleShovel();
+            QTest::mouseClick(target,Qt::LeftButton,Qt::NoModifier,target->mapFrom(&play,point));
+            QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+            QVERIFY(scene->findChildren<WhiteDogs*>().isEmpty());
+            const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+            if(!folder.isEmpty()) QVERIFY(play.grab().save(folder+QString("/endless-big-wave-%1.png").arg(wave)));
+            const int remaining=stagger->remainingTime(); play.gamePaused();
+            const int bannerTime=animation->currentTime(); QTest::qWait(80);
+            QCOMPARE(animation->currentTime(),bannerTime); QVERIFY(!stagger->isActive());
+            QVERIFY(scene->findChildren<YellowDogs*>().isEmpty());
+            play.gameContinued(); QVERIFY(stagger->isActive());
+            QVERIFY(qAbs(stagger->remainingTime()-remaining)<50);
+            QMetaObject::invokeMethod(stagger,"timeout",Qt::DirectConnection);
+            QCOMPARE(scene->findChildren<YellowDogs*>().size(),1); QCOMPARE(stagger->interval(),900);
+        } else {
+            QVERIFY(!banner->isVisible()); QCOMPARE(scene->findChildren<YellowDogs*>().size(),1);
+            QCOMPARE(stagger->interval(),900);
+        }
+        while(stagger->isActive()) QMetaObject::invokeMethod(stagger,"timeout",Qt::DirectConnection);
+        const auto enemies=scene->findChildren<YellowDogs*>(); QCOMPARE(enemies.size(),count);
+        int guitars=0;
+        for(auto *enemy : enemies) {
+            const int type=enemy->typeIndex(); if(type==1) ++guitars;
+            if(wave<=5) QCOMPARE(type,0); else if(wave<=10) QVERIFY(type<=1);
+            QCOMPARE(enemy->getHp(),qRound(GameCatalog::enemies()[type].health*(1+.08*(qMin(wave,15)-1))));
+        }
+        if(wave==10) QVERIFY(guitars>=1);
+        if(big) animation->setCurrentTime(animation->duration());
+        QVERIFY(!banner->isVisible());
+        for(auto *enemy : enemies) enemy->getAttacked(100000);
+        QTRY_VERIFY_WITH_TIMEOUT(timer->isActive(),1000); QCOMPARE(timer->interval(),6000);
+        QCOMPARE(win.count(),0); QCOMPARE(final.count(),0);
+    }
+    void endlessCheckpointRetainsBigWaveStage_data() {
+        QTest::addColumn<int>("wave"); QTest::addColumn<int>("count");
+        QTest::newRow("guitar-checkpoint") << 10 << 8;
+        QTest::newRow("settled-checkpoint") << 25 << 11;
+    }
+    void endlessCheckpointRetainsBigWaveStage() {
+        QFETCH(int,wave); QFETCH(int,count);
+        QTemporaryDir dir; const auto path=unlockedPath(dir);
+        ProgressStore saved(path); QVERIFY(saved.startEndless()); QVERIFY(saved.recordEndlessWave(wave));
+        GameWindow root(nullptr,path,false); root.show(); root.startEndless();
+        auto *play=root.playPage(); QVERIFY(play); QVERIFY(play->isPaused());
+        auto *scene=play->findChild<MyGameScene*>(); auto *banner=play->findChild<BattleBanner*>();
+        auto *timer=scene->findChild<QTimer*>("waveTimer"),*stagger=scene->findChild<QTimer*>("waveStaggerTimer");
+        QCOMPARE(scene->wavesStarted(),wave-1); QVERIFY(!timer->isActive());
+        play->gameContinued(); QSignalSpy warning(scene,&MyGameScene::bigWaveApproaching);
+        QMetaObject::invokeMethod(timer,"timeout",Qt::DirectConnection);
+        QCOMPARE(scene->wavesStarted(),wave); QCOMPARE(warning.count(),1); QVERIFY(banner->isVisible());
+        QCOMPARE(banner->accessibleName(),QString("一大波小金毛即将来袭"));
+        QVERIFY(scene->findChildren<YellowDogs*>().isEmpty()); QCOMPARE(stagger->interval(),1800);
+        QCOMPARE(ProgressStore(path).endlessCheckpoint(),wave); QCOMPARE(ProgressStore(path).endlessBest(),wave);
+        while(stagger->isActive()) QMetaObject::invokeMethod(stagger,"timeout",Qt::DirectConnection);
+        const auto enemies=scene->findChildren<YellowDogs*>(); QCOMPARE(enemies.size(),count);
+        if(wave==10) {
+            int guitars=0; for(auto *enemy : enemies) if(enemy->typeIndex()==1) ++guitars;
+            QVERIFY(guitars>=1);
+        }
+        root.close(); QVERIFY(!banner->isVisible()); QVERIFY(!stagger->isActive()); QVERIFY(!timer->isActive());
+    }
     void endlessWavesAndResume() {
         QRandomGenerator random(7);
         for(int wave=1;wave<=20;++wave) {

@@ -118,6 +118,7 @@ signals:
     void healthVisibilityChanged(bool plants, bool enemies);
     void waveStarted(int wave, int total);
     void finalWaveApproaching();
+    void bigWaveApproaching();
     void plantFinished();
     void plantRemoved(int row,int col);
     void heartCollected();

@@ -97,6 +97,8 @@
 
 `gamecatalog.h` 中 `EndlessWavesPerCycle` 为 5，`EndlessDifficultyCapWave` 为 15，`EndlessSettledBigWaveCount` 为 10，`EndlessBigWaveGrowthInterval` 为 10。后两个参数控制定型后的大波基准数量和增长速度。改变周期、开放波次或封顶波次时，还要同步检查上述函数中的阶段规则及测试。
 
+大波在 `MyGameScene::spawnWave()` 中发出 `bigWaveApproaching`，`PlayScene` 使用 `BattleBanner` 显示“一大波小金毛即将来袭”并播放现有 `finalWave` 警示音效。等待 1800 毫秒后刷出第一只，之后每只仍间隔 900 毫秒。小波直接开始刷怪。暂停和恢复存档都保留这一规则。
+
 ## 改完如何检查
 
 ```powershell

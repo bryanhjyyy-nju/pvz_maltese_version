@@ -15,6 +15,7 @@ BattleBanner::BattleBanner(QWidget *parent) : QWidget(parent),animation(this) {
 }
 void BattleBanner::announce(const QString& text,const QString& sound,bool withFlash) {
     animation.stop(); message=text; progress=0; flash=withFlash;
+    setAccessibleName(text);
     setGeometry(parentWidget()->rect()); show(); raise();
     AudioManager::instance().play(sound); animation.start();
 }

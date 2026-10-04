@@ -129,8 +129,10 @@ void MyGameScene::spawnWave() {
     pendingIndex = 0;
     waveRowCounts.fill(0);
     emit waveStarted(nextWave,endlessMode ? 0 : wavePlan.size());
-    if(!endlessMode && nextWave==wavePlan.size()) {
-        emit finalWaveApproaching();
+    const bool bigWave=endlessMode && WavePlanner::isEndlessBigWave(nextWave);
+    if(bigWave || (!endlessMode && nextWave==wavePlan.size())) {
+        if(bigWave) emit bigWaveApproaching();
+        else emit finalWaveApproaching();
         waveStaggerTimer->start(1800);
     } else {
         spawnNextInWave();
