@@ -161,15 +161,40 @@ private slots:
         }
         QCOMPARE(scene.findChildren<Heart*>().size(),20);
         for(auto *heart : scene.findChildren<Heart*>())
-            QCOMPARE(heart->findChild<QPropertyAnimation*>("heartFallAnimation")->duration(),6000);
+            QCOMPARE(heart->findChild<QPropertyAnimation*>("heartFallAnimation")->duration(),8000);
+    }
+    void cartoonHeartsStayInsideVisibleCanvas() {
+        QTemporaryDir dir; GameWindow root(nullptr,unlockedPath(dir),false); root.show(); root.startLevel(3);
+        auto *play=root.playPage(); auto *scene=play->findChild<MyGameScene*>(); auto *view=play->findChild<QGraphicsView*>();
+        scene->generateSkyHeart(); auto *heart=scene->findChild<Heart*>(); QVERIFY(heart);
+        auto *fall=heart->findChild<QPropertyAnimation*>("heartFallAnimation"); fall->pause(); fall->setCurrentTime(0);
+        QCOMPARE(heart->opacity(),qreal(.78)); QCOMPARE(heart->pixmap().size(),QSize(108,100));
+        const QPixmap old(":/others/Image/heart.png"); QVERIFY(heart->boundingRect().width()>old.width()*.6);
+        QVERIFY(heart->boundingRect().height()>old.height()*.6);
+        QCOMPARE(heart->pixmap().toImage().pixelColor(0,0).alpha(),0);
+        QCOMPARE(heart->pos().y(),qreal(140));
+        for(const auto& size : {QSize(825,600),QSize(1280,720),QSize(1920,1080),QSize(2560,1440)}) {
+            root.resize(size); QTest::qWait(20);
+            const auto canvas=view->mapFromScene(QRectF(0,0,1650,900)).boundingRect();
+            const auto visibleHeart=view->mapFromScene(heart->sceneBoundingRect()).boundingRect();
+            QVERIFY(canvas.contains(visibleHeart)); QVERIFY(view->viewport()->rect().contains(visibleHeart));
+        }
+        root.setFullScreenEnabled(true); QTest::qWait(40);
+        QVERIFY(view->mapFromScene(QRectF(0,0,1650,900)).boundingRect().contains(view->mapFromScene(heart->sceneBoundingRect()).boundingRect()));
+        QVERIFY(view->viewport()->rect().contains(view->mapFromScene(heart->sceneBoundingRect()).boundingRect()));
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+"/cartoon-heart-fullscreen.png"));
+        QMetaObject::invokeMethod(heart->findChild<QTimer*>(),"timeout");
+        for(auto *animation : heart->findChildren<QPropertyAnimation*>())
+            if(animation->propertyName()=="opacity") QCOMPARE(animation->startValue().toReal(),qreal(.78));
     }
     void skyHeartsFallSlowlyAndRemainCollectable() {
         PlayScene play(3,nullptr,false); play.show();
         auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
         scene->generateSkyHeart(); auto *sky=scene->findChild<Heart*>(); QVERIFY(sky);
         auto *fall=sky->findChild<QPropertyAnimation*>("heartFallAnimation");
-        QCOMPARE(fall->duration(),6000);
-        fall->setCurrentTime(3000);
+        QCOMPARE(fall->duration(),8000);
+        fall->setCurrentTime(4000);
         const auto start=fall->startValue().toPointF(),end=fall->endValue().toPointF();
         QVERIFY(QLineF(sky->pos(),(start+end)/2).length()<1);
         play.gamePaused(); const auto position=sky->pos(); QTest::qWait(80); QCOMPARE(sky->pos(),position);

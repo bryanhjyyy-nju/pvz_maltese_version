@@ -5,6 +5,7 @@ class QPainter;
 namespace GameArtwork {
 void drawTitle(QPainter& painter, const QRectF& area, const QString& text);
 QPixmap cuteShovel();
+QPixmap cuteHeart();
 QPixmap shovelSlot();
 QPixmap speakerIcon();
 inline QRectF shovelSlotRect() { return QRectF(1200,0,104,110); }

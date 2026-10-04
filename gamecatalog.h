@@ -8,7 +8,8 @@ namespace GameCatalog {
 constexpr int LevelCount = 10;
 constexpr int BulletDamage = 30;
 constexpr int HeartValue = 25;
-constexpr int SkyHeartFallDurationMs = 6000;
+constexpr int SkyHeartFallDurationMs = 8000;
+constexpr int SkyHeartStartY = 140; // Below the card bar, inside the painted canvas.
 constexpr int SkyHeartMinIntervalMs = 5000;
 constexpr int SkyHeartMaxIntervalMs = 6000;
 constexpr int GuitarShotIntervalMs = 2000;

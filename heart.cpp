@@ -6,16 +6,14 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QDebug>
 #include "mygamescene.h"
+#include "gameartwork.h"
 
 QPointF Heart::curMousePos = QPointF(0, 0);
 
 Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCurve::Type type, QObject *parent,bool tutorial,int fallDurationMs):QObject(parent), memEndPos(endPos)
 {
-    //设置阳光图片
-    QPixmap pix;
-    pix.load(":/others/Image/heart.png");
-    pix = pix.scaled(pix.width() * 0.6, pix.height() * 0.6);
-    setPixmap(pix);
+    setPixmap(GameArtwork::cuteHeart());
+    setOpacity(0.78);
     setPos(startPos); //设置起始位置
     setZValue(10); //确保在最上层
 
@@ -95,7 +93,7 @@ void Heart::hasDisappear(){
     isCollectable = false;
     isDisappearing = true;
     QPropertyAnimation *fadeAnim = new QPropertyAnimation(this, "opacity", this);
-    fadeAnim->setStartValue(1.0);
+    fadeAnim->setStartValue(opacity());
     fadeAnim->setEndValue(0.0);
     fadeAnim->setDuration(1000);
     fadeAnim->start(QPropertyAnimation::DeleteWhenStopped);

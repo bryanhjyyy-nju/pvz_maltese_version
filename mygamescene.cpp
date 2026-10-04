@@ -158,7 +158,7 @@ void MyGameScene::spawnNextInWave() {
 
 void MyGameScene::generateSkyHeart(){
     int startX = QRandomGenerator::global()->bounded(800) + 300;
-    QPointF startPos(startX, -100);
+    QPointF startPos(startX, GameCatalog::SkyHeartStartY);
 
     QPointF endPos(startX, 400 + QRandomGenerator::global()->bounded(300));
 

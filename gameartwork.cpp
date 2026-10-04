@@ -5,6 +5,31 @@
 #include <QFontMetricsF>
 #include <QtMath>
 namespace GameArtwork {
+QPixmap cuteHeart() {
+    QPixmap result(108,100); result.fill(Qt::transparent);
+    QPainter p(&result); p.setRenderHint(QPainter::Antialiasing);
+    QPainterPath heart;
+    heart.moveTo(54,24);
+    heart.cubicTo(25,-4,3,12,7,35);
+    heart.cubicTo(10,59,36,78,54,94);
+    heart.cubicTo(72,78,98,59,101,35);
+    heart.cubicTo(105,12,83,-4,54,24);
+    QLinearGradient pink(25,12,75,94);
+    pink.setColorAt(0,QColor("#ffb1cc")); pink.setColorAt(.5,QColor("#ff629c"));
+    pink.setColorAt(1,QColor("#e93571"));
+    p.setPen(QPen(QColor("#713449"),5,Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));
+    p.setBrush(pink); p.drawPath(heart);
+    p.setPen(QPen(QColor("#fff4fa"),5,Qt::SolidLine,Qt::RoundCap));
+    QPainterPath shine; shine.moveTo(18,33); shine.cubicTo(16,23,24,16,33,19); p.drawPath(shine);
+    p.setPen(Qt::NoPen); p.setBrush(QColor("#713449"));
+    p.drawEllipse(QPointF(40,45),3,4); p.drawEllipse(QPointF(68,45),3,4);
+    p.setBrush(QColor("#ffc2d6"));
+    p.drawEllipse(QPointF(31,53),6,3); p.drawEllipse(QPointF(77,53),6,3);
+    p.setBrush(Qt::NoBrush);
+    p.setPen(QPen(QColor("#713449"),3,Qt::SolidLine,Qt::RoundCap));
+    QPainterPath smile; smile.moveTo(47,53); smile.quadTo(54,62,61,53); p.drawPath(smile);
+    return result;
+}
 QPixmap speakerIcon() {
     QPixmap result(64,64); result.fill(Qt::transparent);
     QPainter p(&result); p.setRenderHint(QPainter::Antialiasing);
