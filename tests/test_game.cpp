@@ -1342,6 +1342,40 @@ private slots:
         QCOMPARE(plant->getHp(),health);
         QVERIFY(scene->findChildren<EnemyProjectile*>().isEmpty());
     }
+    void guitarProjectileMatchesBiteDamage_data() {
+        QTest::addColumn<int>("wave"); QTest::addColumn<int>("plantType");
+        for(int wave : {1,6}) for(int type : {2,4,7})
+            QTest::newRow(qPrintable(QString("wave-%1-plant-%2").arg(wave).arg(type))) << wave << type;
+    }
+    void guitarProjectileMatchesBiteDamage() {
+        QFETCH(int,wave); QFETCH(int,plantType);
+        PlayScene play(10,nullptr,false,true,wave); play.show();
+        auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
+        for(auto *timer : scene->findChildren<QTimer*>()) timer->stop();
+        scene->setChosenNum(plantType); Card::setGameState(GameState::PrePlace);
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,490)));
+        auto *plant=scene->plantAhead(2,1000); QVERIFY(plant);
+        auto *enemy=new YellowDogs(2,scene,1,wave); enemy->setParent(scene); scene->addItem(enemy);
+        for(auto *timer : enemy->findChildren<QTimer*>()) timer->stop();
+        const int initialHealth=plant->getHp();
+        enemy->startAttacking(plant);
+        const int biteDamage=initialHealth-plant->getHp();
+        QCOMPARE(biteDamage,qRound(GameCatalog::enemies()[1].attack*(1+.025*(wave-1))));
+        for(auto *animation : enemy->findChildren<QPropertyAnimation*>()) animation->stop();
+        enemy->setPos(1000,430);
+        const int enemyHealth=enemy->getHp(); const QPointF enemyPosition=enemy->pos();
+        enemy->shootNote();
+        auto shots=scene->findChildren<EnemyProjectile*>(); QCOMPARE(shots.size(),1);
+        auto *shot=shots.front(); QCOMPARE(shot->damage(),biteDamage);
+        for(auto *animation : shot->findChildren<QPropertyAnimation*>()) animation->stop();
+        auto *collision=shot->findChild<QTimer*>(); QVERIFY(collision); collision->stop();
+        shot->setPos(plant->sceneBoundingRect().center()-shot->boundingRect().center());
+        const int beforeHit=plant->getHp();
+        QVERIFY(QMetaObject::invokeMethod(collision,"timeout",Qt::DirectConnection));
+        QCOMPARE(plant->getHp(),beforeHit-biteDamage); QVERIFY(!shot->scene());
+        // Equal damage does not give ranged notes the melee-only defensive effects.
+        QCOMPARE(enemy->getHp(),enemyHealth); QCOMPARE(enemy->pos(),enemyPosition);
+    }
     void guitarTimerFiresForwardWithoutTarget() {
         PlayScene play(8,nullptr,false);
         auto *scene=play.findChild<MyGameScene*>();
@@ -1388,13 +1422,13 @@ private slots:
         rangedTimer->setInterval(GameCatalog::GuitarShotIntervalMs);
         auto shots = scene->findChildren<EnemyProjectile*>();
         QCOMPARE(shots.size(),1);
-        QCOMPARE(shots.front()->damage(),GameCatalog::enemies()[1].attack/4);
+        QCOMPARE(shots.front()->damage(),GameCatalog::enemies()[1].attack);
         play.gamePaused();
         const auto pos = shots.front()->pos();
         QTest::qWait(150); QCOMPARE(shots.front()->pos(),pos);
         play.gameContinued();
         const int health = plant->getHp();
-        QTRY_COMPARE_WITH_TIMEOUT(plant->getHp(),health-15,2000);
+        QTRY_COMPARE_WITH_TIMEOUT(plant->getHp(),health-GameCatalog::enemies()[1].attack,2000);
         enemy->getAttacked(30);
         QVERIFY(enemy->hitFlash()>0);
         enemy->getAttacked(10000);

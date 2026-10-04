@@ -114,7 +114,7 @@ void YellowDogs::shootNote() {
     if(enemyType!=1 || removed || m_isGamePaused || !scene() || checkCollision()) return;
     // Shoot forward on every ranged tick, even before plants enter melee range.
     AudioManager::instance().play("guitarShot");
-    new EnemyProjectile(battleScene,itRow,QPointF(x()+10,130+145*(itRow+.5)),atkPower/4);
+    new EnemyProjectile(battleScene,itRow,QPointF(x()+10,130+145*(itRow+.5)),atkPower);
 }
 void YellowDogs::getAttacked(int attack) {
     if(removed || attack<=0) return;
