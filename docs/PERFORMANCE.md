@@ -33,4 +33,4 @@
 
 ## 重新测量
 
-构建命令见 README 的性能章节。基准源码为 `tests/benchmark_game.cpp`；本次原始报告为 `build-benchmarks-before/benchmark-before.txt` 与 `build-benchmarks/benchmark-after.txt`。
+构建命令见 README 的性能章节。基准源码为 `src/tests/benchmark_game.cpp`；本次原始报告为 `build-benchmarks-before/benchmark-before.txt` 与 `build-benchmarks/benchmark-after.txt`。

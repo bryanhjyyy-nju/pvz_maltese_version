@@ -71,6 +71,16 @@
 
 ## 代码导览
 
+源文件和头文件分别集中在两个目录中，测试源码位于源文件目录下：
+
+```text
+src/          游戏的 .cpp 源文件
+src/tests/    自动化测试与性能基准源码
+include/      游戏的 .h 头文件
+```
+
+构建工程文件和 `res.qrc` 位于项目根目录，图片与音频分别位于 `Image/` 和 `Media/`。下表的 `模块名.*` 对应 `src/模块名.cpp` 与 `include/模块名.h`。
+
 | 文件 / 模块 | 职责 |
 | --- | --- |
 | `gamecatalog.*` | 小白、敌人数值、图片、技能说明和 10 关刷怪配置；战斗与图鉴共用 |
@@ -97,8 +107,8 @@
 | `almanacdialog.*` | 动画图鉴卡片和技能 / 数值展示 |
 | `audiomanager.*` | 菜单 / 战斗音乐切换、音效复用、音量持久化 |
 | `whitedogs.*` / 各小白类 / `yellowdogs.*` | 单位行为和碰撞 |
-| `tests/test_game.cpp` | 存档、地图边界、音频加载、种植、暂停恢复、各关胜负、截图检查 |
-| `tests/benchmark_game.cpp` / `pvz_benchmarks.pro` | 固定卡片、角色帧和战场重绘场景的性能测量 |
+| `src/tests/test_game.cpp` | 存档、地图边界、音频加载、种植、暂停恢复、各关胜负、截图检查 |
+| `src/tests/benchmark_game.cpp` / `pvz_benchmarks.pro` | 固定卡片、角色帧和战场重绘场景的性能测量 |
 
 场景用小白指针表记录格子占用，同时按排维护仍在战场上的单位。冲锋小白开始移动后释放原格，但保留在战斗列表中，仍能攻击、被攻击和显示血量；清理按单位身份进行，避免它离场时误删原格上后来种下的小白。实体同时加入 Graphics Scene 和 QObject 所有权树，退出时由 Qt 回收；移除使用 `deleteLater()`，避免在对象自己的信号调用栈里销毁它。
 主窗口最多持有一个战斗页面；未结束的战斗在暂停返回首页时保留。结算后返回或选择另一关时，先停止旧页面的计时器、动画和场景事件，再延后销毁。`Card` 的共享交互状态仍按单个活动战斗的前提设计。
@@ -169,7 +179,7 @@ python tools/generate_audio.py
 | 32 只金毛合计更新 2560 帧，开启血量 | 774 ms | 277 ms |
 | 32 只移动金毛，每次重绘占视口的平均面积 | 97.50% | 8.98% |
 
-以上是固定工作量的测量，实际帧率受窗口大小、战场单位数量和电脑性能影响。测量源码为 `tests/benchmark_game.cpp`；报告位于 `build-qt5-tests/benchmark-before.txt` 和 `benchmark-after.txt`。
+以上是固定工作量的测量，实际帧率受窗口大小、战场单位数量和电脑性能影响。测量源码为 `src/tests/benchmark_game.cpp`；报告位于 `build-qt5-tests/benchmark-before.txt` 和 `benchmark-after.txt`。
 
 如需重新测量，在独立构建目录运行：
 

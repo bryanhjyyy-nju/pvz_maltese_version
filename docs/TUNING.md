@@ -15,7 +15,7 @@
 
 ## 改哪里
 
-### 关卡预算、概率和间隔：`gamecatalog.cpp` 的 `GameCatalog::level()`
+### 关卡预算、概率和间隔：`src/gamecatalog.cpp` 的 `GameCatalog::level()`
 
 数组按第一关到第十关排列；第 4–10 关有 `Level 4` 等注释。以第四关为例：
 
@@ -82,7 +82,7 @@
 
 吉他和冲刺的概率分别由 `Level::guitarLikelihood`、`Level::dashLikelihood` 设置，叉子的相对值为 1.0。它们只影响符合预算的随机抽选，保底不参与抽选。开场预览也使用这份概率。
 
-### 金毛本身的数值：`gamecatalog.cpp` 的 `GameCatalog::enemies()`
+### 金毛本身的数值：`src/gamecatalog.cpp` 的 `GameCatalog::enemies()`
 
 每行的数值依次为 `health` 血量、`attack` 近战伤害、`minSpeed` 最低移速、`speedRange` 随机速度范围、`scale` 图片尺寸倍率、`weight` 单只预算消耗。
 
@@ -91,15 +91,15 @@
 - 移速为 `minSpeed` 到 `minSpeed + speedRange - 1`，单位是像素/秒。
 - 实体与图鉴共用这份配置；改变血量、伤害或技能时，也要更新该行说明文字。
 
-吉他的射击间隔在 `gamecatalog.h` 的 `GuitarShotIntervalMs`，当前 2000 毫秒。这与关卡里吉他的出场频率是两项不同的配置。
+吉他的射击间隔在 `include/gamecatalog.h` 的 `GuitarShotIntervalMs`，当前 2000 毫秒。这与关卡里吉他的出场频率是两项不同的配置。
 
 冲刺基础生命为 570；严格低于半血后，`DashLowHealthMoveMultiplier` 控制移速倍率（当前 2.0），`DashLowHealthBiteMultiplier` 控制啃食频率倍率（当前 1.5）。基础啃食间隔 `EnemyBiteIntervalMs` 为 500 毫秒，半血后按 `500 / 1.5` 取整得到 333 毫秒。`YellowDogs` 的独立 `dashCombatTimer` 与啃食动画保留进行中的比例，暂停及全局倍速共用 `GameTimer` / `GamePropertyAnimation` 换算。
 
-### 波次安排和计时：`waveplanner.cpp`、`mygamescene.cpp`
+### 波次安排和计时：`src/waveplanner.cpp`、`src/mygamescene.cpp`
 
 默认抽选相对概率 1.0、0.20、0.08 在 `WavePlanner::enemyLikelihood()`；普通关卡的吉他、冲刺概率由上面的关卡配置覆盖。`WavePlanner::create()` 生成完整计划；`WavePlanner::intervalBeforeWave()` 读取下一波的进入间隔，`MyGameScene::spawnWave()` 用它设置倒计时。
 
-同波单位间隔目前是 `mygamescene.cpp` 中的 900 毫秒。最后一波提示先显示 1800 毫秒再出第一只；表中的波间隔从波次开始计算，包含该波逐只刷出的时间。
+同波单位间隔目前是 `src/mygamescene.cpp` 中的 900 毫秒。最后一波提示先显示 1800 毫秒再出第一只；表中的波间隔从波次开始计算，包含该波逐只刷出的时间。
 
 ## 原速与二倍速
 
@@ -113,15 +113,15 @@
 
 ## 无尽模式
 
-无尽模式的波号包含小波与大波：第 5、10、15……波为大波；其余是小波。`waveplanner.cpp` 的 `endlessWaveWeight()` 管理总权重，`endlessEnemyLikelihood()` 管理类型与相对概率，`endlessWave()` 只抽选剩余预算容纳得下的类型。第 10 波先扣除一只吉他的 3 点权重作为保底。
+无尽模式的波号包含小波与大波：第 5、10、15……波为大波；其余是小波。`src/waveplanner.cpp` 的 `endlessWaveWeight()` 管理总权重，`endlessEnemyLikelihood()` 管理类型与相对概率，`endlessWave()` 只抽选剩余预算容纳得下的类型。第 10 波先扣除一只吉他的 3 点权重作为保底。
 
 - 轮次 `C = (波号 - 1) / 5`（整数除法，从 0 起），小波基准 `k = 1 + 2C`，四小波依次为 `k、k、k+2、k+3`；大波总权重为 `10(C+1)`。
 - 前四波只出叉子；第五波起吉他和冲刺的相对概率均为 `3 × clamp(波号 - 4, 0, 11) / 11`，叉子为 4。第十五波起固定为 `4 : 3 : 3`，不足 3 点预算时只能补叉子。
 - `endlessIntervalAfterWave()` 从上一波最后一只生成后开始计时。基本休息时间为 `20000 - 500 × clamp(波号 - 5, 0, 20)` 游戏毫秒，大波乘 2。第 25 波起为 10 秒 / 20 秒；首波使用原有 28 秒准备时间。
 - `endlessSpawnDelays()` 随机选择小波 3–6 秒、大波 8–12 秒的出怪窗口，再为每只分配依次递增的随机时刻。首只立即生成、末只在窗口末尾生成；只有一只时立即结束生成。大波先等待 1800 毫秒提示，再进入窗口。
-- `yellowdogs.cpp` 用封顶后的波号强化生命、攻击和移速；属性在第 15 波封顶。半血冲刺加速和加快啃食仍然生效，之后大小波总权重继续增长。
+- `src/yellowdogs.cpp` 用封顶后的波号强化生命、攻击和移速；属性在第 15 波封顶。半血冲刺加速和加快啃食仍然生效，之后大小波总权重继续增长。
 
-`gamecatalog.h` 中 `EndlessBigWaveWeightStep` / `EndlessSmallWaveWeightStep` 控制每轮大波 / 小波预算增量；`EndlessIntervalCapWave` 控制间隔定型波次。四个 `Endless*Spawn*Ms` 常量控制出怪窗口。周期与阶段规则由上述函数共同实现，改动时同步更新测试。
+`include/gamecatalog.h` 中 `EndlessBigWaveWeightStep` / `EndlessSmallWaveWeightStep` 控制每轮大波 / 小波预算增量；`EndlessIntervalCapWave` 控制间隔定型波次。四个 `Endless*Spawn*Ms` 常量控制出怪窗口。周期与阶段规则由上述函数共同实现，改动时同步更新测试。
 
 大波在 `MyGameScene::spawnWave()` 中发出 `bigWaveApproaching`，`PlayScene` 使用 `BattleBanner` 显示“一大波小金毛即将来袭”并播放现有 `finalWave` 警示音效。场景按出怪计划逐只推进，最后一只生成时启动下一波休息计时，不等待清场。所有时间使用 `GameTimer`，暂停与速度切换保留剩余时间。恢复战场存档会继续尚未生成的单位及提示 / 休息进度；没有快照的旧大波检查点会重新提示并生成整波。
 
@@ -140,4 +140,4 @@
 .\tools\build.ps1 -Deploy
 ```
 
-自动化测试会检查第 4–7 关的末期数量增长，以及第 8–10 关的精确权重、叉子开局、吉他和冲刺保底、逐波间隔、暂停和胜利统计。测试中有本次数值的明确期望；有意改变预算时，需要一起更新 `tests/test_game.cpp` 的末期和逐波测试数据。
+自动化测试会检查第 4–7 关的末期数量增长，以及第 8–10 关的精确权重、叉子开局、吉他和冲刺保底、逐波间隔、暂停和胜利统计。测试中有本次数值的明确期望；有意改变预算时，需要一起更新 `src/tests/test_game.cpp` 的末期和逐波测试数据。
