@@ -10,8 +10,9 @@ constexpr int BulletDamage = 30;
 constexpr int HeartValue = 25;
 constexpr int SkyHeartFallDurationMs = 8000;
 constexpr int SkyHeartStartY = 140; // Below the card bar, inside the painted canvas.
-constexpr int SkyHeartMinIntervalMs = 5000;
-constexpr int SkyHeartMaxIntervalMs = 6000;
+constexpr int SkyHeartMinIntervalMs = 12000;
+constexpr int SkyHeartMaxIntervalMs = 15000;
+constexpr int DoubleShotGapMs = 180;
 constexpr int GuitarShotIntervalMs = 2000;
 struct Plant {
     QString id, name, image, description;

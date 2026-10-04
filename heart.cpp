@@ -13,7 +13,7 @@ QPointF Heart::curMousePos = QPointF(0, 0);
 Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCurve::Type type, QObject *parent,bool tutorial,int fallDurationMs):QObject(parent), memEndPos(endPos)
 {
     setPixmap(GameArtwork::cuteHeart());
-    setOpacity(0.78);
+    setOpacity(1.0);
     setPos(startPos); //设置起始位置
     setZValue(10); //确保在最上层
 
@@ -36,7 +36,7 @@ Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCu
 
     //创建爱心消失计时器
     memDisappearTimer = new QTimer(this);
-    memDisappearTimer->setInterval(4500);
+    memDisappearTimer->setInterval(3500);
     memDisappearTimer->setSingleShot(true);
 
     //链接信号和曹
@@ -46,7 +46,15 @@ Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCu
     connect(memFallAnim, &QPropertyAnimation::finished, this, &Heart::hasReachedGround);
 
     //倒计时结束链接已经消失
-    connect(memDisappearTimer, &QTimer::timeout, this, &Heart::hasDisappear);
+    memBlinkAnim = new QPropertyAnimation(this,"opacity",this);
+    memBlinkAnim->setObjectName("heartBlinkAnimation");
+    memBlinkAnim->setDuration(500);
+    memBlinkAnim->setStartValue(1.0);
+    memBlinkAnim->setKeyValueAt(.5,.2);
+    memBlinkAnim->setEndValue(1.0);
+    memBlinkAnim->setLoopCount(2);
+    connect(memDisappearTimer, &QTimer::timeout, memBlinkAnim, [this] { memBlinkAnim->start(); });
+    connect(memBlinkAnim, &QPropertyAnimation::finished, this, &Heart::hasDisappear);
 
     // qDebug() << "2";
     //收集动作结束链接删去阳光
@@ -65,6 +73,8 @@ Heart::Heart(QPointF startPos, QPointF endPos, MyGameScene *gameScene, QEasingCu
             && this->y() + this->boundingRect().height() > curMousePos.y()
             && isCollectable){
             memDisappearTimer->stop();
+            memBlinkAnim->stop();
+            setOpacity(1.0);
             // Collection owns the position immediately, even during a slow fall.
             memFallAnim->stop();
             isCollectable = false;
@@ -107,6 +117,7 @@ void Heart::hasDisappear(){
 }
 
 void Heart::gamePaused(){
+    if(memBlinkAnim->state()==QAbstractAnimation::Running) memBlinkAnim->pause();
     if(memCollectAnim){
         if(memCollectAnim->state() == memCollectAnim->Running){
             memCollectAnim->setPaused(true);
@@ -127,6 +138,7 @@ void Heart::gamePaused(){
 }
 
 void Heart::gameContinued(){
+    if(memBlinkAnim->state()==QAbstractAnimation::Paused) memBlinkAnim->resume();
     if(memCollectAnim){
         if(memCollectAnim->state() == memCollectAnim->Paused){
             memCollectAnim->setPaused(false);

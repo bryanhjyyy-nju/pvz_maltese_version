@@ -156,7 +156,7 @@ private slots:
         MyGameScene scene(3);
         auto *timer=scene.findChild<QTimer*>("skyHeartTimer"); QVERIFY(timer && timer->isActive());
         for(int i=0;i<20;++i) {
-            QVERIFY(timer->interval()>=5000); QVERIFY(timer->interval()<=6000);
+            QVERIFY(timer->interval()>=12000); QVERIFY(timer->interval()<=15000);
             QMetaObject::invokeMethod(timer,"timeout");
         }
         QCOMPARE(scene.findChildren<Heart*>().size(),20);
@@ -168,7 +168,7 @@ private slots:
         auto *play=root.playPage(); auto *scene=play->findChild<MyGameScene*>(); auto *view=play->findChild<QGraphicsView*>();
         scene->generateSkyHeart(); auto *heart=scene->findChild<Heart*>(); QVERIFY(heart);
         auto *fall=heart->findChild<QPropertyAnimation*>("heartFallAnimation"); fall->pause(); fall->setCurrentTime(0);
-        QCOMPARE(heart->opacity(),qreal(.78)); QCOMPARE(heart->pixmap().size(),QSize(108,100));
+        QCOMPARE(heart->opacity(),qreal(1)); QCOMPARE(heart->pixmap().size(),QSize(108,100));
         const QPixmap old(":/others/Image/heart.png"); QVERIFY(heart->boundingRect().width()>old.width()*.6);
         QVERIFY(heart->boundingRect().height()>old.height()*.6);
         QCOMPARE(heart->pixmap().toImage().pixelColor(0,0).alpha(),0);
@@ -185,8 +185,10 @@ private slots:
         const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
         if(!folder.isEmpty()) QVERIFY(play->grab().save(folder+"/cartoon-heart-fullscreen.png"));
         QMetaObject::invokeMethod(heart->findChild<QTimer*>(),"timeout");
+        auto *blink=heart->findChild<QPropertyAnimation*>("heartBlinkAnimation");
+        blink->setCurrentTime(blink->totalDuration());
         for(auto *animation : heart->findChildren<QPropertyAnimation*>())
-            if(animation->propertyName()=="opacity") QCOMPARE(animation->startValue().toReal(),qreal(.78));
+            if(animation->propertyName()=="opacity") QCOMPARE(animation->startValue().toReal(),qreal(1));
     }
     void skyHeartsFallSlowlyAndRemainCollectable() {
         PlayScene play(3,nullptr,false); play.show();
@@ -208,6 +210,31 @@ private slots:
         scene->generateWhiteHeart(QPointF(700,450));
         auto *plantHeart=scene->findChild<Heart*>(); QVERIFY(plantHeart);
         QCOMPARE(plantHeart->findChild<QPropertyAnimation*>("heartFallAnimation")->duration(),3000);
+    }
+    void heartsBlinkTwiceBeforeDisappearingAndRemainCollectable() {
+        PlayScene play(3,nullptr,false); play.show();
+        auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
+        scene->generateSkyHeart(); QPointer<Heart> heart=scene->findChild<Heart*>();
+        auto *fall=heart->findChild<QPropertyAnimation*>("heartFallAnimation"); fall->setCurrentTime(fall->duration());
+        auto *expiry=heart->findChild<QTimer*>(); QCOMPARE(expiry->interval(),3500); QVERIFY(expiry->isActive());
+        expiry->stop(); QMetaObject::invokeMethod(expiry,"timeout");
+        auto *blink=heart->findChild<QPropertyAnimation*>("heartBlinkAnimation");
+        QCOMPARE(blink->loopCount(),2); QCOMPARE(blink->totalDuration(),1000);
+        for(int time : {0,250,500,750}) {
+            blink->setCurrentTime(time); QVERIFY(qAbs(heart->opacity()-(time%500==0 ? 1.0 : .2))<.01);
+        }
+        play.gamePaused(); const auto opacity=heart->opacity(); QTest::qWait(90);
+        QCOMPARE(blink->state(),QAbstractAnimation::Paused); QCOMPARE(heart->opacity(),opacity);
+        play.gameContinued(); QCOMPARE(blink->state(),QAbstractAnimation::Running);
+        const int resources=scene->getRestHeart();
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(heart->sceneBoundingRect().center()));
+        QCOMPARE(blink->state(),QAbstractAnimation::Stopped); QCOMPARE(heart->opacity(),qreal(1));
+        QTRY_COMPARE_WITH_TIMEOUT(scene->getRestHeart(),resources+25,1200); QVERIFY(heart.isNull());
+        scene->generateSkyHeart(); heart=scene->findChild<Heart*>(); QSignalSpy gone(heart,&Heart::i_have_disappeared);
+        heart->findChild<QPropertyAnimation*>("heartFallAnimation")->stop();
+        QMetaObject::invokeMethod(heart->findChild<QTimer*>(),"timeout");
+        blink=heart->findChild<QPropertyAnimation*>("heartBlinkAnimation"); blink->setCurrentTime(blink->totalDuration());
+        QTRY_COMPARE_WITH_TIMEOUT(gone.count(),1,1200); QVERIFY(heart.isNull());
     }
     void victoryNextLevelStartsUnlockedBattle() {
         QTemporaryDir dir; const auto path=dir.filePath("progress.json");

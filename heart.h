@@ -44,6 +44,7 @@ private:
     QPointF memEndPos; //下落终点位置记录
     QPropertyAnimation *memCollectAnim; //爱心收集动画
     QPropertyAnimation *memFallAnim; //爱心下落动画
+    QPropertyAnimation *memBlinkAnim; //到期前闪烁两次，期间仍可收集
     QTimer* memDisappearTimer; //爱心消失计时器
     bool isCollectable = true;
     bool isDisappearing = false;
