@@ -75,7 +75,8 @@ PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening,bool endless,
     myGraphicsView->setRenderHint(QPainter::Antialiasing);  // 抗锯齿
     myGraphicsView->setAlignment(Qt::AlignCenter);
     myGraphicsView->setFrameShape(QFrame::NoFrame);
-    myGraphicsView->setBackgroundBrush(QColor("#20291c"));
+    myGraphicsView->setBackgroundBrush(Qt::NoBrush);
+    myGameScene->setBackgroundBrush(QColor("#20291c"));
     myGraphicsView->setViewportUpdateMode(QGraphicsView::MinimalViewportUpdate);
     myGraphicsView->setCacheMode(QGraphicsView::CacheBackground);
     myGraphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);

@@ -71,6 +71,31 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void cachedBackgroundRetainsGrassAcrossResizeAndCamera() {
+        PlayScene play(8,nullptr,false); play.resize(1650,900); play.show();
+        auto *view=play.findChild<QGraphicsView*>();
+        QPixmap grass(":/others/Image/grass.jpg"); const auto source=grass.scaledToHeight(900).toImage();
+        const QPointF point(700,300);
+        const auto verifyGrass=[&] {
+            const auto image=view->viewport()->grab().toImage(); const auto pixel=view->mapFromScene(point);
+            QVERIFY(image.rect().contains(pixel));
+            const auto actual=image.pixelColor(pixel),expected=source.pixelColor(point.toPoint());
+            QVERIFY(actual!=QColor("#20291c"));
+            QVERIFY(qAbs(actual.red()-expected.red())<10 && qAbs(actual.green()-expected.green())<10 && qAbs(actual.blue()-expected.blue())<10);
+        };
+        verifyGrass();
+        play.resize(1280,720); verifyGrass();
+        play.resize(1920,1080); verifyGrass();
+        PlayScene opening(4); opening.show();
+        auto *timeline=opening.findChild<LevelOpening*>()->findChild<QVariantAnimation*>("openingTimeline");
+        timeline->setCurrentTime(timeline->duration());
+        auto *openingView=opening.findChild<QGraphicsView*>();
+        const auto preview=openingView->viewport()->grab().toImage();
+        QVERIFY(preview.pixelColor(openingView->mapFromScene(point))!=QColor("#20291c"));
+        completeOpening(&opening);
+        const auto returned=openingView->viewport()->grab().toImage();
+        QVERIFY(returned.pixelColor(openingView->mapFromScene(point))!=QColor("#20291c"));
+    }
     void sharedSpriteDecoderMatchesEveryOriginalFrame() {
         auto check=[](const QString& path,qreal scale) {
             QMovie original(path); original.setCacheMode(QMovie::CacheAll);
