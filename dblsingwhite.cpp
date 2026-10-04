@@ -9,9 +9,19 @@ DblSingWhite::DblSingWhite(int r, int c,MyGameScene *myScene) : WhiteDogs(":/whi
     isZombieOnYourLawn = false;
     setItPos(r,c);
     whiteDogTimer = new QTimer(this);
+    whiteDogTimer->setObjectName("doubleBurstTimer");
+    secondShotTimer = new QTimer(this);
+    secondShotTimer->setObjectName("doubleSecondShotTimer");
+    secondShotTimer->setSingleShot(true);
+    secondShotTimer->setInterval(GameCatalog::DoubleShotGapMs);
     connect(this, &DblSingWhite::bulletShot,myScene, &MyGameScene::generateBullet);
     connect(whiteDogTimer,&QTimer::timeout,this,[=](){
+        if(hp<=0 || !isInFrontOfMe(myScene->getZombieMap(r))) return;
         emit bulletShot(r,c);
+        secondShotTimer->start();
+    });
+    connect(secondShotTimer,&QTimer::timeout,this,[=] {
+        if(hp>0 && isInFrontOfMe(myScene->getZombieMap(r))) emit bulletShot(r,c);
     });
     whiteDogTimer->setInterval(stats.actionIntervalMs);
     connect(myScene->getGameTimer(), &QTimer::timeout, this,[=](){
@@ -27,6 +37,7 @@ DblSingWhite::DblSingWhite(int r, int c,MyGameScene *myScene) : WhiteDogs(":/whi
                 // qDebug() << "2";
                 isZombieOnYourLawn = false;
                 whiteDogTimer->stop();
+                secondShotTimer->stop();
             }
         }
     });

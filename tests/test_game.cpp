@@ -17,6 +17,10 @@
 #include "gamecatalog.h"
 #include "mygamescene.h"
 #include "singingwhite.h"
+#include "dblsingwhite.h"
+#include "allheartwhite.h"
+#include "heartwhite.h"
+#include <QElapsedTimer>
 #include "yellowdogs.h"
 #include "pausedialog.h"
 #include <QPushButton>
@@ -61,6 +65,54 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void doubleSingerFiresPairedBurstsAndPausesBetweenShots() {
+        PlayScene play(8,nullptr,false); play.show(); auto *scene=play.findChild<MyGameScene*>();
+        auto *view=play.findChild<QGraphicsView*>(); scene->addHeart(1000); scene->setChosenNum(6);
+        Card::setGameState(GameState::PrePlace);
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,490)));
+        auto *singer=scene->findChild<DblSingWhite*>(); QVERIFY(singer);
+        auto *burst=singer->findChild<QTimer*>("doubleBurstTimer"); auto *second=singer->findChild<QTimer*>("doubleSecondShotTimer");
+        QCOMPARE(burst->interval(),GameCatalog::plants()[0].actionIntervalMs); QCOMPARE(burst->interval(),1600);
+        QCOMPARE(second->interval(),180); QVERIFY(second->isSingleShot());
+        QSignalSpy shots(singer,&DblSingWhite::bulletShot); QElapsedTimer clock; QVector<qint64> times; clock.start();
+        connect(singer,&DblSingWhite::bulletShot,&play,[&] { times.append(clock.elapsed()); });
+        QTest::qWait(100); QCOMPARE(shots.count(),0);
+        scene->setAYellowDog(2); auto *enemy=static_cast<YellowDogs*>(scene->getZombieMap(2).front()); enemy->stopMoving();
+        QTRY_COMPARE_WITH_TIMEOUT(shots.count(),4,4000);
+        QVERIFY(times[1]-times[0]>=120 && times[1]-times[0]<=400);
+        QVERIFY(times[3]-times[2]>=120 && times[3]-times[2]<=400);
+        QVERIFY(times[2]-times[0]>=1450 && times[2]-times[0]<=1850);
+        burst->stop(); QMetaObject::invokeMethod(burst,"timeout"); QCOMPARE(shots.count(),5);
+        QVERIFY(second->isActive()); play.gamePaused(); QTest::qWait(300); QCOMPARE(shots.count(),5); QVERIFY(!second->isActive());
+        play.gameContinued(); QTRY_COMPARE_WITH_TIMEOUT(shots.count(),6,500);
+        burst->stop(); QMetaObject::invokeMethod(burst,"timeout"); QCOMPARE(shots.count(),7);
+        enemy->getAttacked(10000); QTest::qWait(250); QCOMPARE(shots.count(),7);
+        scene->setAYellowDog(2); QMetaObject::invokeMethod(scene->getGameTimer(),"timeout");
+        burst->stop(); QMetaObject::invokeMethod(burst,"timeout"); QCOMPARE(shots.count(),8);
+        scene->removeWhite(2,0); QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        QTest::qWait(250); QCOMPARE(shots.count(),8);
+    }
+    void fullHeartProducesTwoCollectableHeartsAtNormalInterval() {
+        PlayScene play(8,nullptr,false); play.show(); auto *scene=play.findChild<MyGameScene*>();
+        auto *view=play.findChild<QGraphicsView*>(); scene->addHeart(1000); scene->setChosenNum(5);
+        Card::setGameState(GameState::PrePlace);
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,490)));
+        auto *producer=scene->findChild<AllHeartWhite*>(); QVERIFY(producer);
+        auto *timer=producer->findChild<QTimer*>("doubleHeartTimer"); HeartWhite normal(scene);
+        QCOMPARE(timer->interval(),normal.findChild<QTimer*>()->interval()); QCOMPARE(timer->interval(),12000);
+        QSignalSpy produced(producer,&AllHeartWhite::heartGenerated);
+        play.gamePaused(); QVERIFY(!timer->isActive()); play.gameContinued(); QVERIFY(timer->isActive());
+        QMetaObject::invokeMethod(timer,"timeout"); QCOMPARE(produced.count(),2);
+        const auto hearts=scene->findChildren<Heart*>(); QCOMPARE(hearts.size(),2);
+        QVERIFY(QLineF(hearts[0]->pos(),hearts[1]->pos()).length()>=130);
+        for(auto *heart : hearts) heart->findChild<QPropertyAnimation*>("heartFallAnimation")->stop();
+        const int resources=scene->getRestHeart();
+        for(int i=0;i<hearts.size();++i) {
+            QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(hearts[i]->sceneBoundingRect().center()));
+            QTRY_COMPARE_WITH_TIMEOUT(scene->getRestHeart(),resources+25*(i+1),1200);
+        }
+        QVERIFY(scene->findChildren<Heart*>().isEmpty());
+    }
     void pausePreservesPlantAndShovelSelection() {
         QTemporaryDir dir; GameWindow root(nullptr,unlockedPath(dir),false);
         root.show(); root.startLevel(4);

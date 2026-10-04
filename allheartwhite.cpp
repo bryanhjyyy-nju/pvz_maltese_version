@@ -9,15 +9,15 @@ AllHeartWhite::AllHeartWhite(MyGameScene *myScene) :WhiteDogs(":/white/Image/all
 
 
     whiteDogTimer = new QTimer(this);
+    whiteDogTimer->setObjectName("doubleHeartTimer");
     connect(whiteDogTimer,&QTimer::timeout,this,[this](){
-        emit heartGenerated(this->pos());
+        emit heartGenerated(pos()-QPointF(65,0));
+        emit heartGenerated(pos()+QPointF(65,0));
     });
 
     whiteDogTimer->start(stats.actionIntervalMs);
 
-    connect(this, &AllHeartWhite::heartGenerated, myScene, [=](){
-        myScene->generateWhiteHeart(this->pos());
-    });
+    connect(this, &AllHeartWhite::heartGenerated, myScene, &MyGameScene::generateWhiteHeart);
 }
 
 void AllHeartWhite::gamePaused(){

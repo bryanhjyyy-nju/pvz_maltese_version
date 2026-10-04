@@ -13,6 +13,8 @@ constexpr int SkyHeartStartY = 140; // Below the card bar, inside the painted ca
 constexpr int SkyHeartMinIntervalMs = 12000;
 constexpr int SkyHeartMaxIntervalMs = 15000;
 constexpr int DoubleShotGapMs = 180;
+constexpr int SingingShotIntervalMs = 1600;
+constexpr int HeartProductionIntervalMs = 12000;
 constexpr int GuitarShotIntervalMs = 2000;
 struct Plant {
     QString id, name, image, description;
