@@ -89,7 +89,7 @@ void MyGameScene::setupTimers() {
     memGameTimer = new GameTimer(this,gameSpeed());
     memGameTimer->setInterval(100);
     memLongGameTimer = new GameTimer(this,gameSpeed());
-    memLongGameTimer->setInterval(500);
+    memLongGameTimer->setInterval(GameCatalog::EnemyBiteIntervalMs);
 
     memSkyHeartTimer = new GameTimer(this,gameSpeed());
     memSkyHeartTimer->setObjectName("skyHeartTimer");

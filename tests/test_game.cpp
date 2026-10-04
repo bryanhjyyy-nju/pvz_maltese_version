@@ -330,8 +330,9 @@ private slots:
     void dashSpeedThreshold_data() {
         QTest::addColumn<int>("wave");
         QTest::addColumn<int>("health");
-        QTest::newRow("campaign") << 1 << 450;
-        QTest::newRow("endless-wave-six") << 6 << 630;
+        QTest::newRow("campaign") << 1 << 570;
+        QTest::newRow("endless-wave-six") << 6 << 798;
+        QTest::newRow("endless-wave-fifteen") << 15 << 1208;
     }
     void dashSpeedThreshold() {
         QFETCH(int,wave); QFETCH(int,health);
@@ -346,40 +347,102 @@ private slots:
         const QPointF before=enemy.pos();
         enemy.getAttacked(1); QCOMPARE(enemy.pos(),before);
         QCOMPARE(walk->state(),QAbstractAnimation::Running);
-        QVERIFY(qAbs(walk->startValue().toPointF().x()-walk->endValue().toPointF().x()-base*1.5)<.0001);
-        walk->setCurrentTime(500); QVERIFY(qAbs(enemy.x()-(before.x()-base*.75))<.0001);
+        QVERIFY(qAbs(walk->startValue().toPointF().x()-walk->endValue().toPointF().x()-base*2.0)<.0001);
+        walk->setCurrentTime(500); QVERIFY(qAbs(enemy.x()-(before.x()-base))<.0001);
         enemy.getAttacked(1);
-        QVERIFY(qAbs(walk->startValue().toPointF().x()-walk->endValue().toPointF().x()-base*1.5)<.0001);
+        QVERIFY(qAbs(walk->startValue().toPointF().x()-walk->endValue().toPointF().x()-base*2.0)<.0001);
     }
     void dashAccelerationPreservesPause() {
         MyGameScene scene(10,nullptr,true); YellowDogs enemy(2,&scene,2); enemy.startMoving();
         auto *walk=enemy.findChild<QPropertyAnimation*>("enemyMovement");
         const qreal base=walk->startValue().toPointF().x()-walk->endValue().toPointF().x();
         GamePause pause; pause.pause(&enemy); const QPointF before=enemy.pos();
-        enemy.cutHp(226); QCOMPARE(walk->state(),QAbstractAnimation::Paused);
+        enemy.cutHp(286); QCOMPARE(walk->state(),QAbstractAnimation::Paused);
         QTest::qWait(80); QCOMPARE(enemy.pos(),before);
         pause.resume(); QCOMPARE(walk->state(),QAbstractAnimation::Running);
-        walk->setCurrentTime(500); QVERIFY(qAbs(enemy.x()-(before.x()-base*.75))<.0001);
+        walk->setCurrentTime(500); QVERIFY(qAbs(enemy.x()-(before.x()-base))<.0001);
+    }
+    void dashLowHealthBitesFaster_data() {
+        QTest::addColumn<int>("rate"); QTest::addColumn<int>("wave");
+        QTest::newRow("campaign-normal") << 1 << 1;
+        QTest::newRow("campaign-double") << 2 << 1;
+        QTest::newRow("endless-double") << 2 << 15;
+    }
+    void dashLowHealthBitesFaster() {
+        QFETCH(int,rate); QFETCH(int,wave);
+        PlayScene play(10,nullptr,false); play.show(); play.setSpeedMultiplier(rate);
+        auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
+        scene->setChosenNum(2); Card::setGameState(GameState::PrePlace);
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,490)));
+        auto *defender=scene->plantAhead(2,1000); QVERIFY(defender);
+        auto *enemy=new YellowDogs(2,scene,2,wave); enemy->setParent(scene); scene->addItem(enemy);
+        enemy->setPos(defender->sceneBoundingRect().center()-enemy->boundingRect().center());
+        QVERIFY(enemy->checkCollision());
+        auto *combat=enemy->findChild<GameTimer*>("dashCombatTimer"); QVERIFY(combat);
+        QCOMPARE(combat->gameInterval(),500);
+        const int health=enemy->getHp(); enemy->cutHp(health/2);
+        QCOMPARE(combat->gameInterval(),500); // Exactly half health has no bonus.
+        QElapsedTimer elapsed; elapsed.start(); QVector<qint64> bites;
+        connect(defender,&MyItem::healthChanged,&play,[&] { bites.append(elapsed.elapsed()); });
+        const int biteDamage=wave==1 ? 80 : 108;
+        QTRY_COMPARE_WITH_TIMEOUT(bites.size(),2,1400);
+        QCOMPARE(defender->getHp(),4000-2*biteDamage);
+        QVERIFY(qAbs(bites[1]-bites[0]-500.0/rate)<80);
+        const int remaining=combat->remainingTime(); enemy->cutHp(1);
+        QCOMPARE(combat->gameInterval(),333);
+        QVERIFY(qAbs(combat->remainingTime()-remaining*333.0/500)<15);
+        QTRY_COMPARE_WITH_TIMEOUT(bites.size(),5,1400);
+        QCOMPARE(defender->getHp(),4000-5*biteDamage);
+        for(int i=3;i<5;++i) QVERIFY(qAbs(bites[i]-bites[i-1]-333.0/rate)<80);
+        enemy->cutHp(1); QCOMPARE(combat->gameInterval(),333); // The bonus does not stack.
+        const int pausedHealth=defender->getHp(),pausedRemaining=combat->remainingTime();
+        play.gamePaused(); const int otherRate=rate==1 ? 2 : 1; play.setSpeedMultiplier(otherRate);
+        QTest::qWait(100); QCOMPARE(defender->getHp(),pausedHealth); QVERIFY(!combat->isActive());
+        play.gameContinued();
+        QVERIFY(qAbs(combat->remainingTime()-pausedRemaining*double(rate)/otherRate)<25);
+        QTRY_COMPARE_WITH_TIMEOUT(bites.size(),6,750); QCOMPARE(defender->getHp(),4000-6*biteDamage);
+        scene->removeWhite(2,0); QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        QMetaObject::invokeMethod(combat,"timeout"); QCOMPARE(bites.size(),6);
+        auto *walk=enemy->findChild<QPropertyAnimation*>("enemyMovement");
+        QCOMPARE(walk->state(),QAbstractAnimation::Running);
+        enemy->getAttacked(10000); QVERIFY(!combat->isActive());
+        QMetaObject::invokeMethod(combat,"timeout"); QCOMPARE(bites.size(),6);
+    }
+    void dashBiteBonusPreservesPausedAnimationAndTimerProgress() {
+        MyGameScene scene(10,nullptr,true); YellowDogs enemy(2,&scene,2); WallWhite defender;
+        enemy.startAttacking(&defender);
+        auto *bite=enemy.findChild<QPropertyAnimation*>("enemyBiteAnimation");
+        QVERIFY(bite); bite->setCurrentTime(240);
+        auto *combat=enemy.findChild<GameTimer*>("dashCombatTimer");
+        QTest::qWait(40); const int remaining=combat->remainingTime(); const qreal progress=enemy.biteProgress();
+        GamePause pause; pause.pause(&enemy); enemy.cutHp(286);
+        QCOMPARE(combat->gameInterval(),333); QVERIFY(!combat->isActive());
+        QCOMPARE(bite->duration(),200); QCOMPARE(bite->state(),QAbstractAnimation::Paused);
+        QVERIFY(qAbs(enemy.biteProgress()-progress)<.005);
+        scene.gameSpeed()->setMultiplier(2); QTest::qWait(80);
+        QVERIFY(!combat->isActive()); pause.resume();
+        QVERIFY(qAbs(combat->remainingTime()-remaining*333.0/500/2)<20);
+        QCOMPARE(bite->duration(),100); QCOMPARE(bite->state(),QAbstractAnimation::Running);
     }
     void dashAccelerationPreservesBiteAndKnockback() {
         MyGameScene scene(10,nullptr,true); YellowDogs enemy(2,&scene,2); enemy.startMoving();
         auto *walk=enemy.findChild<QPropertyAnimation*>("enemyMovement");
         const qreal base=walk->startValue().toPointF().x()-walk->endValue().toPointF().x();
-        enemy.stopMoving(); enemy.cutHp(205); DancingWhite defender;
-        enemy.startAttacking(&defender); QCOMPARE(enemy.getHp(),205); // Forty points reflected from the bite.
+        enemy.stopMoving(); enemy.cutHp(285); DancingWhite defender;
+        enemy.startAttacking(&defender); QCOMPARE(enemy.getHp(),245); // Forty points reflected from the bite cross the half-health threshold.
         QCOMPARE(walk->state(),QAbstractAnimation::Stopped);
-        enemy.startMoving(); QVERIFY(qAbs(walk->startValue().toPointF().x()-walk->endValue().toPointF().x()-base*1.5)<.0001);
+        enemy.startMoving(); QVERIFY(qAbs(walk->startValue().toPointF().x()-walk->endValue().toPointF().x()-base*2.0)<.0001);
 
         YellowDogs knocked(2,&scene,2); knocked.startMoving();
         auto *knockedWalk=knocked.findChild<QPropertyAnimation*>("enemyMovement");
         const qreal knockedBase=knockedWalk->startValue().toPointF().x()-knockedWalk->endValue().toPointF().x();
-        knocked.stopMoving(); knocked.cutHp(225); MoneyWhite repeller; knocked.startAttacking(&repeller);
+        knocked.stopMoving(); knocked.cutHp(285); MoneyWhite repeller; knocked.startAttacking(&repeller);
         auto *back=knocked.findChild<QPropertyAnimation*>("enemyKnockback");
         back->setCurrentTime(100); const QPointF before=knocked.pos(); knocked.cutHp(1);
         QCOMPARE(knocked.pos(),before); QCOMPARE(back->state(),QAbstractAnimation::Running);
         QCOMPARE(knockedWalk->state(),QAbstractAnimation::Stopped);
         back->setCurrentTime(back->duration()); QCOMPARE(knockedWalk->state(),QAbstractAnimation::Running);
-        QVERIFY(qAbs(knockedWalk->startValue().toPointF().x()-knockedWalk->endValue().toPointF().x()-knockedBase*1.5)<.0001);
+        QVERIFY(qAbs(knockedWalk->startValue().toPointF().x()-knockedWalk->endValue().toPointF().x()-knockedBase*2.0)<.0001);
     }
     void dashAccelerationIgnoresOtherTypesAndLethalDamage() {
         MyGameScene scene(10,nullptr,true);
@@ -397,9 +460,9 @@ private slots:
         }
     }
     void dashWeightAndCampaignAvailability() {
-        QCOMPARE(GameCatalog::enemies()[2].weight,3); QCOMPARE(GameCatalog::enemies()[2].health,450);
+        QCOMPARE(GameCatalog::enemies()[2].weight,3); QCOMPARE(GameCatalog::enemies()[2].health,570);
         const auto details=GameCatalog::enemyDetails(2);
-        QVERIFY(details.contains("450")); QVERIFY(details.contains("权重：3")); QVERIFY(details.contains("1.5 倍"));
+        QVERIFY(details.contains("570")); QVERIFY(details.contains("权重：3")); QVERIFY(details.contains("2 倍")); QVERIFY(details.contains("啃食频率提升至原来的 1.5 倍"));
         for(int level=7;level<=8;++level) {
             int dashCount=0,middleDashCount=0;
             for(int seed=1;seed<=500;++seed) {
@@ -982,7 +1045,7 @@ private slots:
     void endlessEnemyStatsStopGrowing() {
         QFETCH(int,wave);
         MyGameScene scene(10,nullptr,true,true,wave);
-        const int health[]={636,1018,954},damage[]={68,81,108};
+        const int health[]={636,1018,1208},damage[]={68,81,108};
         for(int type=0;type<3;++type) {
             YellowDogs enemy(2,&scene,type,wave); QCOMPARE(enemy.getHp(),health[type]);
             WallWhite defender; const int before=defender.getHp(); enemy.startAttacking(&defender);
@@ -993,7 +1056,7 @@ private slots:
             QVERIFY(speed>=stats.minSpeed*1.14-.0001 && speed<=(stats.minSpeed+stats.speedRange-1)*1.14+.0001);
             if(type==2) {
                 enemy.getAttacked(health[type]/2+1);
-                QVERIFY(qAbs(walk->startValue().toPointF().x()-walk->endValue().toPointF().x()-speed*1.5)<.0001);
+                QVERIFY(qAbs(walk->startValue().toPointF().x()-walk->endValue().toPointF().x()-speed*2.0)<.0001);
             }
         }
     }
@@ -1573,8 +1636,9 @@ private slots:
         QCOMPARE(WavePlanner::enemyLikelihood(1,8),.60);
         QCOMPARE(WavePlanner::enemyLikelihood(1,9),1.20);
         QCOMPARE(WavePlanner::enemyLikelihood(1,10),.30);
-        for(int level=1;level<=9;++level) QCOMPARE(WavePlanner::enemyLikelihood(2,level),.08);
-        QCOMPARE(WavePlanner::enemyLikelihood(2,10),.12);
+        for(int level=1;level<=8;++level) QCOMPARE(WavePlanner::enemyLikelihood(2,level),.08);
+        QCOMPARE(WavePlanner::enemyLikelihood(2,9),.10);
+        QCOMPARE(WavePlanner::enemyLikelihood(2,10),.15);
         QCOMPARE(WavePlanner::enemyLikelihood(0),1.0);
         QCOMPARE(WavePlanner::enemyLikelihood(1),.20);
         QCOMPARE(WavePlanner::enemyLikelihood(2),.08);

@@ -44,6 +44,7 @@ protected:
     int initialHealth = 0;
     qreal initialSpeed = 0;
     bool dashAccelerated = false;
+    GameTimer *dashCombatTimer=nullptr;
     bool removed = false;
     WhiteDogs *targetWhiteDog;
     int atkPower = 10;

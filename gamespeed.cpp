@@ -35,6 +35,15 @@ void GameTimer::start() {
     paused=false; partial=false;
     QTimer::start(wallTime(nominalInterval));
 }
+void GameTimer::setIntervalPreservingProgress(int gameMilliseconds) {
+    const bool running=isActive();
+    const double remaining=paused ? pausedRemaining : qMax(0,remainingTime())*multiplier();
+    const double fraction=remaining/qMax(1,nominalInterval);
+    QTimer::stop();
+    setInterval(gameMilliseconds);
+    if(paused) pausedRemaining=fraction*nominalInterval;
+    else if(running) scheduleRemaining(fraction*nominalInterval);
+}
 void GameTimer::start(int gameMilliseconds) { setInterval(gameMilliseconds); start(); }
 void GameTimer::stop() { paused=false; partial=false; QTimer::stop(); }
 void GameTimer::scheduleRemaining(double gameMilliseconds) {

@@ -40,9 +40,18 @@ YellowDogs::YellowDogs(int row, MyGameScene *scene, int type,int difficultyWave)
     };
     hitAnimation = animation("hitFlash",220);
     biteAnimation = animation("biteProgress",300);
+    biteAnimation->setObjectName("enemyBiteAnimation");
     deathAnimation = animation("deathProgress",600);
     connect(deathAnimation,&QPropertyAnimation::finished,this,[this] { emit pleaseRemoveMe(this); });
-    connect(scene->memLongGameTimer,&QTimer::timeout,this,[this] {
+    // Dash dogs need their own cadence once their low-health skill activates.
+    GameTimer *combatTimer=scene->memLongGameTimer;
+    if(enemyType==2) {
+        dashCombatTimer=new GameTimer(this,scene->gameSpeed());
+        dashCombatTimer->setObjectName("dashCombatTimer");
+        dashCombatTimer->start(GameCatalog::EnemyBiteIntervalMs);
+        combatTimer=dashCombatTimer;
+    }
+    connect(combatTimer,&QTimer::timeout,this,[this] {
         if(removed || m_isGamePaused || !this->scene()) return;
         if(x()<100) { stopMoving(); emit arrivedYourHome(); return; }
         if(checkCollision()) { stopMoving(); startAttacking(targetWhiteDog); }
@@ -66,7 +75,9 @@ void YellowDogs::initArgues(int type) {
 void YellowDogs::updateDashSpeed(int health) {
     if(enemyType!=2 || removed || dashAccelerated || health<=0 || health*2>=initialHealth) return;
     dashAccelerated=true;
-    speed=initialSpeed*1.5;
+    speed=initialSpeed*GameCatalog::DashLowHealthMoveMultiplier;
+    dashCombatTimer->setIntervalPreservingProgress(qRound(GameCatalog::EnemyBiteIntervalMs/GameCatalog::DashLowHealthBiteMultiplier));
+    biteAnimation->setDurationPreservingProgress(qRound(300/GameCatalog::DashLowHealthBiteMultiplier));
     // A bite or knockback keeps its current state; the next walk uses the new speed.
     if(!memIsMoving || movingAnim->state()==QAbstractAnimation::Stopped) return;
     const bool paused=movingAnim->state()==QAbstractAnimation::Paused;

@@ -27,6 +27,7 @@ class GameTimer : public QTimer {
 public:
     GameTimer(QObject *parent,GameSpeed *clock);
     void setInterval(int gameMilliseconds);
+    void setIntervalPreservingProgress(int gameMilliseconds);
     int gameInterval() const { return nominalInterval; }
     void start();
     void start(int gameMilliseconds);
@@ -58,6 +59,10 @@ public:
     void setDuration(int gameMilliseconds) {
         nominalDuration=gameMilliseconds;
         Base::setDuration(wallDuration());
+    }
+    void setDurationPreservingProgress(int gameMilliseconds) {
+        nominalDuration=gameMilliseconds;
+        applySpeed();
     }
 private:
     QPointer<GameSpeed> clock;
