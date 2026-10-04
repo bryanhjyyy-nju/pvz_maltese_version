@@ -19,7 +19,7 @@ const QVector<Enemy>& enemies() {
     static const QVector<Enemy> values = {
         {"叉子金毛", ":/yellow/Image/forkYellow.gif", "基础敌人，沿本排前进并攻击接触到的小白。",300,50,25,8,0.55,1},
         {"吉他金毛", ":/yellow/Image/guitarYellow.gif", "第 4 关起出现。每 2 秒沿本排向前发射金色双音符，命中小白造成 15 伤害（近战的 1/4）；贴身时只啃食。",480,60,15,8,0.4,3},
-        {"冲刺金毛", ":/yellow/Image/dashYellow.gif", "移动快、近战伤害高；从第 7 关开始出现。",400,80,40,10,0.5,4}
+        {"冲刺金毛", ":/yellow/Image/dashYellow.gif", "移动快、近战伤害高；生命低于一半时，移速提升至初始速度的 1.5 倍。从第 7 关开始出现。",450,80,40,10,0.5,5}
     };
     return values;
 }

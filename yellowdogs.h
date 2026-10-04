@@ -40,6 +40,10 @@ public:
     virtual void stopMoving() override;
 
 protected:
+    void updateDashSpeed(int health);
+    int initialHealth = 0;
+    qreal initialSpeed = 0;
+    bool dashAccelerated = false;
     bool removed = false;
     WhiteDogs *targetWhiteDog;
     int atkPower = 10;

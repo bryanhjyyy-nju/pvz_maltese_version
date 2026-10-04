@@ -16,7 +16,10 @@ WavePlanner::Plan WavePlanner::create(int number, QRandomGenerator& random) {
             plan.append(enemies);
             continue;
         }
-        int remaining=level.waveWeight;
+        // Dash dogs cost five points. Allow them in the last two waves of
+        // levels 7 and 8, while keeping the existing opening and wave counts.
+        int remaining=number>=7 && number<=8 && wave>=level.waves-2
+            ? qMax(level.waveWeight,GameCatalog::enemies()[2].weight) : level.waveWeight;
         while(remaining>0) {
             double total=0;
             for(int type=0;type<=level.maxEnemyType;++type)

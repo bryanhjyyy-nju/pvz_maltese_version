@@ -15,12 +15,16 @@ YellowDogs::YellowDogs(int row, MyGameScene *scene, int type,int difficultyWave)
     hp=qRound(hp*(1+.08*extra));
     atkPower=qRound(atkPower*(1+.025*extra));
     speed*=1+.01*extra;
+    initialHealth=hp;
+    initialSpeed=speed;
     setPos(QRandomGenerator::global()->bounded(180)+1589-pixmap().width()/2,
            130+145*(row+.5)-pixmap().height()/2);
     tempBackAnim = new QPropertyAnimation(this,"pos",this);
+    tempBackAnim->setObjectName("enemyKnockback");
     tempBackAnim->setDuration(200);
     connect(tempBackAnim,&QPropertyAnimation::finished,this,[this] { if(!removed) startMoving(); });
     movingAnim = new QPropertyAnimation(this,"pos",this);
+    movingAnim->setObjectName("enemyMovement");
     movingAnim->setDuration(1000);
     connect(movingAnim,&QPropertyAnimation::finished,this,[this] {
         if(!memIsMoving || removed) return;
@@ -28,6 +32,7 @@ YellowDogs::YellowDogs(int row, MyGameScene *scene, int type,int difficultyWave)
         movingAnim->setEndValue(pos()-QPointF(speed,0));
         movingAnim->start();
     });
+    connect(this,&MyItem::healthChanged,this,&YellowDogs::updateDashSpeed);
     auto animation = [this](const char *property, int duration) {
         auto *result = new QPropertyAnimation(this,property,this);
         result->setDuration(duration);
@@ -56,6 +61,20 @@ void YellowDogs::initArgues(int type) {
     speed = stats.minSpeed+QRandomGenerator::global()->bounded(stats.speedRange);
     atkPower = stats.attack;
     setupGifAnimation(stats.image,stats.scale);
+}
+void YellowDogs::updateDashSpeed(int health) {
+    if(enemyType!=2 || removed || dashAccelerated || health<=0 || health*2>=initialHealth) return;
+    dashAccelerated=true;
+    speed=initialSpeed*1.5;
+    // A bite or knockback keeps its current state; the next walk uses the new speed.
+    if(!memIsMoving || movingAnim->state()==QAbstractAnimation::Stopped) return;
+    const bool paused=movingAnim->state()==QAbstractAnimation::Paused;
+    const QPointF current=pos();
+    movingAnim->stop();
+    movingAnim->setStartValue(current);
+    movingAnim->setEndValue(current-QPointF(speed,0));
+    movingAnim->start();
+    if(paused) movingAnim->pause();
 }
 QRectF YellowDogs::boundingRect() const {
     const QRectF sprite=MyItem::boundingRect();
