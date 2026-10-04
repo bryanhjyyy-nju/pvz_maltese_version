@@ -1176,9 +1176,8 @@ private slots:
                 }
             }
         }
-        QVERIFY(counts[0]>counts[1]*5);
-        QVERIFY(counts[1]>counts[2]*2);
-        QCOMPARE(GameCatalog::level(10).waves*GameCatalog::level(10).waveWeight,40);
+        QVERIFY(counts[0]>counts[1]);
+        QVERIFY(counts[1]>counts[2]);
     }
     void strongerLateWavesPreserveOpeningAndGuaranteeGuitars() {
         const int penultimate[]={8,9,10,12},final[]={10,11,12,14},total[]={24,29,34,38};
@@ -1239,6 +1238,17 @@ private slots:
             QCOMPARE(previous,scene.totalEnemies()); QVERIFY(!waveTimer->isActive());
         }
     }
+    void campaignRarityKeepsEndlessProbabilities() {
+        for(int level=4;level<=7;++level) QCOMPARE(WavePlanner::enemyLikelihood(1,level),.45);
+        QCOMPARE(WavePlanner::enemyLikelihood(1,8),.60);
+        QCOMPARE(WavePlanner::enemyLikelihood(1,9),1.20);
+        QCOMPARE(WavePlanner::enemyLikelihood(1,10),.30);
+        for(int level=1;level<=9;++level) QCOMPARE(WavePlanner::enemyLikelihood(2,level),.08);
+        QCOMPARE(WavePlanner::enemyLikelihood(2,10),.12);
+        QCOMPARE(WavePlanner::enemyLikelihood(0),1.0);
+        QCOMPARE(WavePlanner::enemyLikelihood(1),.20);
+        QCOMPARE(WavePlanner::enemyLikelihood(2),.08);
+    }
     void configuredCampaignWaves_data() {
         QTest::addColumn<int>("level");
         for(const char *column : {"weights","guitars","dashes","maxTypes","minGaps","maxGaps"})
@@ -1255,6 +1265,12 @@ private slots:
             << QVector<int>({0,0,0,2,2,2,2})
             << QVector<int>({25000,27000,42000,45000,48000,52000,58000})
             << QVector<int>({25000,32000,50000,54000,58000,62000,68000});
+        QTest::newRow("level-ten") << 10
+            << QVector<int>({1,1,2,7,11,15,19,23})
+            << QVector<int>({0,0,0,1,1,1,1,1}) << QVector<int>({0,0,0,0,0,1,1,1})
+            << QVector<int>({0,0,0,2,2,2,2,2})
+            << QVector<int>({28000,27000,40000,44000,48000,52000,58000,62000})
+            << QVector<int>({28000,32000,48000,52000,58000,62000,68000,72000});
     }
     void configuredCampaignWaves() {
         QFETCH(int,level); QFETCH(QVector<int>,weights); QFETCH(QVector<int>,guitars);
@@ -1324,7 +1340,7 @@ private slots:
             const auto enemies=scene.findChildren<YellowDogs*>();
             int sum=0;
             for(int j=previous;j<enemies.size();++j) sum+=GameCatalog::enemies()[enemies[j]->typeIndex()].weight;
-            QCOMPARE(sum,GameCatalog::level(10).waveWeight);
+            QCOMPARE(sum,GameCatalog::level(10).waveRules[i].weight);
             previous=enemies.size();
         }
         QCOMPARE(started.count(),GameCatalog::level(10).waves);
@@ -1894,6 +1910,7 @@ private slots:
             if(max==2 && level==7) { QCOMPARE(types.count(0),8); QCOMPARE(types.count(1),3); QCOMPARE(types.count(2),1); }
             else if(max==2 && level==8) { QCOMPARE(types.count(0),7); QCOMPARE(types.count(1),4); QCOMPARE(types.count(2),1); }
             else if(max==2 && level==9) { QCOMPARE(types.count(0),5); QCOMPARE(types.count(1),6); QCOMPARE(types.count(2),1); }
+            else if(max==2 && level==10) { QCOMPARE(types.count(0),8); QCOMPARE(types.count(1),3); QCOMPARE(types.count(2),1); }
             else if(max==2) { QCOMPARE(types.count(0),9); QCOMPARE(types.count(1),2); QCOMPARE(types.count(2),1); }
         }
     }
