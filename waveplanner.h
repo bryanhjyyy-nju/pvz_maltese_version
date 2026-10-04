@@ -3,7 +3,8 @@
 class QRandomGenerator;
 namespace WavePlanner {
 using Plan = QVector<QVector<int>>;
-// Integer budgets are filled exactly; ineligible enemies are excluded before sampling.
+// Middle waves fill the threat budget. Levels 2–8 ease the opening and pad
+// the last two waves with ordinary dogs so the final wave has the most enemies.
 Plan create(int level, QRandomGenerator& random);
 int enemyCount(const Plan& plan);
 double enemyLikelihood(int type);

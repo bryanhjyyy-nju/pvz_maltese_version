@@ -851,14 +851,23 @@ private slots:
                 QRandomGenerator random(seed);
                 const auto plan=WavePlanner::create(level,random);
                 QCOMPARE(plan.size(),stats.waves);
-                for(const auto& wave : plan) {
+                for(int index=0;index<plan.size();++index) {
+                    const auto& wave=plan[index];
                     int sum=0;
                     for(int type : wave) {
                         QVERIFY(type<=stats.maxEnemyType);
                         sum+=GameCatalog::enemies()[type].weight;
                         if(level==10) ++counts[type];
                     }
-                    QCOMPARE(sum,stats.waveWeight);
+                    if(level>=2 && level<=8 && index<2) {
+                        const int count=index==0 ? 1 : qMax(1,stats.waveWeight-1);
+                        QCOMPARE(wave.size(),count); QCOMPARE(sum,count);
+                        for(int type : wave) QCOMPARE(type,0);
+                    } else if(level>=2 && level<=8 && index>=stats.waves-2) {
+                        const int count=(level==2 ? stats.waveWeight : stats.waveWeight+1)+(index==stats.waves-1 ? 1 : 0);
+                        QCOMPARE(wave.size(),count); QVERIFY(sum>=count); QVERIFY(sum<=count+stats.waveWeight-1);
+                        for(int earlier=0;earlier<index;++earlier) QVERIFY(plan[earlier].size()<wave.size());
+                    } else QCOMPARE(sum,stats.waveWeight);
                 }
             }
         }
@@ -887,6 +896,23 @@ private slots:
         QCOMPARE(started.count(),GameCatalog::level(10).waves);
         QCOMPARE(previous,scene.totalEnemies());
         QVERIFY(!waveTimer->isActive()); QVERIFY(!stagger->isActive());
+    }
+    void gradualWavesSpawnTheirPlannedCounts() {
+        for(int level=2;level<=8;++level) {
+            MyGameScene scene(level); auto *waveTimer=scene.findChild<QTimer*>("waveTimer");
+            auto *stagger=scene.findChild<QTimer*>("waveStaggerTimer");
+            int previous=0,largest=0;
+            for(int wave=0;wave<GameCatalog::level(level).waves;++wave) {
+                QMetaObject::invokeMethod(waveTimer,"timeout");
+                while(stagger->isActive()) QMetaObject::invokeMethod(stagger,"timeout");
+                const int spawned=scene.findChildren<YellowDogs*>().size()-previous;
+                if(wave==0) QCOMPARE(spawned,1);
+                if(level==2) QCOMPARE(spawned,QVector<int>({1,1,2,3}).at(wave));
+                if(wave>=GameCatalog::level(level).waves-2) QVERIFY(spawned>largest);
+                largest=qMax(largest,spawned); previous+=spawned;
+            }
+            QCOMPARE(previous,scene.totalEnemies()); QVERIFY(!waveTimer->isActive()); QVERIFY(!stagger->isActive());
+        }
     }
     void allLevelsFinish_data() {
         QTest::addColumn<int>("level");

@@ -8,8 +8,14 @@ double WavePlanner::enemyLikelihood(int type) {
 WavePlanner::Plan WavePlanner::create(int number, QRandomGenerator& random) {
     const auto& level=GameCatalog::level(number);
     Plan plan;
+    const bool gradualOpening=number>=2 && number<=8;
     for(int wave=0;wave<level.waves;++wave) {
         QVector<int> enemies;
+        if(gradualOpening && wave<2) {
+            enemies.fill(0,wave==0 ? 1 : qMax(1,level.waveWeight-1));
+            plan.append(enemies);
+            continue;
+        }
         int remaining=level.waveWeight;
         while(remaining>0) {
             double total=0;
@@ -24,6 +30,14 @@ WavePlanner::Plan WavePlanner::create(int number, QRandomGenerator& random) {
             }
             enemies.append(selected);
             remaining-=GameCatalog::enemies()[selected].weight;
+        }
+        if(gradualOpening && wave>=level.waves-2) {
+            // Keep the existing rare-enemy draw, then add ordinary dogs to make
+            // the final two waves larger even when a heavy enemy was selected.
+            const int count=(number==2 ? level.waveWeight : level.waveWeight+1)
+                +(wave==level.waves-1 ? 1 : 0);
+            while(enemies.size()<count) enemies.append(0);
+            for(int i=enemies.size()-1;i>0;--i) enemies.swapItemsAt(i,random.bounded(i+1));
         }
         plan.append(enemies);
     }
