@@ -356,7 +356,6 @@ void MyGameScene::addHeartItem(Heart *heart) {
     addItem(heart);
     connect(heart,&Heart::collected,this,[this,heart] {
         addHeart(heart->value());
-        AudioManager::instance().play("collect");
         emit heartCollected();
     });
 }

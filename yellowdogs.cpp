@@ -135,7 +135,6 @@ void YellowDogs::removeItself() {
     if(movie) movie->setPaused(true);
     targetWhiteDog=nullptr;
     emit dying(this); // Leave the combat list immediately; keep the sprite until its animation finishes.
-    AudioManager::instance().play("death");
     deathAnimation->setStartValue(0.0); deathAnimation->setEndValue(1.0);
     deathAnimation->start();
 }
