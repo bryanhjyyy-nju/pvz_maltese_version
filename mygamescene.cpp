@@ -108,7 +108,7 @@ void MyGameScene::setupTimers() {
     waveStaggerTimer = new GameTimer(this,gameSpeed());
     waveStaggerTimer->setObjectName("waveStaggerTimer");
     connect(waveStaggerTimer,&QTimer::timeout,this,[this] {
-        waveStaggerTimer->setInterval(900);
+        if(!endlessMode) waveStaggerTimer->setInterval(900);
         spawnNextInWave();
     });
     memYellowDogsTimer->setInterval(GameCatalog::level(gameLevelNum).initialDelayMs);
@@ -125,6 +125,7 @@ void MyGameScene::spawnWave() {
     if(m_isGameOver || (!endlessMode && nextWave >= wavePlan.size())) { memYellowDogsTimer->stop(); return; }
     if(endlessMode) {
         pendingWave=WavePlanner::endlessWave(++nextWave,*QRandomGenerator::global());
+        pendingSpawnDelays=WavePlanner::endlessSpawnDelays(nextWave,pendingWave.size(),*QRandomGenerator::global());
         memYellowDogsTimer->stop();
     } else pendingWave = wavePlan[nextWave++];
     pendingIndex = 0;
@@ -137,7 +138,7 @@ void MyGameScene::spawnWave() {
         waveStaggerTimer->start(1800);
     } else {
         spawnNextInWave();
-        if(pendingIndex < pendingWave.size()) waveStaggerTimer->start(900);
+        if(!endlessMode && pendingIndex < pendingWave.size()) waveStaggerTimer->start(900);
     }
     if(endlessMode) return;
     if(nextWave == wavePlan.size()) memYellowDogsTimer->stop();
@@ -163,7 +164,10 @@ void MyGameScene::spawnNextInWave() {
     int row=rows[QRandomGenerator::global()->bounded(rows.size())];
     ++waveRowCounts[row];
     setAYellowDog(row,pendingWave[pendingIndex++]);
-    if(pendingIndex >= pendingWave.size()) waveStaggerTimer->stop();
+    if(pendingIndex >= pendingWave.size()) {
+        waveStaggerTimer->stop();
+        if(endlessMode) memYellowDogsTimer->start(WavePlanner::endlessIntervalAfterWave(nextWave));
+    } else if(endlessMode) waveStaggerTimer->start(pendingSpawnDelays[pendingIndex]);
 }
 
 void MyGameScene::generateSkyHeart(){
@@ -308,11 +312,7 @@ void MyGameScene::removePlant(WhiteDogs *plant) {
 
 void MyGameScene::checkWinCondition()
 {
-    if(endlessMode) {
-        if(!m_isGameOver && pendingIndex>=pendingWave.size() && m_zombiesSpawned>0 && m_zombiesKilled==m_zombiesSpawned && !memYellowDogsTimer->isActive())
-            memYellowDogsTimer->start(6000);
-        return;
-    }
+    if(endlessMode) return;
     if (m_isGameOver || m_zombiesSpawned < m_totalZombiesForLevel) {
         return;
     }

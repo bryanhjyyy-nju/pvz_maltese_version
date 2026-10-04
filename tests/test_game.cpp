@@ -225,7 +225,8 @@ private slots:
         QVERIFY(qAbs(stagger->remainingTime()-remaining*2)<35);
         endless.setSpeedMultiplier(2);
         QTRY_VERIFY_WITH_TIMEOUT(!scene->findChildren<YellowDogs*>().isEmpty(),1100);
-        QCOMPARE(stagger->interval(),450);
+        QVERIFY(stagger->interval()>0);
+        QCOMPARE(stagger->interval(),qRound(scene->findChild<GameTimer*>("waveStaggerTimer")->gameInterval()/2.0));
         // Victory presentation also follows the chosen rate; the next battle starts at 1x.
         PlayScene victory(8,nullptr,false); QCOMPARE(victory.speedMultiplier(),1); victory.setSpeedMultiplier(2);
         emit victory.gameWin(); auto *result=victory.findChild<BattleResult*>(); QVERIFY(result);
@@ -994,7 +995,7 @@ private slots:
         }
     }
     void endlessCyclesAndEnemyUnlocks() {
-        const QVector<int> earlyCounts{1,1,2,2,5,3,4,4,4,8,4,4,4,4,10};
+        const QVector<int> earlyWeights{1,1,3,4,10,3,3,5,6,20,5,5,7,8,30};
         int seen[61][3]={};
         for(int seed=1;seed<=500;++seed) {
             QRandomGenerator random(seed);
@@ -1002,41 +1003,106 @@ private slots:
                 const auto enemies=WavePlanner::endlessWave(wave,random);
                 const bool big=wave%5==0;
                 QCOMPARE(WavePlanner::isEndlessBigWave(wave),big);
-                const int expected=wave<=15 ? earlyCounts[wave-1] : big ? 10+(wave-15)/10 : 4;
-                QCOMPARE(enemies.size(),expected);
-                if(!big) QVERIFY(enemies.size()<=4);
+                const int cycle=(wave-1)/5;
+                const int offsets[]={0,0,2,3};
+                const int expected=wave<=15 ? earlyWeights[wave-1] : big ? (cycle+1)*10 : 1+cycle*2+offsets[(wave-1)%5];
+                QCOMPARE(WavePlanner::endlessWaveWeight(wave),expected);
+                int weight=0;
                 for(int type : enemies) {
                     QVERIFY(type>=0 && type<3); ++seen[wave][type];
-                    if(wave<=5) QCOMPARE(type,0);
-                    else if(wave<=10) QVERIFY(type<=1);
+                    weight+=GameCatalog::enemies()[type].weight;
+                    if(wave<5) QCOMPARE(type,0);
                 }
+                QCOMPARE(weight,expected);
+                if(wave<=2) QCOMPARE(enemies.size(),1);
                 if(wave==10) QVERIFY(enemies.count(1)>=1);
             }
         }
-        for(int wave=6;wave<=60;++wave) QVERIFY(seen[wave][1]>0);
-        for(int wave=11;wave<=60;++wave) QVERIFY(seen[wave][2]>0);
+        for(int wave=5;wave<=60;++wave) {
+            QVERIFY(seen[wave][1]>0); QVERIFY(seen[wave][2]>0);
+        }
     }
     void endlessProbabilitiesSettleAtFifteen() {
-        QCOMPARE(WavePlanner::endlessEnemyLikelihood(1,5),0.0);
-        QCOMPARE(WavePlanner::endlessEnemyLikelihood(1,6),.10);
-        QCOMPARE(WavePlanner::endlessEnemyLikelihood(1,10),.20);
-        QCOMPARE(WavePlanner::endlessEnemyLikelihood(2,10),0.0);
-        double previousDash=0;
-        for(int wave=11;wave<=15;++wave) {
-            const double dash=WavePlanner::endlessEnemyLikelihood(2,wave);
-            QVERIFY(dash>previousDash); previousDash=dash;
+        for(int type : {1,2}) {
+            QCOMPARE(WavePlanner::endlessEnemyLikelihood(type,4),0.0);
+            double previous=0;
+            for(int wave=5;wave<=15;++wave) {
+                const double chance=WavePlanner::endlessEnemyLikelihood(type,wave);
+                QVERIFY(chance>previous); previous=chance;
+                QVERIFY(qAbs(chance-3.0*(wave-4)/11)<.000001);
+            }
+            QCOMPARE(previous,3.0);
         }
-        QCOMPARE(previousDash,.08);
         for(int wave=15;wave<=1000;++wave) {
-            QCOMPARE(WavePlanner::endlessEnemyLikelihood(0,wave),1.0);
-            QCOMPARE(WavePlanner::endlessEnemyLikelihood(1,wave),.20);
-            QCOMPARE(WavePlanner::endlessEnemyLikelihood(2,wave),.08);
+            QCOMPARE(WavePlanner::endlessEnemyLikelihood(0,wave),4.0);
+            QCOMPARE(WavePlanner::endlessEnemyLikelihood(1,wave),3.0);
+            QCOMPARE(WavePlanner::endlessEnemyLikelihood(2,wave),3.0);
         }
-        for(int seed=1;seed<=500;++seed) {
-            QRandomGenerator atFifteen(seed),atTwenty(seed),atSixteen(seed),atFiveHundredOne(seed);
-            QCOMPARE(WavePlanner::endlessWave(15,atFifteen),WavePlanner::endlessWave(20,atTwenty));
-            QCOMPARE(WavePlanner::endlessWave(16,atSixteen),WavePlanner::endlessWave(501,atFiveHundredOne));
+    }
+    void endlessIntervalsAndSpawnWindows() {
+        int previous=20001;
+        for(int wave=1;wave<=100;++wave) {
+            const bool big=wave%5==0;
+            const int expected=(20000-500*qBound(0,wave-5,20))*(big ? 2 : 1);
+            QCOMPARE(WavePlanner::endlessIntervalAfterWave(wave),expected);
+            const int base=expected/(big ? 2 : 1);
+            QVERIFY(base<=previous); previous=base;
+            if(wave>=25) QCOMPARE(expected,big ? 20000 : 10000);
         }
+        QRandomGenerator random(71);
+        for(int wave : {1,4,5,10,25,60,500}) {
+            for(int seed=0;seed<100;++seed) {
+                const auto roster=WavePlanner::endlessWave(wave,random);
+                const auto delays=WavePlanner::endlessSpawnDelays(wave,roster.size(),random);
+                QCOMPARE(delays.size(),roster.size()); QCOMPARE(delays[0],0);
+                int duration=0;
+                for(int i=1;i<delays.size();++i) { QVERIFY(delays[i]>0); duration+=delays[i]; }
+                if(delays.size()==1) QCOMPARE(duration,0);
+                else {
+                    const bool big=wave%5==0;
+                    QVERIFY(duration>=(big ? 8000 : 3000));
+                    QVERIFY(duration<=(big ? 12000 : 6000));
+                }
+            }
+        }
+        QVERIFY(WavePlanner::endlessSpawnDelays(5,0,random).isEmpty());
+    }
+    void endlessSpawnsThenCountsDownWithLiveEnemies() {
+        PlayScene play(10,nullptr,false,true,3); play.setSpeedMultiplier(2);
+        auto *scene=play.findChild<MyGameScene*>();
+        auto *timer=scene->findChild<GameTimer*>("waveTimer");
+        auto *stagger=scene->findChild<GameTimer*>("waveStaggerTimer");
+        QCOMPARE(timer->gameInterval(),28000);
+        QSignalSpy waves(scene,&MyGameScene::waveStarted),win(scene,&MyGameScene::gameWin);
+        QElapsedTimer elapsed; elapsed.start();
+        QMetaObject::invokeMethod(timer,"timeout",Qt::DirectConnection);
+        QCOMPARE(scene->findChildren<YellowDogs*>().size(),1); QVERIFY(!timer->isActive());
+        QTest::qWait(50); const int remaining=stagger->remainingTime(); play.gamePaused();
+        const auto positions=scene->findChildren<YellowDogs*>(); const auto position=positions[0]->pos();
+        QVERIFY(!stagger->isActive()); QTest::qWait(80);
+        QCOMPARE(scene->findChildren<YellowDogs*>().size(),positions.size()); QCOMPARE(positions[0]->pos(),position);
+        play.gameContinued(); QVERIFY(stagger->isActive());
+        QVERIFY(qAbs(stagger->remainingTime()-remaining)<50);
+        QTRY_COMPARE_WITH_TIMEOUT(scene->findChildren<YellowDogs*>().size(),3,3500);
+        QVERIFY(elapsed.elapsed()>=1400); QVERIFY(elapsed.elapsed()<3400);
+        QVERIFY(!stagger->isActive()); QVERIFY(timer->isActive());
+        QCOMPARE(timer->gameInterval(),20000); QCOMPARE(timer->interval(),10000);
+        // A live preceding wave does not block the next one.
+        timer->start(80);
+        QTRY_COMPARE_WITH_TIMEOUT(scene->wavesStarted(),4,300);
+        QCOMPARE(waves.count(),2); QCOMPARE(scene->findChildren<YellowDogs*>().size(),4);
+        QVERIFY(!timer->isActive());
+        while(stagger->isActive()) QMetaObject::invokeMethod(stagger,"timeout",Qt::DirectConnection);
+        QCOMPARE(scene->findChildren<YellowDogs*>().size(),7); QVERIFY(timer->isActive());
+        const int rest=timer->remainingTime();
+        play.gamePaused(); play.setSpeedMultiplier(1); QTest::qWait(50); QVERIFY(!timer->isActive());
+        play.gameContinued(); QVERIFY(qAbs(timer->remainingTime()-rest*2)<60);
+        // Clearing enemies does not restart or shorten the already running rest.
+        for(auto *enemy : scene->findChildren<YellowDogs*>()) enemy->getAttacked(100000);
+        QTRY_VERIFY_WITH_TIMEOUT(scene->findChildren<YellowDogs*>().isEmpty(),1000);
+        QCOMPARE(timer->gameInterval(),20000); QVERIFY(timer->remainingTime()<rest*2-400);
+        QCOMPARE(win.count(),0);
+        scene->gameLose(); QVERIFY(!timer->isActive()); QVERIFY(!stagger->isActive());
     }
     void endlessEnemyStatsStopGrowing_data() {
         QTest::addColumn<int>("wave");
@@ -1061,17 +1127,17 @@ private slots:
         }
     }
     void endlessWaveAnnouncements_data() {
-        QTest::addColumn<int>("wave"); QTest::addColumn<int>("count"); QTest::addColumn<bool>("big");
-        QTest::newRow("small-four") << 4 << 2 << false;
-        QTest::newRow("first-big") << 5 << 5 << true;
-        QTest::newRow("second-big") << 10 << 8 << true;
-        QTest::newRow("settled-big") << 15 << 10 << true;
-        QTest::newRow("settled-small") << 16 << 4 << false;
-        QTest::newRow("fourth-big") << 20 << 10 << true;
-        QTest::newRow("growing-big") << 25 << 11 << true;
+        QTest::addColumn<int>("wave"); QTest::addColumn<bool>("big");
+        QTest::newRow("small-four") << 4 << false;
+        QTest::newRow("first-big") << 5 << true;
+        QTest::newRow("second-big") << 10 << true;
+        QTest::newRow("settled-big") << 15 << true;
+        QTest::newRow("settled-small") << 16 << false;
+        QTest::newRow("fourth-big") << 20 << true;
+        QTest::newRow("growing-big") << 25 << true;
     }
     void endlessWaveAnnouncements() {
-        QFETCH(int,wave); QFETCH(int,count); QFETCH(bool,big);
+        QFETCH(int,wave); QFETCH(bool,big);
         PlayScene play(10,nullptr,false,true,wave); play.show();
         auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
         auto *timer=scene->findChild<QTimer*>("waveTimer"),*stagger=scene->findChild<QTimer*>("waveStaggerTimer");
@@ -1107,33 +1173,44 @@ private slots:
             play.gameContinued(); QVERIFY(stagger->isActive());
             QVERIFY(qAbs(stagger->remainingTime()-remaining)<50);
             QMetaObject::invokeMethod(stagger,"timeout",Qt::DirectConnection);
-            QCOMPARE(scene->findChildren<YellowDogs*>().size(),1); QCOMPARE(stagger->interval(),900);
+            QCOMPARE(scene->findChildren<YellowDogs*>().size(),1); QVERIFY(stagger->interval()>0);
         } else {
             QVERIFY(!banner->isVisible()); QCOMPARE(scene->findChildren<YellowDogs*>().size(),1);
-            QCOMPARE(stagger->interval(),900);
+            QVERIFY(stagger->interval()>0);
         }
-        while(stagger->isActive()) QMetaObject::invokeMethod(stagger,"timeout",Qt::DirectConnection);
-        const auto enemies=scene->findChildren<YellowDogs*>(); QCOMPARE(enemies.size(),count);
-        int guitars=0;
+        int spawnDuration=0;
+        while(stagger->isActive()) {
+            QVERIFY(!timer->isActive());
+            spawnDuration+=scene->findChild<GameTimer*>("waveStaggerTimer")->gameInterval();
+            QMetaObject::invokeMethod(stagger,"timeout",Qt::DirectConnection);
+        }
+        QVERIFY(spawnDuration>=(big ? 8000 : 3000));
+        QVERIFY(spawnDuration<=(big ? 12000 : 6000));
+        const auto enemies=scene->findChildren<YellowDogs*>();
+        int guitars=0,weight=0;
         for(auto *enemy : enemies) {
             const int type=enemy->typeIndex(); if(type==1) ++guitars;
-            if(wave<=5) QCOMPARE(type,0); else if(wave<=10) QVERIFY(type<=1);
+            weight+=GameCatalog::enemies()[type].weight;
+            if(wave<5) QCOMPARE(type,0);
             QCOMPARE(enemy->getHp(),qRound(GameCatalog::enemies()[type].health*(1+.08*(qMin(wave,15)-1))));
         }
         if(wave==10) QVERIFY(guitars>=1);
+        QCOMPARE(weight,WavePlanner::endlessWaveWeight(wave));
+        QVERIFY(timer->isActive()); QCOMPARE(timer->interval(),WavePlanner::endlessIntervalAfterWave(wave));
         if(big) animation->setCurrentTime(animation->duration());
         QVERIFY(!banner->isVisible());
         for(auto *enemy : enemies) enemy->getAttacked(100000);
-        QTRY_VERIFY_WITH_TIMEOUT(timer->isActive(),1000); QCOMPARE(timer->interval(),6000);
+        QTRY_VERIFY_WITH_TIMEOUT(scene->findChildren<YellowDogs*>().isEmpty(),1000);
+        QVERIFY(timer->isActive()); QCOMPARE(timer->interval(),WavePlanner::endlessIntervalAfterWave(wave));
         QCOMPARE(win.count(),0); QCOMPARE(final.count(),0);
     }
     void endlessCheckpointRetainsBigWaveStage_data() {
-        QTest::addColumn<int>("wave"); QTest::addColumn<int>("count");
-        QTest::newRow("guitar-checkpoint") << 10 << 8;
-        QTest::newRow("settled-checkpoint") << 25 << 11;
+        QTest::addColumn<int>("wave");
+        QTest::newRow("guitar-checkpoint") << 10;
+        QTest::newRow("settled-checkpoint") << 25;
     }
     void endlessCheckpointRetainsBigWaveStage() {
-        QFETCH(int,wave); QFETCH(int,count);
+        QFETCH(int,wave);
         QTemporaryDir dir; const auto path=unlockedPath(dir);
         ProgressStore saved(path); QVERIFY(saved.startEndless()); QVERIFY(saved.recordEndlessWave(wave));
         GameWindow root(nullptr,path,false); root.show(); root.startEndless();
@@ -1148,7 +1225,10 @@ private slots:
         QVERIFY(scene->findChildren<YellowDogs*>().isEmpty()); QCOMPARE(stagger->interval(),1800);
         QCOMPARE(ProgressStore(path).endlessCheckpoint(),wave); QCOMPARE(ProgressStore(path).endlessBest(),wave);
         while(stagger->isActive()) QMetaObject::invokeMethod(stagger,"timeout",Qt::DirectConnection);
-        const auto enemies=scene->findChildren<YellowDogs*>(); QCOMPARE(enemies.size(),count);
+        const auto enemies=scene->findChildren<YellowDogs*>();
+        int weight=0; for(auto *enemy : enemies) weight+=GameCatalog::enemies()[enemy->typeIndex()].weight;
+        QCOMPARE(weight,WavePlanner::endlessWaveWeight(wave));
+        QVERIFY(timer->isActive()); QCOMPARE(timer->interval(),WavePlanner::endlessIntervalAfterWave(wave));
         if(wave==10) {
             int guitars=0; for(auto *enemy : enemies) if(enemy->typeIndex()==1) ++guitars;
             QVERIFY(guitars>=1);
@@ -1159,8 +1239,8 @@ private slots:
         QRandomGenerator random(7);
         for(int wave=1;wave<=20;++wave) {
             const auto enemies=WavePlanner::endlessWave(wave,random);
-            QCOMPARE(enemies.size(),WavePlanner::endlessEnemyCount(wave));
-            if(wave%5!=0) QVERIFY(enemies.size()<=4);
+            int weight=0; for(int type : enemies) weight+=GameCatalog::enemies()[type].weight;
+            QCOMPARE(weight,WavePlanner::endlessWaveWeight(wave));
         }
         QTemporaryDir dir; const auto path=unlockedPath(dir);
         GameWindow root(nullptr,path,false); root.show(); root.startEndless();
@@ -1171,12 +1251,13 @@ private slots:
         for(int wave=1;wave<=3;++wave) {
             QMetaObject::invokeMethod(waveTimer,"timeout");
             while(stagger->isActive()) QMetaObject::invokeMethod(stagger,"timeout");
-            QCOMPARE(scene->wavesStarted(),wave); QVERIFY(!waveTimer->isActive());
+            QCOMPARE(scene->wavesStarted(),wave); QVERIFY(waveTimer->isActive());
             for(auto *enemy : scene->findChildren<YellowDogs*>()) {
                 QVERIFY(enemy->getHp()>=GameCatalog::enemies()[enemy->typeIndex()].health);
                 enemy->getAttacked(100000);
             }
-            QTRY_VERIFY_WITH_TIMEOUT(waveTimer->isActive(),1200);
+            QTRY_VERIFY_WITH_TIMEOUT(scene->findChildren<YellowDogs*>().isEmpty(),1200);
+            QVERIFY(waveTimer->isActive());
             QCOMPARE(ProgressStore(path).endlessBest(),wave);
         }
         QCOMPARE(win.count(),0); QCOMPARE(final.count(),0);

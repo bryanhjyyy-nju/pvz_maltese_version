@@ -133,41 +133,70 @@ int WavePlanner::enemyCount(const Plan& plan) {
 bool WavePlanner::isEndlessBigWave(int wave) {
     return wave>0 && wave%GameCatalog::EndlessWavesPerCycle==0;
 }
-int WavePlanner::endlessEnemyCount(int wave) {
+int WavePlanner::endlessWaveWeight(int wave) {
     wave=qMax(1,wave);
-    if(!isEndlessBigWave(wave)) return qMin(4,(wave+1)/2);
-    if(wave==5) return 5;
-    if(wave==10) return 8;
-    return GameCatalog::EndlessSettledBigWaveCount
-        +(wave-GameCatalog::EndlessDifficultyCapWave)/GameCatalog::EndlessBigWaveGrowthInterval;
+    const int cycle=(wave-1)/GameCatalog::EndlessWavesPerCycle;
+    if(isEndlessBigWave(wave)) return (cycle+1)*GameCatalog::EndlessBigWaveWeightStep;
+    static const int offsets[]={0,0,2,3};
+    return 1+cycle*GameCatalog::EndlessSmallWaveWeightStep
+        +offsets[(wave-1)%GameCatalog::EndlessWavesPerCycle];
 }
 double WavePlanner::endlessEnemyLikelihood(int type,int wave) {
-    const int stage=qBound(1,wave,GameCatalog::EndlessDifficultyCapWave);
-    if(type==0) return enemyLikelihood(0);
-    // Guitars unlock at 6 and reach their settled probability at 10.
-    if(type==1) return stage<=5 ? 0 : enemyLikelihood(1)*qMin(1.0,.5+(stage-6)/8.0);
-    // Dash dogs unlock at 11; their probability increases until wave 15.
-    if(type==2) return stage<=10 ? 0 : enemyLikelihood(2)*(stage-10)/5.0;
+    if(type==0) return 4.0;
+    // Both advanced types start at wave five and settle at the 4:3:3 ratio.
+    const int progress=qBound(0,wave-4,GameCatalog::EndlessDifficultyCapWave-4);
+    if(type==1 || type==2) return 3.0*progress/(GameCatalog::EndlessDifficultyCapWave-4);
     return 0;
 }
 QVector<int> WavePlanner::endlessWave(int wave,QRandomGenerator& random) {
     wave=qMax(1,wave);
-    const int count=endlessEnemyCount(wave);
+    int remaining=endlessWaveWeight(wave);
     QVector<int> result;
-    result.reserve(count);
-    // Wave ten's guaranteed guitarist occupies one slot in the wave.
-    if(wave==10) result.append(1);
-    double total=0;
-    for(int type=0;type<3;++type) total+=endlessEnemyLikelihood(type,wave);
-    while(result.size()<count) {
+    // Preserve wave ten's guaranteed guitarist within its total weight.
+    if(wave==10) { result.append(1); remaining-=GameCatalog::enemies()[1].weight; }
+    while(remaining>0) {
+        double total=0;
+        for(int type=0;type<3;++type)
+            if(GameCatalog::enemies()[type].weight<=remaining) total+=endlessEnemyLikelihood(type,wave);
         double pick=random.generateDouble()*total;
         int selected=0;
         for(int type=0;type<3;++type) {
+            if(GameCatalog::enemies()[type].weight>remaining) continue;
             pick-=endlessEnemyLikelihood(type,wave);
             if(pick<0) { selected=type; break; }
         }
         result.append(selected);
+        remaining-=GameCatalog::enemies()[selected].weight;
     }
     shuffle(result,random);
     return result;
+}
+
+int WavePlanner::endlessIntervalAfterWave(int wave) {
+    const int progress=qBound(0,wave-5,GameCatalog::EndlessIntervalCapWave-5);
+    const int gap=GameCatalog::EndlessOpeningGapMs
+        -(GameCatalog::EndlessOpeningGapMs-GameCatalog::EndlessSettledGapMs)
+            *progress/(GameCatalog::EndlessIntervalCapWave-5);
+    return gap*(isEndlessBigWave(wave) ? 2 : 1);
+}
+
+QVector<int> WavePlanner::endlessSpawnDelays(int wave,int count,QRandomGenerator& random) {
+    if(count<=0) return {};
+    QVector<int> delays(count,0);
+    if(count==1) return delays;
+    const bool big=isEndlessBigWave(wave);
+    const int minimum=big ? GameCatalog::EndlessBigSpawnMinMs : GameCatalog::EndlessSmallSpawnMinMs;
+    const int maximum=big ? GameCatalog::EndlessBigSpawnMaxMs : GameCatalog::EndlessSmallSpawnMaxMs;
+    const int duration=qMax(count-1,random.bounded(minimum,maximum+1));
+    const int gaps=count-1;
+    int previous=0;
+    for(int i=1;i<count;++i) {
+        // Each slot is separate, so random jitter cannot reorder or merge spawns.
+        const int lower=int((qint64(2)*i-1)*duration/(qint64(2)*gaps))+1;
+        const int upper=int(qint64(i)*duration/gaps);
+        const int time=i==gaps ? duration : random.bounded(lower,upper+1);
+        delays[i]=time-previous;
+        previous=time;
+    }
+    return delays;
 }

@@ -113,16 +113,17 @@
 
 ## 无尽模式
 
-无尽模式的波号包含小波与大波：第 5、10、15……波为大波；其余是小波。`waveplanner.cpp` 的 `endlessEnemyCount()` 管理数量，`endlessEnemyLikelihood()` 管理按波次开放的类型与相对概率，`endlessWave()` 按名额抽选，第 10 波先占用一个吉他名额。
+无尽模式的波号包含小波与大波：第 5、10、15……波为大波；其余是小波。`waveplanner.cpp` 的 `endlessWaveWeight()` 管理总权重，`endlessEnemyLikelihood()` 管理类型与相对概率，`endlessWave()` 只抽选剩余预算容纳得下的类型。第 10 波先扣除一只吉他的 3 点权重作为保底。
 
-- 前四波数量为 1、1、2、2；第 6–9 波为 3、4、4、4；第 11 波起的小波固定为 4。
-- 前三个大波为 5、8、10 只，第 15 波后大波数量为 `10 + (波号 - 15) / 10`，整数除法。第 20、25、30、35 波分别为 10、11、11、12 只。
-- 吉他从第 6 波开放，相对概率从 0.10 增长到第 10 波的 0.20；冲刺从第 11 波开放，相对概率从 0.016 增长到第 15 波的 0.08。第 15 波后固定为叉子 / 吉他 / 冲刺 `1 : 0.20 : 0.08`。
-- `yellowdogs.cpp` 用封顶后的波号强化生命、攻击和移速；低于半血的冲刺仍然加速。封顶之后只增加大波数量。
+- 轮次 `C = (波号 - 1) / 5`（整数除法，从 0 起），小波基准 `k = 1 + 2C`，四小波依次为 `k、k、k+2、k+3`；大波总权重为 `10(C+1)`。
+- 前四波只出叉子；第五波起吉他和冲刺的相对概率均为 `3 × clamp(波号 - 4, 0, 11) / 11`，叉子为 4。第十五波起固定为 `4 : 3 : 3`，不足 3 点预算时只能补叉子。
+- `endlessIntervalAfterWave()` 从上一波最后一只生成后开始计时。基本休息时间为 `20000 - 500 × clamp(波号 - 5, 0, 20)` 游戏毫秒，大波乘 2。第 25 波起为 10 秒 / 20 秒；首波使用原有 28 秒准备时间。
+- `endlessSpawnDelays()` 随机选择小波 3–6 秒、大波 8–12 秒的出怪窗口，再为每只分配依次递增的随机时刻。首只立即生成、末只在窗口末尾生成；只有一只时立即结束生成。大波先等待 1800 毫秒提示，再进入窗口。
+- `yellowdogs.cpp` 用封顶后的波号强化生命、攻击和移速；属性在第 15 波封顶。半血冲刺加速和加快啃食仍然生效，之后大小波总权重继续增长。
 
-`gamecatalog.h` 中 `EndlessWavesPerCycle` 为 5，`EndlessDifficultyCapWave` 为 15，`EndlessSettledBigWaveCount` 为 10，`EndlessBigWaveGrowthInterval` 为 10。后两个参数控制定型后的大波基准数量和增长速度。改变周期、开放波次或封顶波次时，还要同步检查上述函数中的阶段规则及测试。
+`gamecatalog.h` 中 `EndlessBigWaveWeightStep` / `EndlessSmallWaveWeightStep` 控制每轮大波 / 小波预算增量；`EndlessIntervalCapWave` 控制间隔定型波次。四个 `Endless*Spawn*Ms` 常量控制出怪窗口。周期与阶段规则由上述函数共同实现，改动时同步更新测试。
 
-大波在 `MyGameScene::spawnWave()` 中发出 `bigWaveApproaching`，`PlayScene` 使用 `BattleBanner` 显示“一大波小金毛即将来袭”并播放现有 `finalWave` 警示音效。等待 1800 毫秒后刷出第一只，之后每只仍间隔 900 毫秒。小波直接开始刷怪。暂停和恢复存档都保留这一规则。
+大波在 `MyGameScene::spawnWave()` 中发出 `bigWaveApproaching`，`PlayScene` 使用 `BattleBanner` 显示“一大波小金毛即将来袭”并播放现有 `finalWave` 警示音效。场景按出怪计划逐只推进，最后一只生成时启动下一波休息计时，不等待清场。所有时间使用 `GameTimer`，暂停与速度切换保留剩余时间，恢复大波检查点会重新显示提示并生成该波。
 
 ## 改完如何检查
 

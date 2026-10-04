@@ -21,8 +21,13 @@ constexpr qreal DashLowHealthMoveMultiplier = 2.0;
 constexpr qreal DashLowHealthBiteMultiplier = 1.5;
 constexpr int EndlessWavesPerCycle = 5; // Four small waves, then one big wave.
 constexpr int EndlessDifficultyCapWave = 15;
-constexpr int EndlessSettledBigWaveCount = 10;
-constexpr int EndlessBigWaveGrowthInterval = 10; // One extra dog per two big waves.
+constexpr int EndlessBigWaveWeightStep = 10;
+constexpr int EndlessSmallWaveWeightStep = 2;
+constexpr int EndlessIntervalCapWave = 25;
+constexpr int EndlessOpeningGapMs = 20000;
+constexpr int EndlessSettledGapMs = 10000;
+constexpr int EndlessSmallSpawnMinMs = 3000, EndlessSmallSpawnMaxMs = 6000;
+constexpr int EndlessBigSpawnMinMs = 8000, EndlessBigSpawnMaxMs = 12000;
 struct Plant {
     QString id, name, image, description;
     int health, cost, cooldownMs, actionIntervalMs;

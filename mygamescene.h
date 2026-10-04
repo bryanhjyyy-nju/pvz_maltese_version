@@ -89,6 +89,7 @@ private:
     void spawnNextInWave();
     WavePlanner::Plan wavePlan;
     QVector<int> pendingWave;
+    QVector<int> pendingSpawnDelays;
     int nextWave = 0;
     int pendingIndex = 0;
     std::array<int,5> waveRowCounts{};
