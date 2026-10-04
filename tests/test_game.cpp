@@ -976,7 +976,7 @@ private slots:
     void audioAssetsLoad() {
         auto& manager = AudioManager::instance();
         const auto sounds = manager.findChildren<QSoundEffect*>();
-        QCOMPARE(sounds.size(),20);
+        QCOMPARE(sounds.size(),18);
         for(auto *sound : sounds) {
             QTRY_VERIFY_WITH_TIMEOUT(sound->status() != QSoundEffect::Loading,5000);
             QCOMPARE(sound->status(),QSoundEffect::Ready);

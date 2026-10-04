@@ -185,7 +185,6 @@ void MyGameScene::generateWhiteHeart(QPointF whitePos){
 }
 
 void MyGameScene::generateBullet(int r,int c){
-    AudioManager::instance().play("shoot");
     Bullet *blt = new Bullet(r, c, memGameTimer);
     blt->setParent(this);
     this->addItem(blt);
