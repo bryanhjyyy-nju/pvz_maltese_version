@@ -24,21 +24,22 @@ WavePlanner::Plan WavePlanner::create(int number, QRandomGenerator& random) {
         const bool finalTwo=wave>=level.waves-2;
         const int configuredWeight=wave==level.waves-1 ? level.late.finalWeight : level.late.penultimateWeight;
         const bool configuredLate=finalTwo && configuredWeight>0;
-        int guitars=0,guitarLimit=remaining;
+        int guitars=0,minimumCount=0;
         if(configuredLate) {
             remaining=configuredWeight;
             const int guitarWeight=GameCatalog::enemies()[1].weight;
             guitars=level.maxEnemyType>=1 ? qBound(0,level.late.minGuitars,remaining/guitarWeight) : 0;
             int largestEarlier=0;
             for(const auto& earlier : plan) largestEarlier=qMax(largestEarlier,earlier.size());
-            // Limit expensive picks to leave enough ordinary dogs for a larger
-            // last wave, without adding any points beyond the exact budget.
-            guitarLimit=qMax(guitars,(remaining-largestEarlier-1)/qMax(1,guitarWeight-1));
+            // Reserve enough ordinary dogs for increasing wave counts. This
+            // applies to every expensive type, including level 7's dash dogs.
+            minimumCount=largestEarlier+1;
             enemies.fill(1,guitars);
             remaining-=guitars*guitarWeight;
         }
         const auto eligible=[&](int type) {
-            return GameCatalog::enemies()[type].weight<=remaining && (type!=1 || guitars<guitarLimit);
+            const int cost=GameCatalog::enemies()[type].weight;
+            return cost<=remaining && enemies.size()+1+remaining-cost>=minimumCount;
         };
         while(remaining>0) {
             double total=0;
