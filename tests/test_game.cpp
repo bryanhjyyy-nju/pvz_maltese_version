@@ -20,6 +20,7 @@
 #include "dblsingwhite.h"
 #include "allheartwhite.h"
 #include "heartwhite.h"
+#include "wallwhite.h"
 #include "linewhite.h"
 #include "dancingwhite.h"
 #include "moneywhite.h"
@@ -767,11 +768,79 @@ private slots:
             QCOMPARE(button->size(),QSize(430,84)); QCOMPARE(button->property("color").toString(),QString("sunshine"));
         }
     }
+    void endlessCyclesAndEnemyUnlocks() {
+        const QVector<int> earlyCounts{1,1,2,2,5,3,4,4,4,8,4,4,4,4,10};
+        int seen[61][3]={};
+        for(int seed=1;seed<=500;++seed) {
+            QRandomGenerator random(seed);
+            for(int wave=1;wave<=60;++wave) {
+                const auto enemies=WavePlanner::endlessWave(wave,random);
+                const bool big=wave%5==0;
+                QCOMPARE(WavePlanner::isEndlessBigWave(wave),big);
+                const int expected=wave<=15 ? earlyCounts[wave-1] : big ? 10+(wave-15)/10 : 4;
+                QCOMPARE(enemies.size(),expected);
+                if(!big) QVERIFY(enemies.size()<=4);
+                for(int type : enemies) {
+                    QVERIFY(type>=0 && type<3); ++seen[wave][type];
+                    if(wave<=5) QCOMPARE(type,0);
+                    else if(wave<=10) QVERIFY(type<=1);
+                }
+                if(wave==10) QVERIFY(enemies.count(1)>=1);
+            }
+        }
+        for(int wave=6;wave<=60;++wave) QVERIFY(seen[wave][1]>0);
+        for(int wave=11;wave<=60;++wave) QVERIFY(seen[wave][2]>0);
+    }
+    void endlessProbabilitiesSettleAtFifteen() {
+        QCOMPARE(WavePlanner::endlessEnemyLikelihood(1,5),0.0);
+        QCOMPARE(WavePlanner::endlessEnemyLikelihood(1,6),.10);
+        QCOMPARE(WavePlanner::endlessEnemyLikelihood(1,10),.20);
+        QCOMPARE(WavePlanner::endlessEnemyLikelihood(2,10),0.0);
+        double previousDash=0;
+        for(int wave=11;wave<=15;++wave) {
+            const double dash=WavePlanner::endlessEnemyLikelihood(2,wave);
+            QVERIFY(dash>previousDash); previousDash=dash;
+        }
+        QCOMPARE(previousDash,.08);
+        for(int wave=15;wave<=1000;++wave) {
+            QCOMPARE(WavePlanner::endlessEnemyLikelihood(0,wave),1.0);
+            QCOMPARE(WavePlanner::endlessEnemyLikelihood(1,wave),.20);
+            QCOMPARE(WavePlanner::endlessEnemyLikelihood(2,wave),.08);
+        }
+        for(int seed=1;seed<=500;++seed) {
+            QRandomGenerator atFifteen(seed),atTwenty(seed),atSixteen(seed),atFiveHundredOne(seed);
+            QCOMPARE(WavePlanner::endlessWave(15,atFifteen),WavePlanner::endlessWave(20,atTwenty));
+            QCOMPARE(WavePlanner::endlessWave(16,atSixteen),WavePlanner::endlessWave(501,atFiveHundredOne));
+        }
+    }
+    void endlessEnemyStatsStopGrowing_data() {
+        QTest::addColumn<int>("wave");
+        for(int wave : {15,16,20,1000}) QTest::newRow(qPrintable(QString::number(wave))) << wave;
+    }
+    void endlessEnemyStatsStopGrowing() {
+        QFETCH(int,wave);
+        MyGameScene scene(10,nullptr,true,true,wave);
+        const int health[]={636,1018,954},damage[]={68,81,108};
+        for(int type=0;type<3;++type) {
+            YellowDogs enemy(2,&scene,type,wave); QCOMPARE(enemy.getHp(),health[type]);
+            WallWhite defender; const int before=defender.getHp(); enemy.startAttacking(&defender);
+            QCOMPARE(before-defender.getHp(),damage[type]);
+            enemy.startMoving(); auto *walk=enemy.findChild<QPropertyAnimation*>("enemyMovement"); QVERIFY(walk);
+            const qreal speed=walk->startValue().toPointF().x()-walk->endValue().toPointF().x();
+            const auto& stats=GameCatalog::enemies()[type];
+            QVERIFY(speed>=stats.minSpeed*1.14-.0001 && speed<=(stats.minSpeed+stats.speedRange-1)*1.14+.0001);
+            if(type==2) {
+                enemy.getAttacked(health[type]/2+1);
+                QVERIFY(qAbs(walk->startValue().toPointF().x()-walk->endValue().toPointF().x()-speed*1.5)<.0001);
+            }
+        }
+    }
     void endlessWavesAndResume() {
         QRandomGenerator random(7);
         for(int wave=1;wave<=20;++wave) {
-            int weight=0; for(int type : WavePlanner::endlessWave(wave,random)) weight+=GameCatalog::enemies()[type].weight;
-            QCOMPARE(weight,4+2*wave);
+            const auto enemies=WavePlanner::endlessWave(wave,random);
+            QCOMPARE(enemies.size(),WavePlanner::endlessEnemyCount(wave));
+            if(wave%5!=0) QVERIFY(enemies.size()<=4);
         }
         QTemporaryDir dir; const auto path=unlockedPath(dir);
         GameWindow root(nullptr,path,false); root.show(); root.startEndless();

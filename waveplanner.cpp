@@ -130,21 +130,44 @@ int WavePlanner::enemyCount(const Plan& plan) {
     for(const auto& wave : plan) count+=wave.size();
     return count;
 }
+bool WavePlanner::isEndlessBigWave(int wave) {
+    return wave>0 && wave%GameCatalog::EndlessWavesPerCycle==0;
+}
+int WavePlanner::endlessEnemyCount(int wave) {
+    wave=qMax(1,wave);
+    if(!isEndlessBigWave(wave)) return qMin(4,(wave+1)/2);
+    if(wave==5) return 5;
+    if(wave==10) return 8;
+    return GameCatalog::EndlessSettledBigWaveCount
+        +(wave-GameCatalog::EndlessDifficultyCapWave)/GameCatalog::EndlessBigWaveGrowthInterval;
+}
+double WavePlanner::endlessEnemyLikelihood(int type,int wave) {
+    const int stage=qBound(1,wave,GameCatalog::EndlessDifficultyCapWave);
+    if(type==0) return enemyLikelihood(0);
+    // Guitars unlock at 6 and reach their settled probability at 10.
+    if(type==1) return stage<=5 ? 0 : enemyLikelihood(1)*qMin(1.0,.5+(stage-6)/8.0);
+    // Dash dogs unlock at 11; their probability increases until wave 15.
+    if(type==2) return stage<=10 ? 0 : enemyLikelihood(2)*(stage-10)/5.0;
+    return 0;
+}
 QVector<int> WavePlanner::endlessWave(int wave,QRandomGenerator& random) {
-    // Two more threat points each wave; all enemy types are eligible.
-    int remaining=4+2*qMax(1,wave);
+    wave=qMax(1,wave);
+    const int count=endlessEnemyCount(wave);
     QVector<int> result;
-    while(remaining>0) {
-        double total=0;
-        for(int type=0;type<3;++type) if(GameCatalog::enemies()[type].weight<=remaining) total+=enemyLikelihood(type);
+    result.reserve(count);
+    // Wave ten's guaranteed guitarist occupies one slot in the wave.
+    if(wave==10) result.append(1);
+    double total=0;
+    for(int type=0;type<3;++type) total+=endlessEnemyLikelihood(type,wave);
+    while(result.size()<count) {
         double pick=random.generateDouble()*total;
         int selected=0;
         for(int type=0;type<3;++type) {
-            if(GameCatalog::enemies()[type].weight>remaining) continue;
-            pick-=enemyLikelihood(type);
+            pick-=endlessEnemyLikelihood(type,wave);
             if(pick<0) { selected=type; break; }
         }
-        result.append(selected); remaining-=GameCatalog::enemies()[selected].weight;
+        result.append(selected);
     }
+    shuffle(result,random);
     return result;
 }

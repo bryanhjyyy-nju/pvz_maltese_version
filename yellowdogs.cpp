@@ -11,7 +11,7 @@ YellowDogs::YellowDogs(int row, MyGameScene *scene, int type,int difficultyWave)
     itRow = row;
     setZValue(5);
     initArgues(enemyType);
-    const int extra=qMax(0,difficultyWave-1);
+    const int extra=qBound(1,difficultyWave,GameCatalog::EndlessDifficultyCapWave)-1;
     hp=qRound(hp*(1+.08*extra));
     atkPower=qRound(atkPower*(1+.025*extra));
     speed*=1+.01*extra;

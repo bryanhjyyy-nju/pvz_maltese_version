@@ -16,6 +16,10 @@ constexpr int DoubleShotGapMs = 180;
 constexpr int SingingShotIntervalMs = 1600;
 constexpr int HeartProductionIntervalMs = 12000;
 constexpr int GuitarShotIntervalMs = 2000;
+constexpr int EndlessWavesPerCycle = 5; // Four small waves, then one big wave.
+constexpr int EndlessDifficultyCapWave = 15;
+constexpr int EndlessSettledBigWaveCount = 10;
+constexpr int EndlessBigWaveGrowthInterval = 10; // One extra dog per two big waves.
 struct Plant {
     QString id, name, image, description;
     int health, cost, cooldownMs, actionIntervalMs;
