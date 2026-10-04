@@ -27,9 +27,16 @@ struct Enemy {
     double scale;
     int weight;
 };
+struct LateWaves {
+    int penultimateWeight=0, finalWeight=0; // Exact budgets; zero keeps the default plan.
+    int minGuitars=0; // Guaranteed in each of the last two waves.
+    int minIntervalMs=0, maxIntervalMs=0; // Gap from the penultimate to final wave.
+};
 struct Level {
     int waves, waveWeight, minRow, maxRow, minInterval, maxInterval;
     int maxEnemyType, initialDelayMs, startingHearts;
+    double guitarLikelihood=.20; // Relative to ordinary dogs (1.0), when eligible.
+    LateWaves late;
 };
 const QVector<Plant>& plants();
 const QVector<Enemy>& enemies();

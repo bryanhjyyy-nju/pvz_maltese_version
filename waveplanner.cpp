@@ -1,7 +1,8 @@
 #include "waveplanner.h"
 #include "gamecatalog.h"
 #include <QRandomGenerator>
-double WavePlanner::enemyLikelihood(int type) {
+double WavePlanner::enemyLikelihood(int type,int level) {
+    if(type==1 && level>0) return GameCatalog::level(level).guitarLikelihood;
     static const double values[]={1.0,.20,.08};
     return type>=0 && type<3 ? values[type] : 0;
 }
@@ -20,26 +21,46 @@ WavePlanner::Plan WavePlanner::create(int number, QRandomGenerator& random) {
         // levels 7 and 8, while keeping the existing opening and wave counts.
         int remaining=number>=7 && number<=8 && wave>=level.waves-2
             ? qMax(level.waveWeight,GameCatalog::enemies()[2].weight) : level.waveWeight;
+        const bool finalTwo=wave>=level.waves-2;
+        const int configuredWeight=wave==level.waves-1 ? level.late.finalWeight : level.late.penultimateWeight;
+        const bool configuredLate=finalTwo && configuredWeight>0;
+        int guitars=0,guitarLimit=remaining;
+        if(configuredLate) {
+            remaining=configuredWeight;
+            const int guitarWeight=GameCatalog::enemies()[1].weight;
+            guitars=level.maxEnemyType>=1 ? qBound(0,level.late.minGuitars,remaining/guitarWeight) : 0;
+            int largestEarlier=0;
+            for(const auto& earlier : plan) largestEarlier=qMax(largestEarlier,earlier.size());
+            // Limit expensive picks to leave enough ordinary dogs for a larger
+            // last wave, without adding any points beyond the exact budget.
+            guitarLimit=qMax(guitars,(remaining-largestEarlier-1)/qMax(1,guitarWeight-1));
+            enemies.fill(1,guitars);
+            remaining-=guitars*guitarWeight;
+        }
+        const auto eligible=[&](int type) {
+            return GameCatalog::enemies()[type].weight<=remaining && (type!=1 || guitars<guitarLimit);
+        };
         while(remaining>0) {
             double total=0;
             for(int type=0;type<=level.maxEnemyType;++type)
-                if(GameCatalog::enemies()[type].weight<=remaining) total+=enemyLikelihood(type);
+                if(eligible(type)) total+=enemyLikelihood(type,number);
             double pick=random.generateDouble()*total;
             int selected=0;
             for(int type=0;type<=level.maxEnemyType;++type) {
-                if(GameCatalog::enemies()[type].weight>remaining) continue;
-                pick-=enemyLikelihood(type);
+                if(!eligible(type)) continue;
+                pick-=enemyLikelihood(type,number);
                 if(pick<0) { selected=type; break; }
             }
             enemies.append(selected);
+            if(selected==1) ++guitars;
             remaining-=GameCatalog::enemies()[selected].weight;
         }
-        if(gradualOpening && wave>=level.waves-2) {
-            // Keep the existing rare-enemy draw, then add ordinary dogs to make
-            // the final two waves larger even when a heavy enemy was selected.
+        if(gradualOpening && finalTwo) {
+            // The default plan pads with ordinary dogs. Explicit late budgets
+            // already reserve enough enemies and must keep their exact cost.
             const int count=(number==2 ? level.waveWeight : level.waveWeight+1)
                 +(wave==level.waves-1 ? 1 : 0);
-            while(enemies.size()<count) enemies.append(0);
+            if(!configuredLate) while(enemies.size()<count) enemies.append(0);
             for(int i=enemies.size()-1;i>0;--i) enemies.swapItemsAt(i,random.bounded(i+1));
         }
         plan.append(enemies);
@@ -49,11 +70,11 @@ WavePlanner::Plan WavePlanner::create(int number, QRandomGenerator& random) {
 QVector<int> WavePlanner::previewTypes(int number,QRandomGenerator& random) {
     const int maxType=GameCatalog::level(number).maxEnemyType;
     const int count=maxType==0 ? 5 : 12;
-    double total=0; for(int type=0;type<=maxType;++type) total+=enemyLikelihood(type);
+    double total=0; for(int type=0;type<=maxType;++type) total+=enemyLikelihood(type,number);
     QVector<int> counts(3,0); QVector<double> remainder(3,0);
     int assigned=0;
     for(int type=0;type<=maxType;++type) {
-        const double expected=count*enemyLikelihood(type)/total;
+        const double expected=count*enemyLikelihood(type,number)/total;
         counts[type]=int(expected); remainder[type]=expected-counts[type]; assigned+=counts[type];
     }
     while(assigned<count) {

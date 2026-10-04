@@ -25,13 +25,14 @@ const QVector<Enemy>& enemies() {
 }
 const Level& level(int number) {
     static const Level values[] = {
-        // waves, weight/wave, rows, interval, max type, opening time, hearts
+        // waves, weight/wave, rows, interval (ms), max type, opening time (ms), hearts
+        // Optional: guitar relative likelihood, {last-two weights, guaranteed guitars, final gap (ms)}
         {3,1,2,2,18000,22000,0,15000,50},
         {4,2,1,3,22000,26000,0,18000,50},
         {5,2,0,4,20000,24000,0,18000,50},
-        {5,3,0,4,23000,28000,1,20000,75},
-        {6,3,0,4,22000,27000,1,20000,75},
-        {6,4,0,4,25000,30000,1,22000,75},
+        {5,3,0,4,23000,28000,1,20000,75,.45,{8,10,1,35000,42000}}, // Level 4
+        {6,3,0,4,22000,27000,1,20000,75,.45,{9,11,1,38000,45000}}, // Level 5
+        {6,4,0,4,25000,30000,1,22000,75,.45,{10,12,1,40000,48000}}, // Level 6
         {6,4,0,4,25000,30000,2,22000,100},
         {7,4,0,4,25000,30000,2,25000,100},
         {7,5,0,4,27000,32000,2,25000,100},

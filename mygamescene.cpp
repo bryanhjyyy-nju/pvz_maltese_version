@@ -99,6 +99,7 @@ void MyGameScene::setupTimers() {
     memSkyHeartTimer->setInterval(QRandomGenerator::global()->bounded(GameCatalog::SkyHeartMinIntervalMs,GameCatalog::SkyHeartMaxIntervalMs+1));
 
     memYellowDogsTimer = new QTimer(this);
+    memYellowDogsTimer->setTimerType(Qt::PreciseTimer); // Preserve long wave gaps accurately across pause.
     memYellowDogsTimer->setObjectName("waveTimer");
 
     connect(memYellowDogsTimer, &QTimer::timeout, this, &MyGameScene::spawnWave);
@@ -138,7 +139,12 @@ void MyGameScene::spawnWave() {
     const auto& level = GameCatalog::level(gameLevelNum);
     if(endlessMode) return;
     if(nextWave == wavePlan.size()) memYellowDogsTimer->stop();
-    else memYellowDogsTimer->setInterval(QRandomGenerator::global()->bounded(level.minInterval,level.maxInterval+1));
+    else {
+        const bool finalGap=nextWave==wavePlan.size()-1 && level.late.minIntervalMs>0;
+        const int minimum=finalGap ? level.late.minIntervalMs : level.minInterval;
+        const int maximum=finalGap ? level.late.maxIntervalMs : level.maxInterval;
+        memYellowDogsTimer->setInterval(QRandomGenerator::global()->bounded(minimum,qMax(minimum,maximum)+1));
+    }
 }
 
 void MyGameScene::spawnNextInWave() {

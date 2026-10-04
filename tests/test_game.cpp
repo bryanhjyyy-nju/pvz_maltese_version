@@ -1106,6 +1106,12 @@ private slots:
                         QCOMPARE(wave.size(),count); QCOMPARE(sum,count);
                         for(int type : wave) QCOMPARE(type,0);
                     } else if(level>=2 && level<=8 && index>=stats.waves-2) {
+                        if(level>=4 && level<=6) {
+                            QCOMPARE(sum,index==stats.waves-1 ? stats.late.finalWeight : stats.late.penultimateWeight);
+                            QVERIFY(wave.count(1)>=1);
+                            for(int earlier=0;earlier<index;++earlier) QVERIFY(plan[earlier].size()<wave.size());
+                            continue;
+                        }
                         const int count=(level==2 ? stats.waveWeight : stats.waveWeight+1)+(index==stats.waves-1 ? 1 : 0);
                         const int budget=level>=7 ? qMax(stats.waveWeight,GameCatalog::enemies()[2].weight) : stats.waveWeight;
                         QCOMPARE(wave.size(),count); QVERIFY(sum>=count); QVERIFY(sum<=count+budget-1);
@@ -1119,6 +1125,65 @@ private slots:
         QCOMPARE(GameCatalog::level(8).waves*GameCatalog::level(8).waveWeight,28);
         QCOMPARE(GameCatalog::level(9).waves*GameCatalog::level(9).waveWeight,35);
         QCOMPARE(GameCatalog::level(10).waves*GameCatalog::level(10).waveWeight,40);
+    }
+    void strongerLateWavesPreserveOpeningAndGuaranteeGuitars() {
+        const int penultimate[]={8,9,10},final[]={10,11,12},total[]={24,29,34};
+        for(int level=4;level<=6;++level) {
+            int extraGuitars=0,middleGuitars=0,middleWaves=0;
+            for(int seed=1;seed<=500;++seed) {
+                QRandomGenerator random(seed); const auto plan=WavePlanner::create(level,random);
+                QCOMPARE(plan[0],QVector<int>({0}));
+                QCOMPARE(plan[1],QVector<int>(GameCatalog::level(level).waveWeight-1,0));
+                int totalWeight=0;
+                for(int wave=0;wave<plan.size();++wave) {
+                    int weight=0; for(int type : plan[wave]) weight+=GameCatalog::enemies()[type].weight;
+                    totalWeight+=weight;
+                    if(wave>=plan.size()-2) {
+                        QCOMPARE(weight,wave==plan.size()-1 ? final[level-4] : penultimate[level-4]);
+                        QVERIFY(plan[wave].count(1)>=1); extraGuitars+=plan[wave].count(1)-1;
+                        for(int earlier=0;earlier<wave;++earlier) QVERIFY(plan[earlier].size()<plan[wave].size());
+                    } else if(wave>=2) { middleGuitars+=plan[wave].count(1); ++middleWaves; }
+                }
+                QCOMPARE(totalWeight,total[level-4]);
+            }
+            QVERIFY(extraGuitars>0); // The guarantee still allows additional weighted picks.
+            QVERIFY(middleGuitars>middleWaves*.23); // Previous eligible draw probability was about 1/6.
+            QCOMPARE(WavePlanner::enemyLikelihood(1,level),.45);
+        }
+        QCOMPARE(WavePlanner::enemyLikelihood(1,7),.20);
+    }
+    void strongerLateWavesSpawnWithLongerFinalGap() {
+        const int penultimate[]={8,9,10},final[]={10,11,12};
+        const int minGap[]={35000,38000,40000},maxGap[]={42000,45000,48000};
+        for(int level=4;level<=6;++level) {
+            MyGameScene scene(level); auto *waveTimer=scene.findChild<QTimer*>("waveTimer");
+            auto *stagger=scene.findChild<QTimer*>("waveStaggerTimer"); const int waves=GameCatalog::level(level).waves;
+            int previous=0;
+            for(int wave=1;wave<=waves;++wave) {
+                QMetaObject::invokeMethod(waveTimer,"timeout");
+                if(wave==waves-1) {
+                    QVERIFY(waveTimer->interval()>=minGap[level-4] && waveTimer->interval()<=maxGap[level-4]);
+                    QVERIFY(waveTimer->interval()>GameCatalog::level(level).maxInterval);
+                    const int remaining=waveTimer->remainingTime(); GamePause pause; pause.pause(&scene);
+                    QTest::qWait(70); QVERIFY(!waveTimer->isActive()); pause.resume();
+                    QVERIFY(qAbs(waveTimer->remainingTime()-remaining)<50);
+                } else if(wave<waves) {
+                    QVERIFY(waveTimer->interval()>=GameCatalog::level(level).minInterval);
+                    QVERIFY(waveTimer->interval()<=GameCatalog::level(level).maxInterval);
+                }
+                while(stagger->isActive()) QMetaObject::invokeMethod(stagger,"timeout");
+                const auto enemies=scene.findChildren<YellowDogs*>(); int weight=0,guitars=0;
+                for(int i=previous;i<enemies.size();++i) {
+                    const int type=enemies[i]->typeIndex(); weight+=GameCatalog::enemies()[type].weight;
+                    if(type==1) ++guitars;
+                }
+                if(wave>=waves-1) {
+                    QCOMPARE(weight,wave==waves ? final[level-4] : penultimate[level-4]); QVERIFY(guitars>=1);
+                } else if(wave<=2) QCOMPARE(guitars,0);
+                previous=enemies.size();
+            }
+            QCOMPARE(previous,scene.totalEnemies()); QVERIFY(!waveTimer->isActive());
+        }
     }
     void waveScheduling() {
         MyGameScene scene(10);
@@ -1665,7 +1730,7 @@ private slots:
             const int max=GameCatalog::level(level).maxEnemyType;
             for(int type : types) QVERIFY(type>=0 && type<=max);
             if(max==0) { QCOMPARE(types.size(),5); QCOMPARE(types.count(0),5); }
-            if(max==1) { QCOMPARE(types.count(0),10); QCOMPARE(types.count(1),2); }
+            if(max==1) { QCOMPARE(types.count(0),8); QCOMPARE(types.count(1),4); }
             if(max==2) { QCOMPARE(types.count(0),9); QCOMPARE(types.count(1),2); QCOMPARE(types.count(2),1); }
         }
     }
