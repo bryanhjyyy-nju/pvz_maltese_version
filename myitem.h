@@ -31,6 +31,7 @@ public:
 
     void setItPos(int r, int c); //设置所在行，所在列
     int getItRow() const { return itRow; }
+    int getItCol() const { return itCol; }
     int getHp() const { return hp; } //返回血量的函数
     void setHealthVisible(bool visible);
     bool isHealthVisible() const;

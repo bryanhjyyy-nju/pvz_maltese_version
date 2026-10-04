@@ -21,10 +21,12 @@ public:
 
 private:
     bool m_isGamePaused = false;
+    bool plantingCellVacated = false;
     // QPropertyAnimation *memRunningAnim;
     YellowDogs *targetYellowDog = nullptr;
 
 signals:
+    void vacatedPlantingCell();
 };
 
 #endif // LINEWHITE_H

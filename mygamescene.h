@@ -59,6 +59,7 @@ public:
     WhiteDogs *plantAhead(int row, qreal x) const;
     QTimer *getGameTimer() const { return memGameTimer; } //获取gameTimer
     const QVector<MyItem *>& getZombieMap(int row) const { return zombieMap.at(row); }
+    const QVector<WhiteDogs*>& plantsInRow(int row) const { return plantRows.at(row); }
 private:
     int gameLevelNum = 0;
     bool endlessMode=false;
@@ -69,6 +70,8 @@ private:
     bool started=false;
     InputMode inputMode=InputMode::Normal;
     std::array<WhiteDogs*,45> dogMap{};
+    std::array<QVector<WhiteDogs*>,5> plantRows;
+    void removePlant(WhiteDogs *plant);
     void mousePressEvent(QGraphicsSceneMouseEvent * event) override;
     void keyPressEvent(QKeyEvent *event) override;
 

@@ -20,6 +20,7 @@
 #include "dblsingwhite.h"
 #include "allheartwhite.h"
 #include "heartwhite.h"
+#include "linewhite.h"
 #include <QElapsedTimer>
 #include "yellowdogs.h"
 #include "pausedialog.h"
@@ -65,6 +66,44 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void chargingWhiteFreesItsCellAndCannotRemoveReplacement() {
+        PlayScene play(8,nullptr,false); play.show(); auto *scene=play.findChild<MyGameScene*>();
+        auto *view=play.findChild<QGraphicsView*>(); auto *chargeCard=play.findChild<Card*>("plantCard3");
+        QCOMPARE(chargeCard->heartCost,125); QCOMPARE(chargeCard->coolTime,30000);
+        QVERIFY(chargeCard->toolTip().contains("冷却：30 秒")); QVERIFY(chargeCard->toolTip().contains("125 爱心"));
+        scene->addHeart(25); scene->heartCollected(); chargeCard->cooldownFinished();
+        QTest::mouseClick(chargeCard,Qt::LeftButton);
+        auto click=[&] { QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,490))); };
+        click(); QPointer<LineWhite> charger=scene->findChild<LineWhite*>(); QVERIFY(charger);
+        QCOMPARE(charger->HeartCost(),125); QCOMPARE(scene->getRestHeart(),0); QVERIFY(chargeCard->isCooling());
+        const auto initial=charger->pos(); QTRY_VERIFY_WITH_TIMEOUT(charger->x()>initial.x(),300);
+        play.gamePaused(); const auto pausedPos=charger->pos(); QTest::qWait(80); QCOMPARE(charger->pos(),pausedPos); play.gameContinued();
+        scene->addHeart(50); scene->heartCollected(); QTest::mouseClick(play.findChild<Card*>("plantCard1"),Qt::LeftButton); click();
+        auto *replacement=scene->findChild<HeartWhite*>(); QVERIFY(replacement); QCOMPARE(scene->getRestHeart(),0);
+        QCOMPARE(scene->plantsInRow(2).size(),2); scene->togglePlantHealth(); QVERIFY(charger->isHealthVisible());
+        QSignalSpy removed(scene,&MyGameScene::plantRemoved);
+        charger->setPos(1701,charger->y()); QMetaObject::invokeMethod(scene->getGameTimer(),"timeout");
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        QVERIFY(charger.isNull()); QCOMPARE(scene->plantsInRow(2).size(),1);
+        QCOMPARE(scene->plantsInRow(2).front(),static_cast<WhiteDogs*>(replacement)); QCOMPARE(removed.count(),0);
+        scene->toggleShovel(); click(); QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        QVERIFY(scene->plantsInRow(2).isEmpty()); QCOMPARE(removed.count(),1);
+    }
+    void multipleChargersCanShareAReleasedOrigin() {
+        PlayScene play(8,nullptr,false); play.show(); auto *scene=play.findChild<MyGameScene*>();
+        auto *view=play.findChild<QGraphicsView*>(); scene->addHeart(1000);
+        for(int i=0;i<2;++i) {
+            scene->setChosenNum(3); Card::setGameState(GameState::PrePlace);
+            QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,490)));
+            const auto chargers=scene->findChildren<LineWhite*>(); QCOMPARE(chargers.size(),i+1);
+            auto *newest=chargers.back(); const qreal initial=newest->x();
+            QTRY_VERIFY_WITH_TIMEOUT(newest->x()>initial,300);
+        }
+        auto chargers=scene->findChildren<LineWhite*>(); QCOMPARE(scene->plantsInRow(2).size(),2);
+        for(auto *charger : chargers) { charger->cutHp(10000); charger->removeItself(); }
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        QVERIFY(scene->plantsInRow(2).isEmpty()); QVERIFY(scene->findChildren<LineWhite*>().isEmpty());
+    }
     void doubleSingerFiresPairedBurstsAndPausesBetweenShots() {
         PlayScene play(8,nullptr,false); play.show(); auto *scene=play.findChild<MyGameScene*>();
         auto *view=play.findChild<QGraphicsView*>(); scene->addHeart(1000); scene->setChosenNum(6);

@@ -11,11 +11,18 @@ LineWhite::LineWhite(int row, int col, MyGameScene *myScene, QPointF cPos):White
     WhiteDogs *tempPtr = this;
     setPos(cPos - QPointF(tempPtr->pixmap().width() / 2.0, tempPtr->pixmap().height() / 2.0));
     movingAnim = new QPropertyAnimation(this, "pos", this);
+    movingAnim->setObjectName("chargeMovement");
     movingAnim->setDuration(1000);
     // movingAnim->setLoopCount(-1);
     qreal distance = speed * 1.0;
     movingAnim->setEasingCurve(QEasingCurve::Linear);
     movingAnim->setEndValue(pos() + QPointF(distance, 0));
+    connect(movingAnim,&QPropertyAnimation::valueChanged,this,[this,plantingX=x()](const QVariant& value) {
+        if(!plantingCellVacated && value.toPointF().x()>plantingX) {
+            plantingCellVacated=true;
+            emit vacatedPlantingCell();
+        }
+    });
 
     connect(movingAnim, &QPropertyAnimation::finished, this,[=](){
         if(memIsMoving){

@@ -7,7 +7,7 @@ const QVector<Plant>& plants() {
         {"singingWhite", "歌唱小白", ":/white/Image/singingWhite.gif", "同排前方有敌人时，每 1.6 秒发射音符，造成 30 点伤害。", 500,100,7500,SingingShotIntervalMs,110,-13,-3},
         {"heartWhite", "爱心小白", ":/white/Image/heartWhite.gif", "每 12 秒产出一颗爱心；每颗可收集 25 爱心。", 500,50,5000,HeartProductionIntervalMs,85,0,5},
         {"wallWhite", "坚盾小白", ":/white/Image/wallWhite.gif", "以高生命值阻挡敌人，保护后排。", 4000,50,17500,0,80,0,5},
-        {"lineWhite", "冲锋小白", ":/white/Image/lineWhite.gif", "种下后沿本排前进（100 像素/秒），碰撞造成 2000 伤害；离开草坪后消失。", 10000,0,45000,0,80,0,10},
+        {"lineWhite", "冲锋小白", ":/white/Image/lineWhite.gif", "种下后沿本排前进（100 像素/秒），开始移动后释放原草格；碰撞造成 2000 伤害，离开草坪后消失。", 10000,125,30000,0,80,0,10},
         {"dancingWhite", "跳舞小白", ":/white/Image/dancingWhite.gif", "受到近战攻击时，将该次伤害的 50% 反弹给攻击者。", 800,75,20000,0,85,5,0},
         {"allHeartWhite", "满心小白", ":/white/Image/allHeartWhite.gif", "每 12 秒同时产出两颗爱心；每颗可收集 25 爱心。", 500,125,12500,HeartProductionIntervalMs,90,-5,0},
         {"dblSingWhite", "双唱小白", ":/white/Image/dblSingWhite.gif", "同排前方有敌人时，每 1.6 秒开始一组两发连射，两发相隔 0.18 秒，每发造成 30 点伤害。", 500,200,15000,SingingShotIntervalMs,80,0,0},

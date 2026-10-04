@@ -280,11 +280,21 @@ void MyGameScene::setAYellowDog(int r,int typeNum){
 }
 
 void MyGameScene::removeWhite(int r,int c){
-    if (!dogMap[9 * r + c]) return;
-    removeItem(dogMap[9 * r + c]);
-    dogMap[9 * r + c]->deleteLater();
-    dogMap[9 * r + c] = nullptr;
-    emit plantRemoved(r,c);
+    if(r<0 || r>=5 || c<0 || c>=9) return;
+    removePlant(dogMap[9*r+c]);
+}
+
+void MyGameScene::removePlant(WhiteDogs *plant) {
+    if(!plant || plant->scene()!=this) return;
+    const int row=plant->getItRow(),col=plant->getItCol();
+    // A moving charger may share its original cell with a newer stationary dog.
+    if(dogMap[row*9+col]==plant) {
+        dogMap[row*9+col]=nullptr;
+        emit plantRemoved(row,col);
+    }
+    plantRows[row].removeOne(plant);
+    removeItem(plant);
+    plant->deleteLater();
 }
 
 void MyGameScene::checkWinCondition()
@@ -370,9 +380,17 @@ void MyGameScene::placePlant(int row, int col,bool charge) {
     dogMap[row * 9 + col] = myDog;
 
     myDog->setItPos(row, col);//设置当前小白的所在行和列
+    plantRows[row].append(myDog);
     myDog->setHealthVisible(showPlantHealth);
 
-    connect(myDog,&WhiteDogs::pleaseRemoveMe, this, &MyGameScene::removeWhite);
+    connect(myDog,&WhiteDogs::pleaseRemoveMe,this,[this,myDog] { removePlant(myDog); });
+    if(auto *charger=qobject_cast<LineWhite*>(myDog)) {
+        connect(charger,&LineWhite::vacatedPlantingCell,this,[this,row,col,myDog] {
+            if(dogMap[row*9+col]!=myDog) return;
+            dogMap[row*9+col]=nullptr;
+            emit plantRemoved(row,col);
+        });
+    }
 
     if(charge) cutHeart(myDog->HeartCost());
 
@@ -401,8 +419,7 @@ void MyGameScene::generateTutorialHeart() {
 WhiteDogs *MyGameScene::plantAhead(int row, qreal x) const {
     if(row<0 || row>=5) return nullptr;
     WhiteDogs *nearest=nullptr;
-    for(int col=0;col<9;++col) {
-        auto *plant=dogMap[row*9+col];
+    for(auto *plant : plantRows[row]) {
         if(plant && plant->getHp()>0 && plant->x()<x && (!nearest || plant->x()>nearest->x())) nearest=plant;
     }
     return nearest;
@@ -410,7 +427,7 @@ WhiteDogs *MyGameScene::plantAhead(int row, qreal x) const {
 
 void MyGameScene::togglePlantHealth() {
     showPlantHealth=!showPlantHealth;
-    for(auto *plant : dogMap) if(plant) plant->setHealthVisible(showPlantHealth);
+    for(const auto& row : plantRows) for(auto *plant : row) plant->setHealthVisible(showPlantHealth);
     emit healthVisibilityChanged(showPlantHealth,showEnemyHealth);
 }
 void MyGameScene::toggleEnemyHealth() {
