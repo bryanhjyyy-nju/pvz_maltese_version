@@ -33,8 +33,10 @@ void Card::refreshAvailability() {
     cardState=coolingState ? CardState::Cooling : memHeartIsEnough ? CardState::Normal : CardState::Unable;
     setEnabled(cardState==CardState::Normal); update();
 }
-void Card::paintEvent(QPaintEvent*) {
-    // Paint the entire face together so cost, heart, plant and curtain agree.
+void Card::cacheFaces() {
+    if(cachedHeartCost==heartCost && !readyFace.isNull()) return;
+    cachedHeartCost=heartCost;
+    // Static art and the gray heart are built once; only the curtain animates.
     QPixmap face(artwork.size()); face.fill(Qt::transparent);
     QPainter content(&face);
     content.setRenderHint(QPainter::Antialiasing);
@@ -49,18 +51,19 @@ void Card::paintEvent(QPaintEvent*) {
     content.setPen(QColor("#26372a"));
     content.drawText(QRectF(3,face.height()*.76,face.width()*.56,face.height()*.22),Qt::AlignCenter,QString::number(heartCost));
     content.end();
-    if(coolingState || !memHeartIsEnough) {
-        // The original heart is raster art: recolor its red pixels exactly.
-        QImage pixels=face.toImage().convertToFormat(QImage::Format_ARGB32);
-        for(int y=pixels.height()*2/3;y<pixels.height();++y) for(int x=pixels.width()/2;x<pixels.width();++x) {
-            const QColor color=pixels.pixelColor(x,y);
-            if(color.red()>color.green()*1.4 && color.red()>color.blue()*1.4)
-                pixels.setPixelColor(x,y,QColor(145,145,145,color.alpha()));
-        }
-        face=QPixmap::fromImage(pixels);
+    readyFace=face;
+    QImage pixels=face.toImage().convertToFormat(QImage::Format_ARGB32);
+    for(int y=pixels.height()*2/3;y<pixels.height();++y) for(int x=pixels.width()/2;x<pixels.width();++x) {
+        const QColor color=pixels.pixelColor(x,y);
+        if(color.red()>color.green()*1.4 && color.red()>color.blue()*1.4)
+            pixels.setPixelColor(x,y,QColor(145,145,145,color.alpha()));
     }
+    unavailableFace=QPixmap::fromImage(pixels);
+}
+void Card::paintEvent(QPaintEvent*) {
+    cacheFaces();
     QPainter painter(this); painter.setRenderHint(QPainter::SmoothPixmapTransform);
-    painter.drawPixmap(rect(),face);
+    painter.drawPixmap(rect(),coolingState || !memHeartIsEnough ? unavailableFace : readyFace);
     if(coolingState) {
         painter.fillRect(rect(),QColor(0,0,0,125));
         const qreal edge=height()*(1-memCoolProgress);

@@ -43,9 +43,10 @@ void EnemyProjectile::paint(QPainter *p,const QStyleOptionGraphicsItem *,QWidget
 }
 void EnemyProjectile::checkCollision() {
     if(m_removed) return;
-    for(auto *item : collidingItems()) {
-        auto *plant = dynamic_cast<WhiteDogs*>(item);
-        if(!plant || plant->getItRow() != m_row || plant->getHp() <= 0) continue;
+    const auto& plants=m_scene->plantsInRow(m_row);
+    for(auto it=plants.crbegin();it!=plants.crend();++it) {
+        auto *plant=*it;
+        if(plant->getHp()<=0 || !sceneBoundingRect().intersects(plant->sceneBoundingRect()) || !collidesWithItem(plant)) continue;
         AudioManager::instance().play("guitarHit");
         plant->cutHp(m_damage);
         new CombatEffect(m_scene,plant->sceneBoundingRect().center(),CombatEffect::Hit);

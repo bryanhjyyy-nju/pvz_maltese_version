@@ -3,8 +3,30 @@
 #include <QGraphicsSimpleTextItem>
 #include <QBitmap>
 #include <QRegion>
+#include <QCache>
 
 namespace {
+QPixmap scaledMovieFrame(QMovie *movie,qreal scale) {
+    // Every actor keeps its own movie clock, while identical scaled frames share pixels.
+    static QCache<QString,QPixmap> frames(32*1024); // 32 MiB, charged in KiB.
+    const QPixmap original=movie->currentPixmap();
+    if(original.isNull()) return {};
+    const QSize size=original.size()*scale;
+    const QString key=movie->fileName()+QString(":%1:%2x%3").arg(movie->currentFrameNumber()).arg(size.width()).arg(size.height());
+    if(auto *cached=frames.object(key)) return *cached;
+    const QPixmap scaled=original.scaled(size,Qt::KeepAspectRatio,Qt::SmoothTransformation);
+    frames.insert(key,new QPixmap(scaled),qMax(1,(scaled.width()*scaled.height()*4+1023)/1024));
+    return scaled;
+}
+QRect visibleSpriteBounds(const QPixmap& sprite) {
+    static QCache<qint64,QRect> bounds(1024);
+    const qint64 key=sprite.cacheKey();
+    if(auto *cached=bounds.object(key)) return *cached;
+    QRect visible=sprite.hasAlphaChannel() ? QRegion(sprite.mask()).boundingRect() : sprite.rect();
+    if(visible.isEmpty()) visible=sprite.rect();
+    bounds.insert(key,new QRect(visible));
+    return visible;
+}
 class HealthLabel : public QGraphicsSimpleTextItem {
 public:
     explicit HealthLabel(QGraphicsItem *parent) : QGraphicsSimpleTextItem(parent) {
@@ -46,31 +68,15 @@ void MyItem::setupGifAnimation(const QString& gifPath, qreal scale){
     movie->setFileName(gifPath);
     movie->setCacheMode(QMovie::CacheAll);
 
-    // 连接帧更新信号
-    connect(movie, &QMovie::frameChanged,this, [=](int frameNumber){
-        if(frameNumber >= 0) {
-            // setPixmap(movie->currentPixmap().scaled(movie->currentPixmap().size() * scale,
-            //         Qt::KeepAspectRatio,
-            //         Qt::SmoothTransformation
-            //         ));
-            QPixmap frame = movie->currentPixmap();
-            if (!frame.isNull()) {
-                QPixmap scaledFrame = frame.scaled(
-                    frame.size() * scale,
-                    Qt::KeepAspectRatio,
-                    Qt::SmoothTransformation
-                    );
-                setPixmap(scaledFrame);
-                updateHealthLabel();
-            }
-        }
+    connect(movie, &QMovie::frameChanged,this, [this,scale](int frameNumber){
+        if(frameNumber<0) return;
+        const QPixmap frame=scaledMovieFrame(movie,scale);
+        if(frame.isNull()) return;
+        setPixmap(frame);
+        updateHealthLabel();
     });
 
     movie->start();
-    setPixmap(movie->currentPixmap().scaled(movie->currentPixmap().size() * scale,
-                                            Qt::KeepAspectRatio,
-                                            Qt::SmoothTransformation
-                                            ));
 }
 
 void MyItem::applyDamage(int damage) {
@@ -92,8 +98,7 @@ void MyItem::updateHealthLabel() {
     if(hp<=0) healthLabel->hide();
     if(!healthLabel->isVisible()) return;
     // GIF canvases contain transparent padding; anchor above the visible sprite.
-    QRect visible=pixmap().hasAlphaChannel() ? QRegion(pixmap().mask()).boundingRect() : pixmap().rect();
-    if(visible.isEmpty()) visible=pixmap().rect();
+    const QRect visible=visibleSpriteBounds(pixmap());
     const qreal y=qMax(visible.top()-healthLabel->boundingRect().height()-6,132.0-pos().y());
     healthLabel->setPos(visible.center().x()-healthLabel->boundingRect().center().x(),y);
 }

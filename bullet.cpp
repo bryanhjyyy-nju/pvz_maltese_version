@@ -18,15 +18,11 @@ Bullet::Bullet(int r, int c, QTimer *gameTimer)
         if(x() > 1700){ disappear(); }
     });
     memMovingAnim = new QPropertyAnimation(this, "pos", this);
-    memMovingAnim->setDuration(100);
+    memMovingAnim->setDuration(qMax(1,qRound((1701-x())/speed*1000)));
     memMovingAnim->setEasingCurve(QEasingCurve::Linear);
     memMovingAnim->setStartValue(pos());
-    memMovingAnim->setEndValue(pos() + QPointF(speed * 0.1, 0));
-    connect(memMovingAnim,&QPropertyAnimation::finished, this, [=](){
-        memMovingAnim->setStartValue(pos());
-        memMovingAnim->setEndValue(pos() + QPointF(speed * 0.1, 0));
-        memMovingAnim->start();
-    });
+    memMovingAnim->setEndValue(QPointF(1701,y()));
+    connect(memMovingAnim,&QPropertyAnimation::finished,this,&Bullet::disappear);
     memMovingAnim->start();
 
 }
@@ -43,18 +39,15 @@ void Bullet::disappear(){
 
 
 bool Bullet::checkCollision(){
-    QList<QGraphicsItem*> colliding_items = collidingItems();
-
-    // 遍历所有碰撞的 item
-    for (QGraphicsItem *item : colliding_items) {
-        // 尝试将 item 转换为 YellowDogs 类型
-        YellowDogs *yellowDog = dynamic_cast<YellowDogs*>(item);
-
-        // 如果转换成功，并且它和 Bullet 在同一行，说明发生了有效碰撞
-        if (yellowDog && !yellowDog->isDying() && yellowDog->getItRow() == this->getItRow()) {
-            // 在这里你可以保存目标，以便后续攻击
+    targetZombie=nullptr;
+    auto *battle=qobject_cast<MyGameScene*>(scene());
+    if(!battle) return false;
+    const auto& enemies=battle->getZombieMap(itRow);
+    for(auto it=enemies.crbegin();it!=enemies.crend();++it) {
+        auto *yellowDog=static_cast<YellowDogs*>(*it);
+        if(!yellowDog->isDying() && sceneBoundingRect().intersects(yellowDog->sceneBoundingRect()) && collidesWithItem(yellowDog)) {
             targetZombie = yellowDog;
-            return true; // 发现碰撞，返回 true
+            return true;
         }
     }
     return false;

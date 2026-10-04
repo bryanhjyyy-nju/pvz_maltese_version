@@ -48,6 +48,9 @@ public:
 
 private:
     QPixmap artwork;
+    QPixmap readyFace,unavailableFace;
+    int cachedHeartCost=-1;
+    void cacheFaces();
     void refreshAvailability();
     void paintEvent(QPaintEvent *event) override;
 

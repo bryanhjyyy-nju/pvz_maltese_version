@@ -1,7 +1,7 @@
 #include "gamecatalog.h"
 #include "linewhite.h"
 
-LineWhite::LineWhite(int row, int col, MyGameScene *myScene, QPointF cPos):WhiteDogs(":/white/Image/lineWhite.gif",0.45)
+LineWhite::LineWhite(int row, int col, MyGameScene *myScene, QPointF cPos):WhiteDogs(":/white/Image/lineWhite.gif",0.45),battleScene(myScene)
 {
     const auto& stats = GameCatalog::plants().at(3);
     hp = stats.health;
@@ -32,7 +32,7 @@ LineWhite::LineWhite(int row, int col, MyGameScene *myScene, QPointF cPos):White
         }
     });
 
-    connect(myScene->memGameTimer,&QTimer::timeout, this,[=](){
+    connect(myScene->getGameTimer(),&QTimer::timeout, this,[=](){
         if (m_isGamePaused){
             this->stopMoving();
             return;
@@ -49,23 +49,16 @@ LineWhite::LineWhite(int row, int col, MyGameScene *myScene, QPointF cPos):White
 }
 
 bool LineWhite::checkCollision(){
-    // 获取场景中所有与当前 LineWhite 碰撞的 item
-    QList<QGraphicsItem*> colliding_items = collidingItems();
-
-    // 遍历所有碰撞的 item
-    for (QGraphicsItem *item : colliding_items) {
-        // 尝试将 item 转换为 YellowDogs 类型
-        YellowDogs *yellowDog = dynamic_cast<YellowDogs*>(item);
-
-        // 如果转换成功，并且它和 LineDog 在同一行，说明发生了有效碰撞
-        if (yellowDog && !yellowDog->isDying() && yellowDog->getItRow() == this->getItRow()) {
-            // 在这里你可以保存目标，以便后续攻击
+    const auto& enemies=battleScene->getZombieMap(getItRow());
+    for(auto it=enemies.crbegin();it!=enemies.crend();++it) {
+        auto *yellowDog=static_cast<YellowDogs*>(*it);
+        if(!yellowDog->isDying() && sceneBoundingRect().intersects(yellowDog->sceneBoundingRect()) && collidesWithItem(yellowDog)) {
             targetYellowDog = yellowDog;
-            return true; // 发现碰撞，返回 true
+            return true;
         }
     }
     targetYellowDog = nullptr;
-    return false; // 没有找到碰撞的 WhiteDogs
+    return false;
 }
 
 void LineWhite::gamePaused(){

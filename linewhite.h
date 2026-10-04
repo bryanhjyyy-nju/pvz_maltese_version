@@ -20,6 +20,7 @@ public:
     void gameContinued() override;
 
 private:
+    MyGameScene *battleScene;
     bool m_isGamePaused = false;
     bool plantingCellVacated = false;
     // QPropertyAnimation *memRunningAnim;

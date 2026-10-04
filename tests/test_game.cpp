@@ -36,6 +36,7 @@
 #include "battlebanner.h"
 #include "leveltutorial.h"
 #include "heart.h"
+#include "bullet.h"
 #include "battleresult.h"
 
 class GameTests : public QObject {
@@ -66,6 +67,74 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void regionalRedrawBoundsContainBiteAndDeathFrames() {
+        MyGameScene scene(10,nullptr,true);
+        for(int type=0;type<3;++type) {
+            YellowDogs enemy(2,&scene,type);
+            const QRectF sprite=enemy.pixmap().rect();
+            QVERIFY(enemy.boundingRect().contains(sprite.translated(5,0)));
+            QVERIFY(enemy.boundingRect().contains(sprite.translated(-5,0)));
+            enemy.removeItself();
+            for(int frame=0;frame<=20;++frame) {
+                const qreal progress=frame/20.0; QTransform transform;
+                transform.translate(sprite.center().x(),sprite.center().y());
+                transform.rotate(-65*progress); transform.scale(1-.35*progress,1-.55*progress);
+                transform.translate(-sprite.center().x(),-sprite.center().y());
+                QVERIFY(enemy.boundingRect().contains(transform.mapRect(sprite)));
+            }
+        }
+    }
+    void sharedSpritePixelsKeepIndependentAnimationAndHealth() {
+        MyGameScene scene(10,nullptr,true);
+        auto *first=new YellowDogs(2,&scene,0),*second=new YellowDogs(2,&scene,0);
+        for(auto *enemy : {first,second}) { enemy->setParent(&scene); scene.addItem(enemy); enemy->setHealthVisible(true); }
+        auto *a=first->findChild<QMovie*>(),*b=second->findChild<QMovie*>();
+        a->setPaused(true); b->setPaused(true); QVERIFY(a->jumpToFrame(1)); QVERIFY(b->jumpToFrame(1));
+        QCOMPARE(first->pixmap().cacheKey(),second->pixmap().cacheKey());
+        QCOMPARE(first->pixmap().toImage(),a->currentPixmap().scaled(a->currentPixmap().size()*.55,Qt::KeepAspectRatio,Qt::SmoothTransformation).toImage());
+        const auto sharedKey=first->pixmap().cacheKey();
+        QVERIFY(b->jumpToFrame(2)); QCOMPARE(a->currentFrameNumber(),1);
+        QVERIFY(b->jumpToFrame(1)); QCOMPARE(second->pixmap().cacheKey(),sharedKey);
+        first->getAttacked(30); QCOMPARE(first->healthText(),QString("270")); QCOMPARE(second->healthText(),QString("300"));
+        QVERIFY(first->hitFlash()>0); QCOMPARE(second->hitFlash(),qreal(0));
+        b->setPaused(false); QTRY_VERIFY_WITH_TIMEOUT(b->currentFrameNumber()!=1,1000); QCOMPARE(a->currentFrameNumber(),1);
+    }
+    void releasedChargerRemainsInCombatLists() {
+        PlayScene play(8,nullptr,false); play.show(); auto *scene=play.findChild<MyGameScene*>();
+        scene->addHeart(125); scene->setChosenNum(3); Card::setGameState(GameState::PrePlace);
+        auto *view=play.findChild<QGraphicsView*>();
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,490)));
+        auto *charger=scene->findChild<LineWhite*>(); QVERIFY(charger);
+        const qreal origin=charger->x(); QTRY_VERIFY_WITH_TIMEOUT(charger->x()>origin,300);
+        charger->findChild<QPropertyAnimation*>("chargeMovement")->pause(); charger->setPos(700,charger->y());
+        QCOMPARE(scene->plantAhead(2,1000),static_cast<WhiteDogs*>(charger));
+        const int initialHealth=charger->getHp();
+        auto *note=new EnemyProjectile(scene,2,charger->sceneBoundingRect().center(),15);
+        note->findChild<QPropertyAnimation*>()->pause(); QMetaObject::invokeMethod(note->findChild<QTimer*>(),"timeout");
+        QCOMPARE(charger->getHp(),initialHealth-15);
+        scene->setAYellowDog(1); auto *other=static_cast<YellowDogs*>(scene->getZombieMap(1).front()); other->stopMoving();
+        other->setPos(charger->sceneBoundingRect().center()-other->boundingRect().center()); QVERIFY(!charger->checkCollision());
+        scene->setAYellowDog(2); auto *enemy=static_cast<YellowDogs*>(scene->getZombieMap(2).front()); enemy->stopMoving();
+        enemy->setPos(charger->sceneBoundingRect().center()-enemy->boundingRect().center());
+        QVERIFY(enemy->checkCollision()); enemy->startAttacking(charger); QCOMPARE(charger->getHp(),initialHealth-15-GameCatalog::enemies()[0].attack);
+        QVERIFY(charger->checkCollision()); QMetaObject::invokeMethod(scene->getGameTimer(),"timeout");
+        QVERIFY(enemy->isDying()); QCOMPARE(other->getHp(),300);
+    }
+    void singleFlightNoteKeepsSpeedPauseAndRowCollision() {
+        PlayScene play(8,nullptr,false); auto *scene=play.findChild<MyGameScene*>(); scene->generateBullet(2,0);
+        QPointer<Bullet> note=scene->findChild<Bullet*>(); auto *flight=note->findChild<QPropertyAnimation*>();
+        QCOMPARE(flight->endValue().toPointF().x(),qreal(1701)); flight->setCurrentTime(1000);
+        QVERIFY(qAbs(note->x()-700)<1); play.gamePaused(); const auto position=note->pos(); QTest::qWait(100); QCOMPARE(note->pos(),position);
+        play.gameContinued();
+        scene->setAYellowDog(1); auto *other=static_cast<YellowDogs*>(scene->getZombieMap(1).front()); other->stopMoving();
+        other->setPos(note->sceneBoundingRect().center()-other->boundingRect().center()); QVERIFY(!note->checkCollision());
+        scene->setAYellowDog(2); auto *enemy=static_cast<YellowDogs*>(scene->getZombieMap(2).front()); enemy->stopMoving();
+        enemy->setPos(note->sceneBoundingRect().center()-enemy->boundingRect().center()); QVERIFY(note->checkCollision());
+        QMetaObject::invokeMethod(scene->getGameTimer(),"timeout"); QCOMPARE(enemy->getHp(),270); QCOMPARE(other->getHp(),300);
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete); QVERIFY(note.isNull());
+        scene->generateBullet(2,0); note=scene->findChild<Bullet*>(); flight=note->findChild<QPropertyAnimation*>();
+        flight->setCurrentTime(flight->duration()); QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete); QVERIFY(note.isNull());
+    }
     void chargingWhiteFreesItsCellAndCannotRemoveReplacement() {
         PlayScene play(8,nullptr,false); play.show(); auto *scene=play.findChild<MyGameScene*>();
         auto *view=play.findChild<QGraphicsView*>(); auto *chargeCard=play.findChild<Card*>("plantCard3");

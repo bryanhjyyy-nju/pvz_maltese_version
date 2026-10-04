@@ -15,6 +15,7 @@ class YellowDogs : public MyItem
 public:
     explicit YellowDogs(int row, MyGameScene *myScene,int typeNum,int difficultyWave=1);
     bool checkCollision();
+    QRectF boundingRect() const override;
     void startAttacking(WhiteDogs *tar);
     void getAttacked(int atk);
     void cutHp(int atk){ applyDamage(atk); } //减少血量
@@ -47,6 +48,8 @@ protected:
     MyGameScene *battleScene;
     int enemyType;
     qreal m_hitFlash=0, m_biteProgress=1, m_deathProgress=0;
+    QPixmap flashFrame;
+    qint64 flashSourceKey=0;
     QPropertyAnimation *hitAnimation, *biteAnimation, *deathAnimation;
 
 signals:

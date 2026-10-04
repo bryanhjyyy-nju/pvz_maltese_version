@@ -57,11 +57,18 @@ void YellowDogs::initArgues(int type) {
     atkPower = stats.attack;
     setupGifAnimation(stats.image,stats.scale);
 }
+QRectF YellowDogs::boundingRect() const {
+    const QRectF sprite=MyItem::boundingRect();
+    if(!removed) return sprite.adjusted(-5,0,5,0); // Bite motion shifts by five pixels.
+    const qreal diagonal=qSqrt(sprite.width()*sprite.width()+sprite.height()*sprite.height());
+    return QRectF(sprite.center()-QPointF(diagonal/2,diagonal/2),QSizeF(diagonal,diagonal)).adjusted(-6,-6,6,6);
+}
 bool YellowDogs::checkCollision() {
     targetWhiteDog = nullptr;
-    for(auto *item : collidingItems()) {
-        auto *plant = dynamic_cast<WhiteDogs*>(item);
-        if(plant && plant->getItRow()==itRow && plant->getHp()>0) {
+    const auto& plants=battleScene->plantsInRow(itRow);
+    for(auto it=plants.crbegin();it!=plants.crend();++it) {
+        auto *plant=*it;
+        if(plant->getHp()>0 && sceneBoundingRect().intersects(plant->sceneBoundingRect()) && collidesWithItem(plant)) {
             targetWhiteDog=plant;
             return true;
         }
@@ -102,6 +109,7 @@ void YellowDogs::getAttacked(int attack) {
 }
 void YellowDogs::removeItself() {
     if(removed) return;
+    prepareGeometryChange(); // Regional redraw must include the rotated death sprite.
     removed=true;
     setHealthVisible(false);
     stopMoving(); tempBackAnim->stop(); hitAnimation->stop(); biteAnimation->stop();
@@ -115,7 +123,7 @@ void YellowDogs::removeItself() {
 }
 void YellowDogs::paint(QPainter *p,const QStyleOptionGraphicsItem *option,QWidget *widget) {
     p->save();
-    const auto bounds = boundingRect();
+    const auto bounds = MyItem::boundingRect();
     const auto center = bounds.center();
     if(removed) {
         p->setOpacity(1-m_deathProgress);
@@ -128,13 +136,14 @@ void YellowDogs::paint(QPainter *p,const QStyleOptionGraphicsItem *option,QWidge
     }
     QGraphicsPixmapItem::paint(p,option,widget);
     if(m_hitFlash>0 && !removed) {
-        QPixmap flash = pixmap();
-        QPainter mask(&flash);
-        mask.setCompositionMode(QPainter::CompositionMode_SourceIn);
-        mask.fillRect(flash.rect(),QColor(255,245,180));
-        mask.end();
+        if(flashSourceKey!=pixmap().cacheKey()) {
+            flashSourceKey=pixmap().cacheKey(); flashFrame=pixmap();
+            QPainter mask(&flashFrame);
+            mask.setCompositionMode(QPainter::CompositionMode_SourceIn);
+            mask.fillRect(flashFrame.rect(),QColor(255,245,180));
+        }
         p->setOpacity(m_hitFlash*.75);
-        p->drawPixmap(0,0,flash);
+        p->drawPixmap(0,0,flashFrame);
     }
     p->restore();
     p->setRenderHint(QPainter::Antialiasing);

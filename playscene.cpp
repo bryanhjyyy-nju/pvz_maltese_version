@@ -76,7 +76,7 @@ PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening,bool endless,
     myGraphicsView->setAlignment(Qt::AlignCenter);
     myGraphicsView->setFrameShape(QFrame::NoFrame);
     myGraphicsView->setBackgroundBrush(QColor("#20291c"));
-    myGraphicsView->setViewportUpdateMode(QGraphicsView::FullViewportUpdate); // 设置更新模式
+    myGraphicsView->setViewportUpdateMode(QGraphicsView::MinimalViewportUpdate);
     myGraphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     myGraphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
