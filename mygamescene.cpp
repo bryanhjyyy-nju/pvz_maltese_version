@@ -46,15 +46,14 @@ MyGameScene::MyGameScene(int n,QObject *parent,bool deferStart,bool endless,int 
 
 void MyGameScene::setupBoard() {
     setSceneRect(0, 0, 1650, 900);
+    // Most items move or change frames; rebuilding a spatial index costs more
+    // than scanning this small board. Combat already searches within one lane.
+    setItemIndexMethod(QGraphicsScene::NoIndex);
 
     zombieMap.resize(5);
 
-    QPixmap backgroundPixmap(":/others/Image/grass.jpg");
-    backgroundPixmap = backgroundPixmap.scaled((900.0 / backgroundPixmap.height()) * backgroundPixmap.width(),900);
-    QGraphicsPixmapItem *backGroundItem = addPixmap(backgroundPixmap);
-    backGroundItem->setPos(0, 0);
-    backGroundItem->setZValue(-20);
-    backGroundItem->setScale(1);
+    background.load(":/others/Image/grass.jpg");
+    background=background.scaledToHeight(900);
     grass=new Lawn(gameLevelNum);
     grass->setParent(this);
     addItem(grass);
@@ -78,6 +77,11 @@ void MyGameScene::setupBoard() {
     mapGrid->setPlantableRows(level.minRow,level.maxRow);
     addItem(mapGrid);
 
+}
+
+void MyGameScene::drawBackground(QPainter *painter,const QRectF& rect) {
+    QGraphicsScene::drawBackground(painter,rect);
+    painter->drawPixmap(0,0,background);
 }
 
 void MyGameScene::setupTimers() {

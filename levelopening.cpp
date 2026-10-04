@@ -6,7 +6,7 @@
 #include "gamecatalog.h"
 #include <QGraphicsPixmapItem>
 #include <QGraphicsTextItem>
-#include <QMovie>
+#include "spriteanimation.h"
 #include <QRandomGenerator>
 #include <QPainter>
 #include <QBitmap>
@@ -47,8 +47,8 @@ void LevelOpening::buildPreview() {
     for(int i=0;i<types.size();++i) {
         const auto& enemy=GameCatalog::enemies()[types[i]];
         const qreal scale=enemy.scale;
-        const QPixmap source(enemy.image);
-        const QPixmap firstFrame=source.scaled(source.size()*scale,Qt::KeepAspectRatio,Qt::SmoothTransformation);
+        auto *movie=new SpriteAnimation(enemy.image,scale,this);
+        const QPixmap firstFrame=movie->currentPixmap();
         auto *image=scene->addPixmap(firstFrame); image->setZValue(3);
         image->setAcceptedMouseButtons(Qt::NoButton);
         image->setData(0,QString("enemyPreview")); image->setData(1,types[i]);
@@ -57,11 +57,8 @@ void LevelOpening::buildPreview() {
         if(visible.isEmpty()) visible=firstFrame.rect();
         const qreal ground=360+(i/3)*145+QRandomGenerator::global()->bounded(-14,15);
         image->setPos(1595+(i%3)*150+QRandomGenerator::global()->bounded(-10,11),ground-visible.bottom());
-        auto *movie=new QMovie(enemy.image,QByteArray(),this);
-        movie->setCacheMode(QMovie::CacheAll);
-        connect(movie,&QMovie::frameChanged,this,[movie,image,scale] {
-            const QPixmap frame=movie->currentPixmap();
-            image->setPixmap(frame.scaled(frame.size()*scale,Qt::KeepAspectRatio,Qt::SmoothTransformation));
+        connect(movie,&SpriteAnimation::frameChanged,this,[movie,image] {
+            image->setPixmap(movie->currentPixmap());
         });
         previewItems.append(image); previewMovies.append(movie); movie->start();
     }

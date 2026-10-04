@@ -5,7 +5,7 @@
 class MyGameScene;
 class BattleBanner;
 class QGraphicsItem;
-class QMovie;
+class SpriteAnimation;
 
 // Presentation runs before battle timers start. Preview actors never enter combat.
 class LevelOpening : public QObject {
@@ -27,7 +27,7 @@ private:
     QVariantAnimation timeline;
     Stage current=Stage::Stopped;
     QVector<QGraphicsItem*> previewItems;
-    QVector<QMovie*> previewMovies;
+    QVector<SpriteAnimation*> previewMovies;
     void enter(Stage stage);
     void buildPreview();
     void clearPreview();

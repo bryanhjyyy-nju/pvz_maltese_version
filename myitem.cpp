@@ -6,18 +6,6 @@
 #include <QCache>
 
 namespace {
-QPixmap scaledMovieFrame(QMovie *movie,qreal scale) {
-    // Every actor keeps its own movie clock, while identical scaled frames share pixels.
-    static QCache<QString,QPixmap> frames(32*1024); // 32 MiB, charged in KiB.
-    const QPixmap original=movie->currentPixmap();
-    if(original.isNull()) return {};
-    const QSize size=original.size()*scale;
-    const QString key=movie->fileName()+QString(":%1:%2x%3").arg(movie->currentFrameNumber()).arg(size.width()).arg(size.height());
-    if(auto *cached=frames.object(key)) return *cached;
-    const QPixmap scaled=original.scaled(size,Qt::KeepAspectRatio,Qt::SmoothTransformation);
-    frames.insert(key,new QPixmap(scaled),qMax(1,(scaled.width()*scaled.height()*4+1023)/1024));
-    return scaled;
-}
 QRect visibleSpriteBounds(const QPixmap& sprite) {
     static QCache<qint64,QRect> bounds(1024);
     const qint64 key=sprite.cacheKey();
@@ -49,7 +37,7 @@ public:
 };
 }
 
-MyItem::MyItem(){}
+MyItem::MyItem(){ setCacheMode(QGraphicsItem::DeviceCoordinateCache); }
 
 MyItem::~MyItem(){
     if(movie) {
@@ -64,13 +52,12 @@ QRectF MyItem::boundingRect() const
 }
 
 void MyItem::setupGifAnimation(const QString& gifPath, qreal scale){
-    movie = new QMovie(this);
-    movie->setFileName(gifPath);
-    movie->setCacheMode(QMovie::CacheAll);
+    movie = new SpriteAnimation(gifPath,scale,this);
+    setPixmap(movie->currentPixmap());
 
-    connect(movie, &QMovie::frameChanged,this, [this,scale](int frameNumber){
+    connect(movie, &SpriteAnimation::frameChanged,this, [this](int frameNumber){
         if(frameNumber<0) return;
-        const QPixmap frame=scaledMovieFrame(movie,scale);
+        const QPixmap frame=movie->currentPixmap();
         if(frame.isNull()) return;
         setPixmap(frame);
         updateHealthLabel();

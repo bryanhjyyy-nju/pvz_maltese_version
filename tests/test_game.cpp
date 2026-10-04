@@ -33,6 +33,8 @@
 #include "gameartwork.h"
 #include <QRandomGenerator>
 #include <QFontInfo>
+#include <QMovie>
+#include <QImageReader>
 #include "lawn.h"
 #include "levelopening.h"
 #include "battlebanner.h"
@@ -69,6 +71,26 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void sharedSpriteDecoderMatchesEveryOriginalFrame() {
+        auto check=[](const QString& path,qreal scale) {
+            QMovie original(path); original.setCacheMode(QMovie::CacheAll);
+            SpriteAnimation shared(path,scale);
+            QImageReader timing(path);
+            QCOMPARE(shared.frameCount(),original.frameCount());
+            int duration=0;
+            for(int frame=0;frame<shared.frameCount();++frame) {
+                QVERIFY(original.jumpToFrame(frame)); QVERIFY(shared.jumpToFrame(frame));
+                const auto pixels=original.currentPixmap();
+                QCOMPARE(shared.currentPixmap().toImage(),pixels.scaled(pixels.size()*scale,Qt::KeepAspectRatio,Qt::SmoothTransformation).toImage());
+                QVERIFY(!timing.read().isNull());
+                duration+=qMax(10,timing.nextImageDelay());
+            }
+            QCOMPARE(shared.duration(),duration);
+            shared.start(); shared.setCurrentTime(shared.duration()+1); QCOMPARE(shared.currentFrameNumber(),0);
+        };
+        for(const auto& enemy : GameCatalog::enemies()) check(enemy.image,enemy.scale);
+        for(const auto& plant : GameCatalog::plants()) check(plant.image,1.0);
+    }
     void dashSpeedThreshold_data() {
         QTest::addColumn<int>("wave");
         QTest::addColumn<int>("health");
@@ -175,10 +197,10 @@ private slots:
         MyGameScene scene(10,nullptr,true);
         auto *first=new YellowDogs(2,&scene,0),*second=new YellowDogs(2,&scene,0);
         for(auto *enemy : {first,second}) { enemy->setParent(&scene); scene.addItem(enemy); enemy->setHealthVisible(true); }
-        auto *a=first->findChild<QMovie*>(),*b=second->findChild<QMovie*>();
+        auto *a=first->findChild<SpriteAnimation*>(),*b=second->findChild<SpriteAnimation*>();
         a->setPaused(true); b->setPaused(true); QVERIFY(a->jumpToFrame(1)); QVERIFY(b->jumpToFrame(1));
         QCOMPARE(first->pixmap().cacheKey(),second->pixmap().cacheKey());
-        QCOMPARE(first->pixmap().toImage(),a->currentPixmap().scaled(a->currentPixmap().size()*.55,Qt::KeepAspectRatio,Qt::SmoothTransformation).toImage());
+        QCOMPARE(first->pixmap().toImage(),a->currentPixmap().toImage());
         const auto sharedKey=first->pixmap().cacheKey();
         QVERIFY(b->jumpToFrame(2)); QCOMPARE(a->currentFrameNumber(),1);
         QVERIFY(b->jumpToFrame(1)); QCOMPARE(second->pixmap().cacheKey(),sharedKey);
@@ -378,7 +400,7 @@ private slots:
     void previewMatchesActualEnemySize() {
         PlayScene play(10); play.show();
         auto *scene=play.findChild<MyGameScene*>(); auto *opening=play.findChild<LevelOpening*>();
-        const auto movies=opening->findChildren<QMovie*>(); QCOMPARE(movies.size(),12);
+        const auto movies=opening->findChildren<SpriteAnimation*>(); QCOMPARE(movies.size(),12);
         for(int frame : {0,1}) {
             for(auto *movie : movies) { movie->setPaused(true); QVERIFY(movie->jumpToFrame(frame)); }
             int checked=0; QSet<int> types;
@@ -387,7 +409,7 @@ private slots:
                 auto *preview=dynamic_cast<QGraphicsPixmapItem*>(item); QVERIFY(preview);
                 const int type=item->data(1).toInt(); types.insert(type);
                 YellowDogs actual(2,scene,type);
-                auto *movie=actual.findChild<QMovie*>(); movie->setPaused(true); QVERIFY(movie->jumpToFrame(frame));
+                auto *movie=actual.findChild<SpriteAnimation*>(); movie->setPaused(true); QVERIFY(movie->jumpToFrame(frame));
                 QCOMPARE(preview->pixmap().size(),actual.pixmap().size());
                 QCOMPARE(preview->pixmap().toImage().convertToFormat(QImage::Format_ARGB32),actual.pixmap().toImage().convertToFormat(QImage::Format_ARGB32));
                 ++checked;

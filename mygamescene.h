@@ -61,6 +61,8 @@ public:
     const QVector<MyItem *>& getZombieMap(int row) const { return zombieMap.at(row); }
     const QVector<WhiteDogs*>& plantsInRow(int row) const { return plantRows.at(row); }
 private:
+    QPixmap background;
+    void drawBackground(QPainter *painter,const QRectF& rect) override;
     int gameLevelNum = 0;
     bool endlessMode=false;
     QPointF losingPosition=QPointF(130,450);

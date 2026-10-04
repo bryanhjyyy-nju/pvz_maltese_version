@@ -1,4 +1,6 @@
 QT       += core gui multimedia
+SOURCES += spriteanimation.cpp
+HEADERS += spriteanimation.h
 SOURCES += lawn.cpp
 HEADERS += lawn.h
 SOURCES += battlebanner.cpp levelopening.cpp

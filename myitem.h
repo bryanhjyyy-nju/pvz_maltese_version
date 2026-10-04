@@ -5,7 +5,7 @@
 #include <QMainWindow>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsObject>
-#include <QMovie>
+#include "spriteanimation.h"
 #include <QPainter>
 #include <QPropertyAnimation>
 #include <QTimer>
@@ -40,7 +40,7 @@ public:
     virtual void stopMoving();
     // qreal getMyScale() const{ return myScale; } //返回缩放比例
 protected:
-    QMovie *movie = NULL; //动画效果
+    SpriteAnimation *movie = nullptr;
     int hp = 100; // 血量
     int itRow = 0; //所在行
     int itCol = 0; //所在列

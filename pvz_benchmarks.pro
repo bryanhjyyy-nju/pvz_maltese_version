@@ -6,3 +6,4 @@ TARGET = pvz_benchmarks
 SOURCES -= main.cpp
 SOURCES += tests/benchmark_game.cpp
 INCLUDEPATH += $$PWD
+win32: LIBS += -lpsapi
