@@ -32,11 +32,20 @@ struct LateWaves {
     int minGuitars=0; // Guaranteed in each of the last two waves.
     int minIntervalMs=0, maxIntervalMs=0; // Gap from the penultimate to final wave.
 };
+struct Wave {
+    int weight;
+    int minGuitars=0, minDashes=0;
+    int maxEnemyType=-1; // -1 inherits the level's unlocked types.
+    // Start-to-start gap from the preceding wave; zero uses the level default.
+    int minIntervalMs=0, maxIntervalMs=0;
+};
 struct Level {
     int waves, waveWeight, minRow, maxRow, minInterval, maxInterval;
     int maxEnemyType, initialDelayMs, startingHearts;
     double guitarLikelihood=.20; // Relative to ordinary dogs (1.0), when eligible.
     LateWaves late;
+    double dashLikelihood=.08;
+    QVector<Wave> waveRules; // Optional rules in wave order, starting with wave 1.
 };
 const QVector<Plant>& plants();
 const QVector<Enemy>& enemies();

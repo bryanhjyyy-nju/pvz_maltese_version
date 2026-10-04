@@ -136,14 +136,11 @@ void MyGameScene::spawnWave() {
         spawnNextInWave();
         if(pendingIndex < pendingWave.size()) waveStaggerTimer->start(900);
     }
-    const auto& level = GameCatalog::level(gameLevelNum);
     if(endlessMode) return;
     if(nextWave == wavePlan.size()) memYellowDogsTimer->stop();
     else {
-        const bool finalGap=nextWave==wavePlan.size()-1 && level.late.minIntervalMs>0;
-        const int minimum=finalGap ? level.late.minIntervalMs : level.minInterval;
-        const int maximum=finalGap ? level.late.maxIntervalMs : level.maxInterval;
-        memYellowDogsTimer->setInterval(QRandomGenerator::global()->bounded(minimum,qMax(minimum,maximum)+1));
+        const auto gap=WavePlanner::intervalBeforeWave(gameLevelNum,nextWave+1);
+        memYellowDogsTimer->setInterval(QRandomGenerator::global()->bounded(gap.first,gap.second+1));
     }
 }
 
