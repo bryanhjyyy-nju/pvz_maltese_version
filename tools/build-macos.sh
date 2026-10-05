@@ -31,10 +31,15 @@ if $run_tests; then
     cd "$build_dir/tests"
     qmake "$project_root/pvz_tests.pro" CONFIG+=release CONFIG-=debug
     make -j"$jobs"
-    PVZ_CAPTURE_DIR="$build_dir/tests/screenshots" ./pvz_tests -platform offscreen -o test-results.txt,txt
+    test_status=0
+    PVZ_CAPTURE_DIR="$build_dir/tests/screenshots" ./pvz_tests -platform offscreen -o test-results.txt,txt || test_status=$?
+    cat test-results.txt
+    if [[ "$test_status" != 0 ]]; then exit "$test_status"; fi
     PVZ_CAPTURE_DIR="$build_dir/tests/native-screenshots" ./pvz_tests -platform cocoa \
         audioAssetsLoad renderScreens battlefieldPauseAndPlacement continueFlow \
-        -o native-test-results.txt,txt
+        -o native-test-results.txt,txt || test_status=$?
+    cat native-test-results.txt
+    if [[ "$test_status" != 0 ]]; then exit "$test_status"; fi
 fi
 
 cd "$build_dir"

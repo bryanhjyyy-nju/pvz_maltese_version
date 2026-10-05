@@ -1774,7 +1774,9 @@ private slots:
         root.continueGame(); QCOMPARE(root.playPage(),play);
         QVERIFY(play->isPaused()); QVERIFY(play->findChild<PauseDialog*>()->isVisible());
         QCOMPARE(enemy->pos(),position);
-        play->gameContinued(); QTest::qWait(100); QVERIFY(enemy->x()<position.x());
+        play->gameContinued();
+        // Native platforms can defer the first animation tick after resuming.
+        QTRY_VERIFY_WITH_TIMEOUT(enemy->x()<position.x(),1000);
         play->gameWin(); QVERIFY(!ProgressStore(path).hasUnfinishedLevel());
         play->playSceneBack(); QVERIFY(!root.playPage());
         root.showMenu(); QVERIFY(!resume->isEnabled()); root.continueGame(); QVERIFY(!root.playPage());
