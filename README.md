@@ -77,6 +77,7 @@ pvz_maltese_version/
 ### 环境要求
 
 已验证的构建环境为 **Windows、Qt 5.15.2、MinGW 8.1（64 位）**。
+macOS 分支使用 **macOS 15.7、Qt 6.8.3、Xcode 16.4**，测试覆盖游戏逻辑与原生窗口交互。
 
 - C++17 编译器与 qmake。
 - Qt Core、Gui、Widgets、Multimedia 模块。

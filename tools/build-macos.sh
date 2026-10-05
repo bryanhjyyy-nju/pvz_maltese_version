@@ -54,7 +54,7 @@ fi
 ditto "$build_dir/game/PvZ_demo.app" "$app"
 macdeployqt "$app" -verbose=2 -codesign=-
 codesign --verify --deep --strict "$app"
-lipo -verify_arch arm64 x86_64 "$app/Contents/MacOS/PvZ_demo"
+lipo "$app/Contents/MacOS/PvZ_demo" -verify_arch arm64 x86_64
 python3 "$project_root/tools/check-macos-bundle.py" "$app"
 cp "$project_root/packaging/macos/使用说明.txt" "$build_dir/dist/使用说明.txt"
 ditto -c -k --sequesterRsrc --keepParent "$app" "$build_dir/dist/PvZ_demo-macOS-universal.zip"

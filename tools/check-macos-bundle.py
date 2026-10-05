@@ -16,7 +16,7 @@ for path in (app / "Contents").rglob("*"):
     kind = subprocess.check_output(["file", "-b", str(path)], text=True)
     if "Mach-O" not in kind:
         continue
-    subprocess.run(["lipo", "-verify_arch", "arm64", "x86_64", str(path)], check=True)
+    subprocess.run(["lipo", str(path), "-verify_arch", "arm64", "x86_64"], check=True)
     for architecture in ("arm64", "x86_64"):
         links = subprocess.check_output(["otool", "-arch", architecture, "-L", str(path)], text=True)
         for line in links.splitlines()[1:]:
