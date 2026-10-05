@@ -20,7 +20,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install compiler cache
         run: brew install ccache
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
+        id: compiler-cache
         with:
           path: build-macos/ccache
           key: macOS-qt683-ccache-${{ github.sha }}
@@ -54,6 +55,12 @@ jobs:
             build-macos/dist/SHA256SUMS.txt
             build-macos/dist/使用说明.txt
           if-no-files-found: error
+      - name: Save compiler cache
+        if: always() && steps.compiler-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: build-macos/ccache
+          key: macOS-qt683-ccache-${{ github.sha }}
 
   intel-startup:
     name: Verify the same bundle on Intel

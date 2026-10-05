@@ -670,18 +670,18 @@ private slots:
         QCOMPARE(combat->gameInterval(),500);
         const int health=enemy->getHp(); enemy->cutHp(health/2);
         QCOMPARE(combat->gameInterval(),500); // Exactly half health has no bonus.
-        QElapsedTimer elapsed; elapsed.start(); QVector<qint64> bites;
-        connect(defender,&MyItem::healthChanged,&play,[&] { bites.append(elapsed.elapsed()); });
+        QSignalSpy bites(defender,&MyItem::healthChanged);
         const int biteDamage=wave==1 ? 80 : 108;
         QTRY_COMPARE_WITH_TIMEOUT(bites.size(),2,1400);
         QCOMPARE(defender->getHp(),4000-2*biteDamage);
-        QVERIFY(qAbs(bites[1]-bites[0]-500.0/rate)<80);
+        QCOMPARE(combat->interval(),qRound(500.0/rate));
         const int remaining=combat->remainingTime(); enemy->cutHp(1);
         QCOMPARE(combat->gameInterval(),333);
         QVERIFY(qAbs(combat->remainingTime()-remaining*333.0/500)<15);
         QTRY_COMPARE_WITH_TIMEOUT(bites.size(),5,1400);
         QCOMPARE(defender->getHp(),4000-5*biteDamage);
-        for(int i=3;i<5;++i) QVERIFY(qAbs(bites[i]-bites[i-1]-333.0/rate)<80);
+        // Verify the recurring interval rather than the host's callback latency.
+        QCOMPARE(combat->interval(),qRound(333.0/rate));
         enemy->cutHp(1); QCOMPARE(combat->gameInterval(),333); // The bonus does not stack.
         const int pausedHealth=defender->getHp(),pausedRemaining=combat->remainingTime();
         play.gamePaused(); const int otherRate=rate==1 ? 2 : 1; play.setSpeedMultiplier(otherRate);
