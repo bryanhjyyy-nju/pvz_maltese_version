@@ -13,8 +13,18 @@ jobs:
     name: Build universal app and test on Apple Silicon
     runs-on: macos-15
     timeout-minutes: 30
+    env:
+      PVZ_BUILD_JOBS: '3'
+      CCACHE_DIR: ${{ github.workspace }}/build-macos/ccache
     steps:
       - uses: actions/checkout@v4
+      - name: Install compiler cache
+        run: brew install ccache
+      - uses: actions/cache@v4
+        with:
+          path: build-macos/ccache
+          key: macOS-qt683-ccache-${{ github.sha }}
+          restore-keys: macOS-qt683-ccache-
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:

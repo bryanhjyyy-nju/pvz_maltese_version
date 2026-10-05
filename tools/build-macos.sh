@@ -20,16 +20,18 @@ if [[ -n "$qt_bin" ]]; then export PATH="$qt_bin:$PATH"; fi
 for tool in qmake macdeployqt make python3; do command -v "$tool" >/dev/null; done
 qmake -v
 jobs="${PVZ_BUILD_JOBS:-2}"
+qmake_args=(CONFIG+=release CONFIG-=debug)
+if command -v ccache >/dev/null; then qmake_args+=('QMAKE_CXX=ccache clang++'); fi
 mkdir -p "$build_dir/game" "$build_dir/dist"
 cd "$build_dir/game"
 # Qt's official macOS packages include both architectures.
-qmake "$project_root/PvZ_demo.pro" CONFIG+=release CONFIG-=debug 'QMAKE_APPLE_DEVICE_ARCHS=arm64 x86_64'
+qmake "$project_root/PvZ_demo.pro" "${qmake_args[@]}" 'QMAKE_APPLE_DEVICE_ARCHS=arm64 x86_64'
 make -j"$jobs"
 
 if $run_tests; then
     mkdir -p "$build_dir/tests/screenshots"
     cd "$build_dir/tests"
-    qmake "$project_root/pvz_tests.pro" CONFIG+=release CONFIG-=debug
+    qmake "$project_root/pvz_tests.pro" "${qmake_args[@]}"
     make -j"$jobs"
     test_status=0
     PVZ_CAPTURE_DIR="$build_dir/tests/screenshots" ./pvz_tests -platform offscreen -o test-results.txt,txt || test_status=$?

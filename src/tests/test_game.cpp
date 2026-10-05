@@ -2453,9 +2453,11 @@ private slots:
         QCOMPARE(timer->interval(),GameCatalog::GuitarShotIntervalMs);
         QCOMPARE(timer->interval(),2000);
         QVERIFY(!scene->plantAhead(2,enemy->x()));
+        timer->setSingleShot(true);
         timer->start(80);
         QTRY_COMPARE_WITH_TIMEOUT(scene->findChildren<EnemyProjectile*>().size(),1,300);
-        timer->setInterval(GameCatalog::GuitarShotIntervalMs);
+        timer->setSingleShot(false);
+        timer->start(GameCatalog::GuitarShotIntervalMs);
         auto *shot=scene->findChild<EnemyProjectile*>();
         const auto position=shot->pos();
         QTest::qWait(80);
@@ -2484,9 +2486,11 @@ private slots:
         enemy->stopMoving(); enemy->setPos(750,430);
         auto *rangedTimer=enemy->findChild<QTimer*>("guitarRangedTimer");
         QVERIFY(rangedTimer);
+        rangedTimer->setSingleShot(true);
         rangedTimer->start(80);
         QTRY_COMPARE_WITH_TIMEOUT(scene->findChildren<EnemyProjectile*>().size(),1,300);
-        rangedTimer->setInterval(GameCatalog::GuitarShotIntervalMs);
+        rangedTimer->setSingleShot(false);
+        rangedTimer->start(GameCatalog::GuitarShotIntervalMs);
         auto shots = scene->findChildren<EnemyProjectile*>();
         QCOMPARE(shots.size(),1);
         QCOMPARE(shots.front()->damage(),GameCatalog::enemies()[1].attack);
