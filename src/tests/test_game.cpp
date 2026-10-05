@@ -148,7 +148,7 @@ private slots:
         for(auto *animation : animations) durations.append(animation->duration());
         auto *enemy=scene->findChild<YellowDogs*>(); auto *heart=scene->findChild<Heart*>();
         const QPointF enemyPosition=enemy->pos(),heartPosition=heart->pos();
-        QTest::mouseClick(button,Qt::LeftButton); QCOMPARE(play.speedMultiplier(),2);
+        QTest::keyClick(view,Qt::Key_F); QCOMPARE(play.speedMultiplier(),2);
         QVERIFY(button->isChecked()); QVERIFY(button->text().contains("2×"));
         for(int i=0;i<animations.size();++i) QCOMPARE(animations[i]->duration(),(durations[i]+1)/2);
         QVERIFY(QLineF(enemyPosition,enemy->pos()).length()<2); QVERIFY(QLineF(heartPosition,heart->pos()).length()<2);
@@ -177,11 +177,11 @@ private slots:
         const int projectileDuration=projectile->findChild<QPropertyAnimation*>()->duration();
         Card::setGameState(GameState::PrePlace); Card::setSelectedWhite("heartWhite");
         play.gamePaused(); const QPointF pausedPosition=newEnemy->pos(); const float cooldown=play.findChild<Card*>()->coolProgress();
-        play.setSpeedMultiplier(1); QTest::qWait(100);
+        QTest::keyClick(view,Qt::Key_F); QCOMPARE(play.speedMultiplier(),1); QTest::qWait(100);
         QCOMPARE(newEnemy->pos(),pausedPosition); QCOMPARE(play.findChild<Card*>()->coolProgress(),cooldown);
         QVERIFY(!scene->getGameTimer()->isActive());
         QVERIFY(qAbs(projectile->findChild<QPropertyAnimation*>()->duration()-projectileDuration*2)<=1);
-        play.setSpeedMultiplier(2); play.gameContinued();
+        QTest::keyClick(view,Qt::Key_F); play.gameContinued();
         QCOMPARE(play.speedMultiplier(),2); QCOMPARE(Card::currentState(),GameState::PrePlace);
         QCOMPARE(Card::selectedWhite(),QString("heartWhite"));
         QTRY_VERIFY_WITH_TIMEOUT(play.findChild<Card*>()->coolProgress()>cooldown,200);
@@ -1508,7 +1508,7 @@ private slots:
         auto *scene=play.findChild<MyGameScene*>();
         auto *view=play.findChild<QGraphicsView*>();
         view->setFocus(); QTest::qWait(40);
-        QTest::keyClick(view,Qt::Key_H);
+        QTest::keyClick(view,Qt::Key_A);
         QVERIFY(scene->plantHealthVisible()); QVERIFY(!scene->enemyHealthVisible());
         scene->setChosenNum(1); Card::setGameState(GameState::PrePlace);
         QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(440,490)));
@@ -1518,7 +1518,7 @@ private slots:
         scene->setAYellowDog(2,1);
         auto *enemy=static_cast<YellowDogs*>(scene->getZombieMap(2).back());
         QVERIFY(!enemy->isHealthVisible());
-        QTest::keyClick(view,Qt::Key_J);
+        QTest::keyClick(view,Qt::Key_D);
         QVERIFY(enemy->isHealthVisible()); QVERIFY(plant->isHealthVisible());
         enemy->stopMoving(); enemy->setPos(800,420);
         enemy->getAttacked(30);
@@ -1528,12 +1528,12 @@ private slots:
         play.gamePaused();
         const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
         if(!folder.isEmpty()) QVERIFY(play.grab().save(folder+"/health.png"));
-        QTest::keyClick(view,Qt::Key_H);
+        QTest::keyClick(view,Qt::Key_A);
         QVERIFY(!plant->isHealthVisible()); QVERIFY(enemy->isHealthVisible());
         QCOMPARE(Card::currentState(),GameState::Paused);
-        QTest::keyClick(view,Qt::Key_J);
+        QTest::keyClick(view,Qt::Key_D);
         QVERIFY(!enemy->isHealthVisible());
-        QTest::keyClick(view,Qt::Key_J);
+        QTest::keyClick(view,Qt::Key_D);
         play.gameContinued();
         enemy->getAttacked(10000);
         QVERIFY(!enemy->isHealthVisible());
@@ -1541,7 +1541,7 @@ private slots:
         QVERIFY(!enemy->isHealthVisible());
         scene->setAYellowDog(1);
         QVERIFY(scene->getZombieMap(1).back()->isHealthVisible());
-        QTest::keyClick(view,Qt::Key_H);
+        QTest::keyClick(view,Qt::Key_A);
         scene->setChosenNum(1); Card::setGameState(GameState::PrePlace);
         QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(QPointF(561,490)));
         QCOMPARE(scene->findChildren<WhiteDogs*>().size(),2);
@@ -2254,7 +2254,7 @@ private slots:
         QTRY_VERIFY(menu.isFullScreen());
         QTest::qWait(50); // Allow the platform to deliver its final full-screen geometry.
         view->setFocus();
-        QTest::keyClick(view,Qt::Key_H);
+        QTest::keyClick(view,Qt::Key_A);
         auto cards=play->findChildren<Card*>();
         QTest::mouseClick(cards[1],Qt::LeftButton);
         QCOMPARE(Card::currentState(),GameState::PrePlace);
@@ -2281,10 +2281,10 @@ private slots:
         QTest::keyClick(view,Qt::Key_Space); QTest::qWait(30);
         auto *pause=play->findChild<PauseDialog*>();
         QVERIFY(pause); QVERIFY(pause->isVisible());
-        QTest::keyClick(pause,Qt::Key_H);
+        QTest::keyClick(pause,Qt::Key_A);
         QVERIFY(!scene->plantHealthVisible());
         QCOMPARE(Card::currentState(),GameState::Paused);
-        QTest::keyClick(pause,Qt::Key_H);
+        QTest::keyClick(pause,Qt::Key_A);
         QVERIFY(scene->plantHealthVisible());
         QTest::keyClick(pause,Qt::Key_F11);
         QTRY_VERIFY(!menu.isFullScreen());

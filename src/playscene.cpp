@@ -293,17 +293,17 @@ void PlayScene::finishGame() {
 }
 
 void PlayScene::buildPauseBtn() {
-    speedButton = new QPushButton("速度：1×",this);
+    speedButton = new QPushButton("速度：1× [F]",this);
     speedButton->setObjectName("battleSpeed");
     speedButton->setCheckable(true);
     speedButton->setFocusPolicy(Qt::NoFocus);
-    speedButton->setToolTip("切换原速 / 二倍速");
+    speedButton->setToolTip("点击或按 F 切换原速 / 二倍速");
     speedButton->setGeometry(20,160,170,44);
     GameUi::styleButton(speedButton,"gold");
     connect(speedButton,&QPushButton::clicked,this,[this](bool doubled) { setSpeedMultiplier(doubled ? 2 : 1); });
     connect(myGameScene->gameSpeed(),&GameSpeed::speedChanged,this,[this](int,int multiplier) {
         speedButton->setChecked(multiplier==2);
-        speedButton->setText(QString("速度：%1×").arg(multiplier));
+        speedButton->setText(QString("速度：%1× [F]").arg(multiplier));
     });
     pauseButton = new QPushButton("暂停 [空格]",this);
     pauseButton->setObjectName("pauseBattle");
@@ -328,7 +328,7 @@ void PlayScene::buildPauseBtn() {
     connect(sound,&QPushButton::clicked,this,&PlayScene::showAudioSettings);
     auto *help = new QLabel(this);
     auto updateHelp = [help,this](bool plants,bool enemies) {
-        help->setText((levelIndex==1 ? "铲子：第二关解锁\n" : "点击铲子 / R：拿起或放下\n")+QString("右键：取消选择\nEsc：退出全屏\n空格：暂停 / 继续\nH：小白血量 %1\nJ：金毛血量 %2\nF11：全屏 / 窗口")
+        help->setText((levelIndex==1 ? "铲子：第二关解锁\n" : "点击铲子 / R：拿起或放下\n")+QString("右键：取消选择\nEsc：退出全屏\n空格：暂停 / 继续\nA：小白血量 %1\nD：金毛血量 %2\nF：原速 / 二倍速\nF11：全屏 / 窗口")
             .arg(plants ? "开" : "关").arg(enemies ? "开" : "关"));
     };
     updateHelp(false,false);
@@ -492,9 +492,13 @@ void PlayScene::finishOpening() {
 
 bool PlayScene::handleGameKey(QKeyEvent *event) {
     if(event->modifiers()!=Qt::NoModifier) return false;
-    if(event->key()!=Qt::Key_H && event->key()!=Qt::Key_J) return false;
+    if(event->key()==Qt::Key_F) {
+        if(!event->isAutoRepeat()) setSpeedMultiplier(speedMultiplier()==1 ? 2 : 1);
+        return true;
+    }
+    if(event->key()!=Qt::Key_A && event->key()!=Qt::Key_D) return false;
     if(!event->isAutoRepeat()) {
-        if(event->key()==Qt::Key_H) myGameScene->togglePlantHealth();
+        if(event->key()==Qt::Key_A) myGameScene->togglePlantHealth();
         else myGameScene->toggleEnemyHealth();
     }
     return true;
