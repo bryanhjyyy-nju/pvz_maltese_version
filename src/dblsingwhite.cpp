@@ -17,24 +17,24 @@ DblSingWhite::DblSingWhite(int r, int c,MyGameScene *myScene) : WhiteDogs(":/whi
     secondShotTimer->setInterval(GameCatalog::DoubleShotGapMs);
     connect(this, &DblSingWhite::bulletShot,myScene, &MyGameScene::generateBullet);
     connect(whiteDogTimer,&QTimer::timeout,this,[=](){
-        if(hp<=0 || !isInFrontOfMe(myScene->getZombieMap(r))) return;
-        emit bulletShot(r,c);
+        if(hp<=0 || !isInFrontOfMe(myScene->getZombieMap(getItRow()))) return;
+        emit bulletShot(getItRow(),getItCol());
         secondShotTimer->start();
     });
     connect(secondShotTimer,&QTimer::timeout,this,[=] {
-        if(hp>0 && isInFrontOfMe(myScene->getZombieMap(r))) emit bulletShot(r,c);
+        if(hp>0 && isInFrontOfMe(myScene->getZombieMap(getItRow()))) emit bulletShot(getItRow(),getItCol());
     });
     whiteDogTimer->setInterval(stats.actionIntervalMs);
     connect(myScene->getGameTimer(), &QTimer::timeout, this,[=](){
         if(!isZombieOnYourLawn){
-            if(isInFrontOfMe(myScene->getZombieMap(r))){
+            if(isInFrontOfMe(myScene->getZombieMap(getItRow()))){
                 // qDebug() << "1";
                 isZombieOnYourLawn = true;
                 whiteDogTimer->start();
             }
         }
         else{
-            if(!isInFrontOfMe(myScene->getZombieMap(r))){
+            if(!isInFrontOfMe(myScene->getZombieMap(getItRow()))){
                 // qDebug() << "2";
                 isZombieOnYourLawn = false;
                 whiteDogTimer->stop();

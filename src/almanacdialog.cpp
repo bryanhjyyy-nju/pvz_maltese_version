@@ -69,7 +69,7 @@ AlmanacDialog::AlmanacDialog(QWidget *parent) : QDialog(parent) {
         scroll->setWidget(page);
         tabs->addTab(scroll,group == 0 ? "小白卡片" : "金毛卡片");
     }
-    auto *hint = new QLabel("关卡逐步开放小白卡片；点击爱心收集。点击铲子或按 R 切换，右键取消选择，空格暂停，A / D 显示小白 / 金毛血量，F 切换原速 / 二倍速，Esc 退出全屏。",this);
+    auto *hint = new QLabel("关卡逐步开放小白卡片；点击爱心收集。点击铲子或按 R 切换，无尽模式点击手套或按 S 搬动小白；冲锋小白不可移动或铲除。右键取消选择，空格暂停，A / D 显示小白 / 金毛血量，F 切换原速 / 二倍速，Esc 退出全屏。",this);
     hint->setWordWrap(true);
     layout->addWidget(hint);
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close,this);

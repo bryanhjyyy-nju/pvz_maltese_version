@@ -111,7 +111,32 @@ QPixmap cuteShovel() {
     p.drawArc(QRectF(36,57,12,9),190*16,160*16);
     return pixmap;
 }
-QPixmap shovelSlot() {
+QPixmap cuteGlove() {
+    QPixmap pixmap(84,84); pixmap.fill(Qt::transparent);
+    QPainter p(&pixmap); p.setRenderHint(QPainter::Antialiasing);
+    QPainterPath hand;
+    hand.moveTo(25,67); hand.lineTo(13,46); hand.quadTo(8,37,15,35);
+    hand.quadTo(20,33,27,45); hand.lineTo(24,18); hand.quadTo(23,7,31,9);
+    hand.quadTo(35,10,35,18); hand.lineTo(37,35); hand.lineTo(37,10);
+    hand.quadTo(38,0,46,4); hand.quadTo(49,6,48,15); hand.lineTo(48,35);
+    hand.lineTo(52,15); hand.quadTo(54,5,61,11); hand.quadTo(64,14,61,23);
+    hand.lineTo(57,39); hand.lineTo(63,26); hand.quadTo(68,18,73,24);
+    hand.quadTo(76,28,71,38); hand.lineTo(64,57); hand.quadTo(61,65,57,69);
+    hand.closeSubpath();
+    QLinearGradient cotton(22,10,62,70);
+    cotton.setColorAt(0,QColor("#fffdf2")); cotton.setColorAt(1,QColor("#f2d997"));
+    p.setPen(QPen(QColor("#6c492e"),3,Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));
+    p.setBrush(cotton); p.drawPath(hand);
+    p.setBrush(QColor("#a7ddc5")); p.drawRoundedRect(QRectF(23,64,37,15),5,5);
+    p.setPen(Qt::NoPen); p.setBrush(QColor("#563a26"));
+    p.drawEllipse(QPointF(35,48),2,3); p.drawEllipse(QPointF(50,48),2,3);
+    p.setBrush(QColor("#f1a6a1"));
+    p.drawEllipse(QPointF(29,54),4,2); p.drawEllipse(QPointF(56,54),4,2);
+    p.setPen(QPen(QColor("#563a26"),2,Qt::SolidLine,Qt::RoundCap));
+    p.drawArc(QRectF(36,50,13,9),190*16,160*16);
+    return pixmap;
+}
+static QPixmap toolSlot(const QString& shortcut) {
     QPixmap pixmap(104,110); pixmap.fill(Qt::transparent);
     QPainter p(&pixmap); p.setRenderHint(QPainter::Antialiasing);
     p.setPen(QPen(QColor("#6c492e"),4)); p.setBrush(QColor("#c09655"));
@@ -120,7 +145,9 @@ QPixmap shovelSlot() {
     p.setPen(Qt::NoPen); p.setBrush(QColor("#b7d58b"));
     p.drawRoundedRect(QRectF(74,84,23,19),6,6);
     p.setPen(QColor("#563a26")); p.setFont(QFont("Arial",10,QFont::Bold));
-    p.drawText(QRectF(74,84,23,19),Qt::AlignCenter,"R");
+    p.drawText(QRectF(74,84,23,19),Qt::AlignCenter,shortcut);
     return pixmap;
 }
+QPixmap shovelSlot() { return toolSlot("R"); }
+QPixmap gloveSlot() { return toolSlot("S"); }
 }

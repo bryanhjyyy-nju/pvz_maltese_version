@@ -9,6 +9,7 @@
 #include <QTimer>
 #include <QGraphicsPixmapItem>
 #include <array>
+#include <QPointer>
 #include "gamepause.h"
 #include "waveplanner.h"
 class Lawn;
@@ -36,6 +37,7 @@ public:
     void setChosenNum(int cardNum);
     void cancelSelection();
     void toggleShovel();
+    void toggleGlove();
     void togglePlantHealth();
     void toggleEnemyHealth();
     bool plantHealthVisible() const { return showPlantHealth; }
@@ -116,6 +118,12 @@ private:
     bool showEnemyHealth = false;
 
     QGraphicsPixmapItem *shovel = nullptr; //铲子
+    QGraphicsPixmapItem *glove = nullptr;
+    QGraphicsPixmapItem *plantGhost = nullptr;
+    QPointer<WhiteDogs> plantToMove;
+    void selectPlantToMove(WhiteDogs *plant);
+    void moveSelectedPlant(int row,int col);
+    void updateGlovePosition(const QPointF& position);
     void mouseMoveEvent(QGraphicsSceneMouseEvent * event) override;
 
 signals:
