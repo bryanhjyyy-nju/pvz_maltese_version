@@ -9,7 +9,10 @@
 #include <QPainter>
 #include <QPropertyAnimation>
 #include <QTimer>
+#include <QPointer>
 #include "gamespeed.h"
+
+class HealthLabel;
 
 class MyItem : public QObject,public QGraphicsPixmapItem
 {
@@ -43,6 +46,7 @@ public:
     virtual void stopMoving();
     // qreal getMyScale() const{ return myScale; } //返回缩放比例
 protected:
+    QVariant itemChange(GraphicsItemChange change,const QVariant& value) override;
     SpriteAnimation *movie = nullptr;
     int hp = 100; // 血量
     int itRow = 0; //所在行
@@ -54,7 +58,8 @@ protected:
     void applyDamage(int damage);
     void updateHealthLabel();
 private:
-    class QGraphicsSimpleTextItem *healthLabel = nullptr;
+    QPointer<HealthLabel> healthLabel;
+    bool healthVisible = false;
 
 signals:
     void healthChanged(int health);

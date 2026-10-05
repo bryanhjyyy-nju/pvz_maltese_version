@@ -4,6 +4,7 @@
 #include <QBitmap>
 #include <QRegion>
 #include <QCache>
+#include <QGraphicsScene>
 
 namespace {
 QRect visibleSpriteBounds(const QPixmap& sprite) {
@@ -15,9 +16,12 @@ QRect visibleSpriteBounds(const QPixmap& sprite) {
     bounds.insert(key,new QRect(visible));
     return visible;
 }
-class HealthLabel : public QGraphicsSimpleTextItem {
+}
+
+// Keep QObject ownership with the unit, but paint independently above sprites.
+class HealthLabel : public QObject, public QGraphicsSimpleTextItem {
 public:
-    explicit HealthLabel(QGraphicsItem *parent) : QGraphicsSimpleTextItem(parent) {
+    explicit HealthLabel(QObject *owner) : QObject(owner) {
         setFont(QFont("Microsoft YaHei",11,QFont::Bold));
         setBrush(QColor("#443326"));
         setAcceptedMouseButtons(Qt::NoButton);
@@ -35,9 +39,12 @@ public:
         QGraphicsSimpleTextItem::paint(p,option,widget);
     }
 };
-}
 
-MyItem::MyItem(){ setCacheMode(QGraphicsItem::DeviceCoordinateCache); }
+MyItem::MyItem(){
+    setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+    setFlag(QGraphicsItem::ItemSendsGeometryChanges);
+    setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
+}
 
 MyItem::~MyItem(){
     if(movie) {
@@ -73,21 +80,44 @@ void MyItem::applyDamage(int damage) {
     emit healthChanged(hp);
 }
 void MyItem::setHealthVisible(bool visible) {
+    healthVisible=visible;
     if(visible && !healthLabel) healthLabel=new HealthLabel(this);
-    if(healthLabel) healthLabel->setVisible(visible && hp>0);
     updateHealthLabel();
 }
 bool MyItem::isHealthVisible() const { return healthLabel && healthLabel->isVisible(); }
 QString MyItem::healthText() const { return healthLabel ? healthLabel->text() : QString(); }
 void MyItem::updateHealthLabel() {
     if(!healthLabel) return;
+    if(healthLabel->scene()!=scene()) {
+        if(healthLabel->scene()) healthLabel->scene()->removeItem(healthLabel);
+        if(scene()) scene()->addItem(healthLabel);
+    }
     healthLabel->setText(QString::number(qMax(0,hp)));
-    if(hp<=0) healthLabel->hide();
+    healthLabel->setZValue(100+qBound(0,itRow,4));
+    healthLabel->setVisible(healthVisible && hp>0 && scene() && isVisible());
     if(!healthLabel->isVisible()) return;
     // GIF canvases contain transparent padding; anchor above the visible sprite.
     const QRect visible=visibleSpriteBounds(pixmap());
     const qreal y=qMax(visible.top()-healthLabel->boundingRect().height()-6,132.0-pos().y());
-    healthLabel->setPos(visible.center().x()-healthLabel->boundingRect().center().x(),y);
+    healthLabel->setPos(mapToScene(QPointF(visible.center().x()-healthLabel->boundingRect().center().x(),y)));
+}
+
+QVariant MyItem::itemChange(GraphicsItemChange change,const QVariant& value) {
+    const auto result=QGraphicsPixmapItem::itemChange(change,value);
+    switch(change) {
+    case ItemPositionHasChanged:
+    case ItemScenePositionHasChanged:
+    case ItemSceneHasChanged:
+    case ItemTransformHasChanged:
+    case ItemRotationHasChanged:
+    case ItemScaleHasChanged:
+    case ItemTransformOriginPointHasChanged:
+    case ItemVisibleHasChanged:
+        updateHealthLabel();
+        break;
+    default: break;
+    }
+    return result;
 }
 
 QPainterPath MyItem::shape() const {
@@ -99,6 +129,7 @@ QPainterPath MyItem::shape() const {
 void MyItem::setItPos(int r, int c){
     itRow = r;
     itCol = c;
+    updateHealthLabel();
 }
 
 void MyItem::startMoving(){

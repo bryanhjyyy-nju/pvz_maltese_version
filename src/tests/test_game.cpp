@@ -49,10 +49,16 @@
 #include <QJsonDocument>
 #include <QDir>
 #include <QGraphicsSceneMouseEvent>
+#include <QGraphicsSimpleTextItem>
 
 class GameTests : public QObject {
     Q_OBJECT
     QTemporaryDir settingsDirectory;
+    QGraphicsSimpleTextItem *healthOverlay(MyItem *unit) {
+        for(auto *child : unit->children())
+            if(auto *label=dynamic_cast<QGraphicsSimpleTextItem*>(child)) return label;
+        return nullptr;
+    }
     void movePointer(QGraphicsView *view,const QPointF& position) {
         const auto point=view->mapFromScene(position);
         QTest::mouseMove(view->viewport(),point);
@@ -94,6 +100,100 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void defeatReturnsToModeHome_data() {
+        QTest::addColumn<bool>("endless");
+        QTest::newRow("campaign-level-selection")<<false;
+        QTest::newRow("endless-main-menu")<<true;
+    }
+    void defeatReturnsToModeHome() {
+        QFETCH(bool,endless); QTemporaryDir dir; const auto path=unlockedPath(dir);
+        GameWindow root(nullptr,path,false); root.show();
+        if(endless) root.startEndless(); else root.startLevel(8);
+        QPointer<PlayScene> play=root.playPage(); auto *scene=play->findChild<MyGameScene*>();
+        scene->setAYellowDog(2); auto *enemy=scene->findChild<YellowDogs*>();
+        enemy->stopMoving(); enemy->setPos(80,430);
+        QTRY_VERIFY_WITH_TIMEOUT(play->isFinished(),1200);
+        auto *result=play->findChild<BattleResult*>(); QVERIFY(result && !result->victory());
+        QVERIFY(!ProgressStore(path).hasUnfinishedLevel()); QVERIFY(!ProgressStore(path).hasEndlessRun());
+        auto *animation=result->findChild<QVariantAnimation*>("resultAnimation");
+        animation->setCurrentTime(animation->duration());
+        QVERIFY(!root.playPage()); QCOMPARE(root.homePage()->isVisible(),endless);
+        QCOMPARE(root.levelPage()->isVisible(),!endless);
+        if(endless) {
+            QCOMPARE(root.homePage()->findChild<QPushButton*>("endlessGame")->text(),QString("开始无尽模式"));
+            const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+            if(!folder.isEmpty()) QVERIFY(root.grab().save(folder+"/endless-defeat-home.png"));
+        }
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete); QVERIFY(!play);
+        if(endless) root.startEndless(); else root.startLevel(8);
+        QVERIFY(root.playPage() && !root.playPage()->isFinished());
+    }
+    void healthLayersRemainAboveAdjacentSprites() {
+        PlayScene play(10,nullptr,false,true); play.show();
+        auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
+        auto *map=battleMap(scene); scene->addHeart(1000);
+        QVector<WhiteDogs*> plants; QVector<YellowDogs*> enemies;
+        for(int row=0;row<5;++row) {
+            scene->setChosenNum(1); Card::setGameState(GameState::PrePlace);
+            QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(map->cellCenter(1,row)));
+            plants.append(scene->plantsInRow(row).first());
+            scene->setAYellowDog(row,row%3); auto *enemy=scene->findChildren<YellowDogs*>().last();
+            enemy->setPos(1100,130+145*(row+.5)-enemy->pixmap().height()/2.0); enemies.append(enemy);
+        }
+        scene->togglePlantHealth(); scene->toggleEnemyHealth(); play.gamePaused();
+        for(int row=0;row<5;++row) {
+            for(MyItem *unit : {static_cast<MyItem*>(plants[row]),static_cast<MyItem*>(enemies[row])}) {
+                auto *label=healthOverlay(unit); QVERIFY(label && label->isVisible());
+                QVERIFY(!label->parentItem()); QCOMPARE(label->scene(),scene);
+                for(int upper=0;upper<row;++upper) {
+                    QVERIFY(label->zValue()>plants[upper]->zValue()); QVERIFY(label->zValue()>enemies[upper]->zValue());
+                    QVERIFY(label->zValue()>healthOverlay(plants[upper])->zValue());
+                    QVERIFY(label->zValue()>healthOverlay(enemies[upper])->zValue());
+                }
+            }
+        }
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(!folder.isEmpty()) QVERIFY(play.grab().save(folder+"/health-row-layers.png"));
+        // Put an opaque upper-row unit directly over a lower-row health tag.
+        // The pixel must retain the tag's appearance for both kinds of unit.
+        auto verifyOverlap=[&](MyItem *lower,MyItem *upper) {
+            auto *label=healthOverlay(lower); const auto sample=label->sceneBoundingRect().center();
+            const QPoint pixel=view->mapFromScene(sample);
+            const auto before=view->viewport()->grab().toImage().pixelColor(pixel);
+            QPixmap cover(180,180); cover.fill(QColor("#ed10ce")); upper->setPixmap(cover);
+            upper->setPos(sample-QPointF(90,90));
+            QVERIFY(upper->sceneBoundingRect().contains(sample));
+            QCOMPARE(view->viewport()->grab().toImage().pixelColor(pixel),before);
+        };
+        verifyOverlap(plants[1],enemies[0]); verifyOverlap(enemies[1],plants[0]);
+        if(!folder.isEmpty()) QVERIFY(play.grab().save(folder+"/health-layers-overlap.png"));
+    }
+    void healthLayerFollowsRelocationAndReleasesOwnership() {
+        {
+            PlayScene play(10,nullptr,false,true); play.show();
+            auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
+            auto *map=battleMap(scene); scene->addHeart(1000); scene->togglePlantHealth();
+            auto click=[&](QPointF point) { QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(point)); };
+            scene->setChosenNum(1); Card::setGameState(GameState::PrePlace); click(map->cellCenter(1,1));
+            auto *plant=scene->findChild<HeartWhite*>(); auto *label=healthOverlay(plant); QVERIFY(label);
+            const auto originalPosition=label->pos(); const auto originalDepth=label->zValue();
+            QTest::keyClick(view,Qt::Key_S); click(map->cellCenter(1,1)); click(map->cellCenter(5,4));
+            QCOMPARE(healthOverlay(plant),label); QVERIFY(label->zValue()>originalDepth);
+            QVERIFY(QLineF(label->pos(),originalPosition).length()>400);
+            const auto before=label->pos(); plant->moveBy(23,17); QCOMPARE(label->pos(),before+QPointF(23,17));
+            plant->hide(); QVERIFY(!label->isVisible()); plant->show(); QVERIFY(label->isVisible());
+            QPointer<QObject> guard=dynamic_cast<QObject*>(label); QVERIFY(guard);
+            plant->removeItself(); QVERIFY(!label->scene()); QVERIFY(!label->isVisible());
+            QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete); QVERIFY(!guard);
+        }
+        QGraphicsScene first,second;
+        auto *unit=new MyItem; unit->setItPos(2,0); unit->setPos(500,450);
+        first.addItem(unit); unit->setHealthVisible(true); auto *label=healthOverlay(unit); QVERIFY(label);
+        QPointer<QObject> unitGuard=unit,labelGuard=dynamic_cast<QObject*>(label);
+        first.removeItem(unit); QVERIFY(!label->scene()); QVERIFY(!unit->isHealthVisible());
+        second.addItem(unit); QCOMPARE(label->scene(),&second); QVERIFY(unit->isHealthVisible());
+        second.clear(); QVERIFY(!unitGuard); QVERIFY(!labelGuard); QVERIFY(first.items().isEmpty());
+    }
     void gloveMovesExistingPlants_data() {
         QTest::addColumn<int>("type");
         for(int type : {0,1,2,4,5,6,7}) QTest::newRow(qPrintable(GameCatalog::plants()[type].id))<<type;
@@ -1466,7 +1566,8 @@ private slots:
         QVERIFY(!root.homePage()->findChild<QPushButton*>("resumeGame")->isEnabled());
         root.startEndless(); QCOMPARE(root.playPage(),play); QVERIFY(play->isPaused());
         QVERIFY(play->findChild<PauseDialog*>()->isVisible());
-        play->gameLose(); play->playSceneBack(); root.showMenu();
+        play->gameLose(); play->playSceneBack();
+        QVERIFY(root.homePage()->isVisible()); QVERIFY(!root.levelPage()->isVisible()); QVERIFY(!root.playPage());
         QCOMPARE(root.homePage()->findChild<QPushButton*>("endlessGame")->text(),QString("开始无尽模式"));
         QCOMPARE(ProgressStore(path).endlessBest(),3); QVERIFY(!ProgressStore(path).hasEndlessRun());
     }
