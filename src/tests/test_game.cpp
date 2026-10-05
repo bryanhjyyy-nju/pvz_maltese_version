@@ -48,10 +48,27 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QDir>
+#include <QGraphicsSceneMouseEvent>
 
 class GameTests : public QObject {
     Q_OBJECT
     QTemporaryDir settingsDirectory;
+    void movePointer(QGraphicsView *view,const QPointF& position) {
+        const auto point=view->mapFromScene(position);
+        QTest::mouseMove(view->viewport(),point);
+        // Offscreen Qt does not reliably deliver native cursor motion.
+        QMouseEvent event(QEvent::MouseMove,QPointF(point),Qt::NoButton,Qt::NoButton,Qt::NoModifier);
+        QApplication::sendEvent(view->viewport(),&event);
+    }
+    Map *battleMap(MyGameScene *scene) {
+        for(auto *item : scene->items()) if(auto *map=dynamic_cast<Map*>(item)) return map;
+        return nullptr;
+    }
+    QGraphicsPixmapItem *toolItem(MyGameScene *scene,const QString& name) {
+        for(auto *item : scene->items())
+            if(item->data(0).toString()==name) return dynamic_cast<QGraphicsPixmapItem*>(item);
+        return nullptr;
+    }
     void verifyGameTerms(QWidget *root) {
         auto widgets=root->findChildren<QWidget*>(); widgets.prepend(root);
         for(auto *widget : widgets) {
@@ -77,6 +94,172 @@ class GameTests : public QObject {
         banner->setCurrentTime(banner->duration());
     }
 private slots:
+    void gloveMovesExistingPlants_data() {
+        QTest::addColumn<int>("type");
+        for(int type : {0,1,2,4,5,6,7}) QTest::newRow(qPrintable(GameCatalog::plants()[type].id))<<type;
+    }
+    void gloveMovesExistingPlants() {
+        QFETCH(int,type);
+        PlayScene play(10,nullptr,false,true); play.show();
+        auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
+        auto *map=battleMap(scene); QVERIFY(map); scene->addHeart(1000);
+        const auto origin=map->cellCenter(1,2),destination=map->cellCenter(4,1);
+        auto click=[&](QPointF point,Qt::MouseButton button=Qt::LeftButton) {
+            QTest::mouseClick(view->viewport(),button,Qt::NoModifier,view->mapFromScene(point));
+        };
+        scene->setChosenNum(type); Card::setGameState(GameState::PrePlace); click(origin);
+        QPointer<WhiteDogs> plant=scene->plantsInRow(2).first(); plant->cutHp(17);
+        const auto position=plant->pos(); const int health=plant->getHp(),resources=scene->getRestHeart();
+        auto *ghost=toolItem(scene,"plantMoveGhost"); auto *glove=toolItem(scene,"moveGlove");
+        QVERIFY(ghost && glove); QVERIFY(!ghost->isVisible());
+        QVERIFY(GameArtwork::gloveSlotRect().contains(glove->sceneBoundingRect()));
+        QCOMPARE(GameArtwork::gloveSlotRect().size(),GameArtwork::shovelSlotRect().size());
+        QTest::keyClick(view,Qt::Key_S); QCOMPARE(Card::currentState(),GameState::MovingPlant);
+        QVERIFY(view->hasMouseTracking()); click(origin);
+        QVERIFY(ghost->isVisible()); QCOMPARE(ghost->opacity(),.45);
+        const auto frozen=ghost->pixmap().toImage();
+        movePointer(view,destination); QTest::qWait(60);
+        QCOMPARE(ghost->pixmap().toImage(),frozen); QCOMPARE(plant->pos(),position);
+        QCOMPARE(plant->getItRow(),2); QVERIFY(scene->plantsInRow(2).contains(plant));
+        QVERIFY(QLineF(ghost->sceneBoundingRect().center(),destination).length()<3);
+        QVERIFY(QLineF(glove->sceneBoundingRect().center(),destination).length()<3);
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(type==1 && !folder.isEmpty()) QVERIFY(play.grab().save(folder+"/endless-glove-preview.png"));
+        auto *card=play.findChild<Card*>(QString("plantCard%1").arg(type));
+        const auto cooldown=card->coolProgress(); click(destination);
+        QCOMPARE(Card::currentState(),GameState::Normal); QVERIFY(!ghost->isVisible());
+        QCOMPARE(glove->pos(),GameArtwork::gloveHome()); QVERIFY(plant);
+        QCOMPARE(plant->getItRow(),1); QCOMPARE(plant->getItCol(),4); QCOMPARE(plant->getHp(),health);
+        QVERIFY(!scene->plantsInRow(2).contains(plant)); QVERIFY(scene->plantsInRow(1).contains(plant));
+        QVERIFY(QLineF(plant->sceneBoundingRect().center(),destination).length()<2);
+        QCOMPARE(scene->getRestHeart(),resources); QCOMPARE(card->coolProgress(),cooldown);
+        if(type==1 || type==5) {
+            QMetaObject::invokeMethod(plant->findChild<QTimer*>(),"timeout",Qt::DirectConnection);
+            const auto hearts=scene->findChildren<Heart*>(); QCOMPARE(hearts.size(),type==1 ? 1 : 2);
+            for(auto *heart : hearts) QVERIFY(QLineF(heart->pos(),plant->pos()).length()<68);
+        }
+        scene->setChosenNum(1); Card::setGameState(GameState::PrePlace); click(origin);
+        QCOMPARE(scene->plantsInRow(2).size(),1); QCOMPARE(scene->findChildren<WhiteDogs*>().size(),2);
+        scene->toggleShovel(); click(destination);
+        QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+        QVERIFY(!plant); QCOMPARE(scene->plantsInRow(1).size(),0); QCOMPARE(scene->plantsInRow(2).size(),1);
+    }
+    void gloveCancellationRestrictionsAndPause() {
+        {
+            PlayScene normal(10,nullptr,false); normal.show();
+            QVERIFY(!toolItem(normal.findChild<MyGameScene*>(),"moveGlove"));
+            QTest::keyClick(normal.findChild<QGraphicsView*>(),Qt::Key_S);
+            QCOMPARE(Card::currentState(),GameState::Normal);
+        }
+        PlayScene play(10,nullptr,false,true); play.show();
+        auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
+        auto *map=battleMap(scene); scene->addHeart(1000);
+        auto click=[&](QPointF point,Qt::MouseButton button=Qt::LeftButton) {
+            QTest::mouseClick(view->viewport(),button,Qt::NoModifier,view->mapFromScene(point));
+        };
+        const auto origin=map->cellCenter(1,2),occupied=map->cellCenter(2,2);
+        scene->setChosenNum(1); Card::setGameState(GameState::PrePlace); click(origin);
+        auto *plant=scene->findChild<HeartWhite*>(); const auto originalPosition=plant->pos();
+        scene->setChosenNum(2); Card::setGameState(GameState::PrePlace); click(occupied);
+        auto *ghost=toolItem(scene,"plantMoveGhost"); auto *glove=toolItem(scene,"moveGlove");
+        click(GameArtwork::gloveSlotRect().center()); QCOMPARE(Card::currentState(),GameState::MovingPlant);
+        click(origin); click(occupied); click(QPointF(1550,500));
+        QCOMPARE(plant->pos(),originalPosition); QVERIFY(ghost->isVisible());
+        play.showPauseMenu(); const auto ghostPosition=ghost->pos(),glovePosition=glove->pos();
+        QTest::keyClick(view,Qt::Key_S); QCOMPARE(Card::currentState(),GameState::Paused);
+        movePointer(view,map->cellCenter(6,4));
+        QCOMPARE(ghost->pos(),ghostPosition); QCOMPARE(glove->pos(),glovePosition);
+        play.gameContinued(); QCOMPARE(Card::currentState(),GameState::MovingPlant); QVERIFY(ghost->isVisible());
+        QVERIFY(view->hasMouseTracking()); click(origin,Qt::RightButton);
+        QCOMPARE(Card::currentState(),GameState::Normal); QVERIFY(!ghost->isVisible());
+        QCOMPARE(plant->pos(),originalPosition); QCOMPARE(glove->pos(),GameArtwork::gloveHome());
+        QTest::keyClick(view,Qt::Key_S); click(origin); QTest::keyClick(view,Qt::Key_S);
+        QVERIFY(!ghost->isVisible()); QCOMPARE(Card::currentState(),GameState::Normal);
+        QTest::keyClick(view,Qt::Key_S); click(origin); scene->toggleShovel();
+        QCOMPARE(Card::currentState(),GameState::Shoveling); QVERIFY(!ghost->isVisible());
+        scene->cancelSelection();
+        // Freeze a newly planted charger before it vacates its occupied cell.
+        const auto chargeCell=map->cellCenter(3,2);
+        scene->setChosenNum(3); Card::setGameState(GameState::PrePlace);
+        QGraphicsSceneMouseEvent press(QEvent::GraphicsSceneMousePress);
+        press.setButton(Qt::LeftButton); press.setButtons(Qt::LeftButton); press.setScenePos(chargeCell);
+        QCoreApplication::sendEvent(scene,&press);
+        QPointer<LineWhite> charger=scene->findChild<LineWhite*>(); QVERIFY(charger);
+        charger->findChild<QPropertyAnimation*>("chargeMovement")->pause();
+        const auto chargePosition=charger->pos();
+        QTest::keyClick(view,Qt::Key_S); click(chargeCell); QVERIFY(!ghost->isVisible());
+        click(map->cellCenter(6,4)); QCOMPARE(charger->pos(),chargePosition);
+        scene->toggleShovel(); click(chargeCell); QVERIFY(charger && charger->scene()==scene);
+        QCOMPARE(charger->pos(),chargePosition); QCOMPARE(Card::currentState(),GameState::Shoveling);
+        scene->cancelSelection(); QTest::keyClick(view,Qt::Key_S); click(origin);
+        QVERIFY(ghost->isVisible()); plant->removeItself();
+        QCOMPARE(Card::currentState(),GameState::Normal); QVERIFY(!ghost->isVisible());
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(!folder.isEmpty()) QVERIFY(play.grab().save(folder+"/endless-glove-slot.png"));
+    }
+    void movedShootersUseNewLaneAndColumn_data() {
+        QTest::addColumn<int>("type"); QTest::newRow("single")<<0; QTest::newRow("double")<<6;
+    }
+    void movedShootersUseNewLaneAndColumn() {
+        QFETCH(int,type); PlayScene play(10,nullptr,false,true); play.show();
+        auto *scene=play.findChild<MyGameScene*>(); auto *view=play.findChild<QGraphicsView*>();
+        auto *map=battleMap(scene); scene->addHeart(1000);
+        auto click=[&](QPointF point) { QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(point)); };
+        scene->setChosenNum(type); Card::setGameState(GameState::PrePlace); click(map->cellCenter(0,2));
+        auto *plant=scene->plantsInRow(2).first();
+        QTest::keyClick(view,Qt::Key_S); click(map->cellCenter(0,2)); click(map->cellCenter(4,1));
+        scene->setAYellowDog(1,0); auto *enemy=scene->findChild<YellowDogs*>();
+        QMetaObject::invokeMethod(scene->getGameTimer(),"timeout",Qt::DirectConnection);
+        auto *timer=type==6 ? plant->findChild<QTimer*>("doubleBurstTimer") : plant->findChild<QTimer*>();
+        QVERIFY(timer && timer->isActive());
+        QMetaObject::invokeMethod(timer,"timeout",Qt::DirectConnection);
+        auto *bullet=scene->findChild<Bullet*>(); QVERIFY(bullet); QCOMPARE(bullet->getItRow(),1);
+        QVERIFY(qAbs(bullet->x()-(400+4*121))<3);
+        if(type==6) {
+            QMetaObject::invokeMethod(plant->findChild<QTimer*>("doubleSecondShotTimer"),"timeout",Qt::DirectConnection);
+            QCOMPARE(scene->findChildren<Bullet*>().size(),2);
+            for(auto *shot : scene->findChildren<Bullet*>()) QCOMPARE(shot->getItRow(),1);
+        }
+        enemy->removeItself(); scene->setAYellowDog(2,0);
+        QMetaObject::invokeMethod(scene->getGameTimer(),"timeout",Qt::DirectConnection);
+        QVERIFY(!timer->isActive());
+    }
+    void gloveSelectionSurvivesCloseAndResume_data() {
+        QTest::addColumn<bool>("picked"); QTest::newRow("holding-glove")<<false; QTest::newRow("holding-plant")<<true;
+    }
+    void gloveSelectionSurvivesCloseAndResume() {
+        QFETCH(bool,picked); QTemporaryDir dir; const auto path=unlockedPath(dir);
+        QImage frozen; QPointF glovePosition; QJsonObject snapshot;
+        {
+            GameWindow root(nullptr,path,false); root.show(); root.startEndless();
+            auto *play=root.playPage(); auto *scene=play->findChild<MyGameScene*>(); auto *view=play->findChild<QGraphicsView*>();
+            auto *map=battleMap(scene); scene->addHeart(1000);
+            auto click=[&](QPointF point) { QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(point)); };
+            scene->setChosenNum(1); Card::setGameState(GameState::PrePlace); click(map->cellCenter(1,2));
+            QTest::keyClick(view,Qt::Key_S); if(picked) click(map->cellCenter(1,2));
+            movePointer(view,map->cellCenter(5,3)); QTest::qWait(60);
+            glovePosition=toolItem(scene,"moveGlove")->pos();
+            if(picked) frozen=toolItem(scene,"plantMoveGhost")->pixmap().toImage().convertToFormat(QImage::Format_ARGB32);
+            QVERIFY(root.close()); snapshot=ProgressStore(path).battleSnapshot(); QVERIFY(BattleSnapshot::isValid(snapshot));
+        }
+        GameWindow root(nullptr,path,false); root.show(); root.startEndless();
+        auto *play=root.playPage(); QVERIFY(play && play->isPaused()); auto *scene=play->findChild<MyGameScene*>();
+        auto *view=play->findChild<QGraphicsView*>(); auto *map=battleMap(scene);
+        auto *ghost=toolItem(scene,"plantMoveGhost"); auto *glove=toolItem(scene,"moveGlove");
+        QCOMPARE(glove->pos(),glovePosition); QCOMPARE(ghost->isVisible(),picked);
+        if(picked) QCOMPARE(ghost->pixmap().toImage().convertToFormat(QImage::Format_ARGB32),frozen);
+        const auto original=scene->findChild<HeartWhite*>()->pos(); QTest::qWait(60);
+        QCOMPARE(scene->findChild<HeartWhite*>()->pos(),original); QCOMPARE(glove->pos(),glovePosition);
+        play->gameContinued(); QCOMPARE(Card::currentState(),GameState::MovingPlant); QVERIFY(view->hasMouseTracking());
+        if(!picked) QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(map->cellCenter(1,2)));
+        QTest::mouseClick(view->viewport(),Qt::LeftButton,Qt::NoModifier,view->mapFromScene(map->cellCenter(5,3)));
+        QCOMPARE(scene->findChild<HeartWhite*>()->getItRow(),3); QCOMPARE(scene->findChild<HeartWhite*>()->getItCol(),5);
+        auto invalid=snapshot; auto gloveState=invalid["glove"].toObject(); gloveState["row"]=4; gloveState["col"]=8;
+        invalid["glove"]=gloveState; QVERIFY(!BattleSnapshot::isValid(invalid));
+        auto legacy=BattleSnapshot::capture(*play); legacy.remove("glove"); QVERIFY(BattleSnapshot::isValid(legacy));
+        const auto folder=qEnvironmentVariable("PVZ_CAPTURE_DIR");
+        if(picked && !folder.isEmpty()) QVERIFY(play->grab().save(folder+"/endless-glove-resumed.png"));
+    }
     void speedTimerPreservesRemainingTimeAndPause() {
         QObject root; GameSpeed clock(&root);
         GameTimer timer(&root,&clock),idle(&root,&clock);

@@ -73,6 +73,25 @@ void MyGameScene::setupBoard() {
 
     }
 
+    if(endlessMode) {
+        auto *gloveBar=new QGraphicsPixmapItem(GameArtwork::gloveSlot());
+        gloveBar->setData(0,"gloveSlot");
+        gloveBar->setPos(GameArtwork::gloveSlotRect().topLeft());
+        gloveBar->setZValue(29);
+        gloveBar->setToolTip("手套 · 点击或按 S 搬动小白；冲锋小白不可移动或铲除");
+        addItem(gloveBar);
+        glove=new QGraphicsPixmapItem(GameArtwork::cuteGlove());
+        glove->setData(0,"moveGlove");
+        glove->setPos(GameArtwork::gloveHome()); glove->setZValue(31);
+        glove->setToolTip("手套 · S 拿起 / 放下，右键取消移动");
+        glove->setAcceptedMouseButtons(Qt::NoButton); addItem(glove);
+        plantGhost=new QGraphicsPixmapItem;
+        plantGhost->setData(0,"plantMoveGhost");
+        plantGhost->setOpacity(.45); plantGhost->setZValue(28);
+        plantGhost->setAcceptedMouseButtons(Qt::NoButton);
+        plantGhost->hide(); addItem(plantGhost);
+    }
+
     mapGrid = new Map(9, 5, QSize(121,145), QPointF(380,130));
     const auto& level=GameCatalog::level(gameLevelNum);
     mapGrid->setPlantableRows(level.minRow,level.maxRow);
@@ -199,7 +218,8 @@ void MyGameScene::generateBullet(int r,int c){
 void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
     if(inputMode==InputMode::Blocked || Card::currentState()==GameState::Paused || Card::currentState()==GameState::GameOver) return;
     if(event->button() == Qt::RightButton) {
-        if(Card::currentState() == GameState::PrePlace || Card::currentState() == GameState::Shoveling)
+        if(Card::currentState() == GameState::PrePlace || Card::currentState() == GameState::Shoveling
+            || Card::currentState() == GameState::MovingPlant)
             cancelSelection();
         return;
     }
@@ -207,6 +227,19 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
     if(Card::currentState() != GameState::Paused && Card::currentState() != GameState::GameOver
         && GameArtwork::shovelSlotRect().contains(event->scenePos())) {
         toggleShovel();
+        return;
+    }
+    if(glove && GameArtwork::gloveSlotRect().contains(event->scenePos())) {
+        toggleGlove();
+        if(Card::currentState()==GameState::MovingPlant) updateGlovePosition(event->scenePos());
+        return;
+    }
+    if(Card::currentState()==GameState::MovingPlant) {
+        int col,row;
+        if(!mapGrid->turnPosToMap(event->scenePos(),col,row)) return;
+        if(plantToMove) moveSelectedPlant(row,col);
+        else selectPlantToMove(dogMap[row*9+col]);
+        updateGlovePosition(event->scenePos());
         return;
     }
     if (Card::currentState() == GameState::PrePlace && (inputMode==InputMode::Normal || inputMode==InputMode::PlantPractice)){
@@ -227,7 +260,7 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
     else if(Card::currentState() == GameState::Shoveling){
         int col, row;
         if(mapGrid->turnPosToMap(event->scenePos(),col,row)){
-            if(dogMap[row * 9 + col]){
+            if(dogMap[row * 9 + col] && !qobject_cast<LineWhite*>(dogMap[row * 9 + col])){
                 AudioManager::instance().play("uproot");
                 new CombatEffect(this,dogMap[row * 9 + col]->sceneBoundingRect().center(),CombatEffect::Uproot);
                 dogMap[row * 9 + col]->removeItself();
@@ -239,7 +272,9 @@ void MyGameScene::mousePressEvent(QGraphicsSceneMouseEvent * event){
 }
 
 void MyGameScene::mouseMoveEvent(QGraphicsSceneMouseEvent * event){
-    if(Card::currentState() == GameState::Shoveling){
+    if(Card::currentState()==GameState::MovingPlant) {
+        updateGlovePosition(event->scenePos());
+    } else if(Card::currentState() == GameState::Shoveling){
         shovel->setPos(event->scenePos() - QPointF(shovel->pixmap().width() / 2.0, shovel->pixmap().height() / 2.0));
     }
     else if(Card::currentState() == GameState::PrePlace){
@@ -251,6 +286,10 @@ void MyGameScene::mouseMoveEvent(QGraphicsSceneMouseEvent * event){
 void MyGameScene::keyPressEvent(QKeyEvent *event){
     if(event->key() == Qt::Key_R){
         toggleShovel();
+        return;
+    }
+    if(event->key()==Qt::Key_S) {
+        if(!event->isAutoRepeat()) toggleGlove();
         return;
     }
     QGraphicsScene::keyPressEvent(event);
@@ -299,6 +338,7 @@ void MyGameScene::removeWhite(int r,int c){
 
 void MyGameScene::removePlant(WhiteDogs *plant) {
     if(!plant || plant->scene()!=this) return;
+    if(plantToMove==plant) cancelSelection();
     const int row=plant->getItRow(),col=plant->getItCol();
     // A moving charger may share its original cell with a newer stationary dog.
     if(dogMap[row*9+col]==plant) {
@@ -338,6 +378,51 @@ void MyGameScene::cancelSelection() {
     emit pleaseRemovePreImage();
     emit banTracking();
     if(shovel) shovel->setPos(GameArtwork::shovelHome());
+    plantToMove.clear();
+    if(plantGhost) plantGhost->hide();
+    if(glove) glove->setPos(GameArtwork::gloveHome());
+}
+
+void MyGameScene::toggleGlove() {
+    if(!glove || inputMode!=InputMode::Normal || m_isGameOver) return;
+    const auto state=Card::currentState();
+    if(state==GameState::Paused || state==GameState::GameOver) return;
+    if(state==GameState::MovingPlant) { cancelSelection(); return; }
+    cancelSelection();
+    Card::setGameState(GameState::MovingPlant);
+    emit allowTracking();
+}
+
+void MyGameScene::selectPlantToMove(WhiteDogs *plant) {
+    if(!glove || !plant || plant->scene()!=this || plant->getHp()<=0 || qobject_cast<LineWhite*>(plant)) return;
+    plantToMove=plant;
+    plantGhost->setPixmap(plant->pixmap());
+    plantGhost->show();
+}
+
+void MyGameScene::updateGlovePosition(const QPointF& position) {
+    if(!glove || Card::currentState()!=GameState::MovingPlant) return;
+    const auto size=glove->pixmap().size();
+    glove->setPos(position-QPointF(size.width()/2.0,size.height()/2.0));
+    if(plantToMove) {
+        const auto ghostSize=plantGhost->pixmap().size();
+        plantGhost->setPos(position-QPointF(ghostSize.width()/2.0,ghostSize.height()/2.0));
+    }
+}
+
+void MyGameScene::moveSelectedPlant(int row,int col) {
+    if(!plantToMove || dogMap[row*9+col]) return;
+    auto *plant=plantToMove.data();
+    const int oldRow=plant->getItRow(),oldCol=plant->getItCol();
+    if(plant->scene()!=this || plant->getHp()<=0 || dogMap[oldRow*9+oldCol]!=plant) { cancelSelection(); return; }
+    dogMap[oldRow*9+oldCol]=nullptr;
+    plantRows[oldRow].removeOne(plant);
+    dogMap[row*9+col]=plant;
+    plantRows[row].append(plant);
+    plant->setItPos(row,col);
+    const auto center=mapGrid->cellCenter(col,row);
+    plant->setPos(center-QPointF(plant->pixmap().width()/2.0,plant->pixmap().height()/2.0));
+    cancelSelection();
 }
 
 void MyGameScene::toggleShovel() {

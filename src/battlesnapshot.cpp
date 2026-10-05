@@ -13,9 +13,25 @@
 #include <QJsonArray>
 #include <QLabel>
 #include <QSignalBlocker>
+#include <QBuffer>
+#include <QImageReader>
 #include <cmath>
 
 namespace {
+QString encodedFrame(const QPixmap& frame) {
+    QByteArray bytes; QBuffer buffer(&bytes); buffer.open(QIODevice::WriteOnly);
+    frame.save(&buffer,"PNG");
+    return QString::fromLatin1(bytes.toBase64());
+}
+QPixmap decodedFrame(const QJsonValue& value) {
+    if(!value.isString() || value.toString().size()>2*1024*1024) return {};
+    auto bytes=QByteArray::fromBase64(value.toString().toLatin1());
+    if(bytes.isEmpty()) return {};
+    QBuffer buffer(&bytes); buffer.open(QIODevice::ReadOnly);
+    QImageReader reader(&buffer,"PNG"); const auto size=reader.size();
+    if(size.isEmpty() || size.width()>1024 || size.height()>1024) return {};
+    return QPixmap::fromImage(reader.read());
+}
 QJsonArray point(const QPointF& p) { return {p.x(),p.y()}; }
 QPointF position(const QJsonValue& v) { const auto a=v.toArray(); return {a[0].toDouble(),a[1].toDouble()}; }
 QJsonArray integers(const QVector<int>& values) {
@@ -203,7 +219,12 @@ QJsonObject BattleSnapshot::capture(PlayScene& play) {
         {"shovelPos",point(scene.shovel ? scene.shovel->pos() : QPointF{})},
         {"showPlants",scene.showPlantHealth},{"showEnemies",scene.showEnemyHealth},
         {"activity",activities(&scene,play.pausedActivity,rate)}};
-    return {{"format",1},{"level",play.levelIndex},{"endless",play.endlessMode},{"speed",rate},
+    QJsonObject glove;
+    if(scene.glove) glove={{"pos",point(scene.glove->pos())},
+        {"row",scene.plantToMove ? scene.plantToMove->getItRow() : -1},
+        {"col",scene.plantToMove ? scene.plantToMove->getItCol() : -1},
+        {"frame",scene.plantToMove ? encodedFrame(scene.plantGhost->pixmap()) : QString{}}};
+    return {{"format",1},{"level",play.levelIndex},{"endless",play.endlessMode},{"speed",rate},{"glove",glove},
         {"scene",state},{"plants",plants},{"enemies",enemies},{"hearts",hearts},
         {"bullets",bullets},{"notes",notes},{"effects",effects},{"cards",cards},
         {"selection",int(play.interactionBeforePause)},{"selectedWhite",Card::selectedWhite()},
@@ -215,7 +236,8 @@ QJsonObject BattleSnapshot::capture(PlayScene& play) {
 
 bool BattleSnapshot::isValid(const QJsonObject& state) {
     if(state["format"].toInt()!=1 || !integer(state["level"],1,10) || !state["endless"].isBool()
-        || !integer(state["speed"],1,2) || !integer(state["selection"],0,2)
+        || !integer(state["speed"],1,2)
+        || !(integer(state["selection"],0,2) || integer(state["selection"],int(GameState::MovingPlant),int(GameState::MovingPlant)))
         || !state["preview"].isBool() || !validPoint(state["previewPos"])) return false;
     const auto s=state["scene"].toObject();
     if(!integer(s["hearts"],0,1000000000) || !integer(s["chosen"],0,7)
@@ -247,6 +269,27 @@ bool BattleSnapshot::isValid(const QJsonObject& state) {
             || !p["moving"].isBool() || !p["occupied"].isBool()) return false;
         const int type=p["type"].toInt();
         if(!activityCount(p["activity"],type==6 ? 2 : (type==0 || type==1 || type==5 ? 1 : 0),type==3 ? 2 : 1)) return false;
+    }
+    const bool moving=state["selection"].toInt()==int(GameState::MovingPlant);
+    const auto glove=state["glove"].toObject();
+    if(moving && (!endless || glove.isEmpty())) return false;
+    if(!glove.isEmpty()) {
+        if(!endless || !validPoint(glove["pos"]) || !integer(glove["row"],-1,4)
+            || !integer(glove["col"],-1,8) || !glove["frame"].isString()) return false;
+        const int row=glove["row"].toInt(),col=glove["col"].toInt();
+        if((row==-1)!=(col==-1)) return false;
+        if(row>=0) {
+            if(!moving || decodedFrame(glove["frame"]).isNull()) return false;
+            int matches=0;
+            for(const auto v : state["plants"].toArray()) {
+                const auto p=v.toObject();
+                if(p["row"].toInt()==row && p["col"].toInt()==col && p["occupied"].toBool()) {
+                    if(p["type"].toInt()==3) return false;
+                    ++matches;
+                }
+            }
+            if(matches!=1) return false;
+        } else if(!glove["frame"].toString().isEmpty()) return false;
     }
     for(const auto v : state["enemies"].toArray()) {
         const auto e=v.toObject();
@@ -350,6 +393,15 @@ bool BattleSnapshot::restore(PlayScene& play,const QJsonObject& state) {
     restoreActivities(play.banner,banner["activity"].toObject(),rate);
     play.banner->progress=banner["progress"].toDouble(); play.banner->setVisible(banner["visible"].toBool());
     Card::setSelectedWhite(state["selectedWhite"].toString()); Card::setGameState(GameState(state["selection"].toInt()));
+    if(Card::currentState()==GameState::MovingPlant) {
+        const auto glove=state["glove"].toObject();
+        if(glove["row"].toInt()>=0) {
+            scene.selectPlantToMove(scene.dogMap[glove["row"].toInt()*9+glove["col"].toInt()]);
+            scene.plantGhost->setPixmap(decodedFrame(glove["frame"]));
+        }
+        const auto size=scene.glove->pixmap().size();
+        scene.updateGlovePosition(position(glove["pos"])+QPointF(size.width()/2.0,size.height()/2.0));
+    }
     play.previewScenePosition=position(state["previewPos"]); play.fitBattlefield();
     play.preImageLabel->setVisible(state["preview"].toBool());
     play.showPauseMenu();

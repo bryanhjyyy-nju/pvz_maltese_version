@@ -273,7 +273,8 @@ void PlayScene::gameContinued() {
     if(pauseShortcut) pauseShortcut->setEnabled(true);
     Card::setGameState(interactionBeforePause);
     refreshCardSelection();
-    myGraphicsView->setMouseTracking(interactionBeforePause==GameState::PrePlace || interactionBeforePause==GameState::Shoveling);
+    myGraphicsView->setMouseTracking(interactionBeforePause==GameState::PrePlace
+        || interactionBeforePause==GameState::Shoveling || interactionBeforePause==GameState::MovingPlant);
     fitBattlefield();
     preImageLabel->setVisible(previewBeforePause);
     pauseButton->setText("暂停 [空格]");
@@ -330,9 +331,10 @@ void PlayScene::buildPauseBtn() {
     auto updateHelp = [help,this](bool plants,bool enemies) {
         help->setText((levelIndex==1 ? "铲子：第二关解锁\n" : "点击铲子 / R：拿起或放下\n")+QString("右键：取消选择\nEsc：退出全屏\n空格：暂停 / 继续\nA：小白血量 %1\nD：金毛血量 %2\nF：原速 / 二倍速\nF11：全屏 / 窗口")
             .arg(plants ? "开" : "关").arg(enemies ? "开" : "关"));
+        if(endlessMode) help->setText(help->text()+"\n手套 / S：移动小白");
     };
     updateHelp(false,false);
-    help->setGeometry(20,405,250,235);
+    help->setGeometry(20,405,250,245);
     help->setStyleSheet("color:#26392e; font-size:16px; background:rgba(255,253,245,225); border-radius:10px; padding:12px;");
     const auto& level = GameCatalog::level(levelIndex);
     auto *wave = new QLabel(endlessMode ? "无尽模式\n准备防守！" : QString("准备防守！\n共 %1 波进攻").arg(level.waves),this);
@@ -492,6 +494,10 @@ void PlayScene::finishOpening() {
 
 bool PlayScene::handleGameKey(QKeyEvent *event) {
     if(event->modifiers()!=Qt::NoModifier) return false;
+    if(event->key()==Qt::Key_S) {
+        if(!event->isAutoRepeat()) myGameScene->toggleGlove();
+        return true;
+    }
     if(event->key()==Qt::Key_F) {
         if(!event->isAutoRepeat()) setSpeedMultiplier(speedMultiplier()==1 ? 2 : 1);
         return true;
