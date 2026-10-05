@@ -5,9 +5,9 @@
 #include <QFontDatabase>
 QString GameUi::fontFamily(const QString& preferred) {
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-    const auto families=QFontDatabase().families();
+    static const auto families=QFontDatabase().families();
 #else
-    const auto families=QFontDatabase::families();
+    static const auto families=QFontDatabase::families();
 #endif
     for(const auto& family : {preferred,QStringLiteral("Microsoft YaHei"),
                              QStringLiteral("PingFang SC"),QStringLiteral("Heiti SC"),

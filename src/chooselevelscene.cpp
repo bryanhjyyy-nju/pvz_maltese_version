@@ -20,7 +20,7 @@ ChooseLevelScene::ChooseLevelScene(QWidget *parent) : GamePage(parent)
     progressLabel = new QLabel(this);
     progressLabel->setGeometry(280, 840, 1100, 45);
     progressLabel->setAlignment(Qt::AlignCenter);
-    progressLabel->setStyleSheet("background:#fff0c8; color:#65452d; border:2px solid #997341; border-radius:14px; font:16px 'Microsoft YaHei'; padding:5px;");
+    progressLabel->setStyleSheet(QString("background:#fff0c8; color:#65452d; border:2px solid #997341; border-radius:14px; font:16px '%1'; padding:5px;").arg(GameUi::fontFamily()));
     auto *almanac = new QPushButton("小白 / 金毛图鉴", this);
     GameUi::styleButton(almanac,"gold");
     almanac->setGeometry(1090, 785, 210, 48);

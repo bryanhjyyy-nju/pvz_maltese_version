@@ -340,7 +340,7 @@ void PlayScene::buildPauseBtn() {
     auto *wave = new QLabel(endlessMode ? "无尽模式\n准备防守！" : QString("准备防守！\n共 %1 波进攻").arg(level.waves),this);
     wave->setObjectName("waveStatus");
     wave->setGeometry(20,655,250,85);
-    wave->setStyleSheet("background:#ffe3a0; border:3px solid #8d6435; border-radius:16px; padding:12px; color:#65452d; font: bold 18px 'Microsoft YaHei';");
+    wave->setStyleSheet(QString("background:#ffe3a0; border:3px solid #8d6435; border-radius:16px; padding:12px; color:#65452d; font: bold 18px '%1';").arg(GameUi::fontFamily()));
     connect(myGameScene,&MyGameScene::waveStarted,this,[wave](int current,int total) {
         wave->setText(total==0 ? QString("无尽模式 · 第 %1 波\n守住你的草坪！").arg(current) : QString("第 %1 / %2 波\n守住你的草坪！").arg(current).arg(total));
     });

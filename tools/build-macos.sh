@@ -32,6 +32,9 @@ if $run_tests; then
     qmake "$project_root/pvz_tests.pro" CONFIG+=release CONFIG-=debug
     make -j"$jobs"
     PVZ_CAPTURE_DIR="$build_dir/tests/screenshots" ./pvz_tests -platform offscreen -o test-results.txt,txt
+    PVZ_CAPTURE_DIR="$build_dir/tests/native-screenshots" ./pvz_tests -platform cocoa \
+        audioAssetsLoad renderScreens battlefieldPauseAndPlacement continueFlow \
+        -o native-test-results.txt,txt
 fi
 
 cd "$build_dir"

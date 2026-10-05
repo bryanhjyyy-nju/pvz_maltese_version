@@ -36,7 +36,7 @@ MainScene::MainScene(QWidget *parent) : GamePage(parent) {
     connect(save,&QPushButton::clicked,this,&MainScene::saveSettingsRequested);
     recordLabel=new QLabel(this); recordLabel->setObjectName("endlessRecord");
     recordLabel->setGeometry(510,840,640,40); recordLabel->setAlignment(Qt::AlignCenter);
-    recordLabel->setStyleSheet("background:#fff0c8;color:#65452d;border-radius:12px;font:bold 20px 'Microsoft YaHei';");
+    recordLabel->setStyleSheet(QString("background:#fff0c8;color:#65452d;border-radius:12px;font:bold 20px '%1';").arg(GameUi::fontFamily()));
     setGif(400,400,82,405); setGif(400,400,1155,405);
     initializePage(QRect(30,30,230,44)); refreshState(false,false,false,0);
 }

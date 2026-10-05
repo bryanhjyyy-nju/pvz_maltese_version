@@ -121,7 +121,7 @@ void BattleResult::paintEvent(QPaintEvent*) {
     }
     painter.restore();
     cartoonText(painter,reward>=0 ? "新伙伴："+GameCatalog::plants()[reward].name : "挑战关胜利 · 荣耀奖杯",665,45,QColor("#ffefb8"));
-    painter.setPen(QColor("#fff7df")); QFont details("Microsoft YaHei"); details.setPixelSize(24); painter.setFont(details);
+    painter.setPen(QColor("#fff7df")); QFont details(GameUi::fontFamily()); details.setPixelSize(24); painter.setFont(details);
     painter.drawText(QRectF(355,690,940,100),Qt::AlignHCenter|Qt::TextWordWrap,
         reward>=0 ? GameCatalog::plants()[reward].description : level==10 ? "全部十关通关！主菜单已解锁无尽模式。" : "下一关已解锁，迎接更强的小金毛吧！");
 }

@@ -63,7 +63,7 @@ void LevelTutorial::fitCanvas(qreal scale,const QPointF& offset) {
     layout()->setContentsMargins(qRound(18*scale),qRound(12*scale),qRound(18*scale),qRound(12*scale));
     layout()->setSpacing(qRound(8*scale));
     setStyleSheet(QString("QFrame#levelTutorial{background:#fff0c8; border:%1px solid #65452d; border-radius:%2px;}").arg(qMax(1,qRound(4*scale))).arg(qRound(20*scale)));
-    title->setStyleSheet(QString("color:#805024; font:bold %1px 'Microsoft YaHei';").arg(qRound(25*scale)));
-    instructions->setStyleSheet(QString("color:#563a26; font:%1px 'Microsoft YaHei';").arg(qRound(20*scale)));
+    title->setStyleSheet(QString("color:#805024; font:bold %1px '%2';").arg(qRound(25*scale)).arg(GameUi::fontFamily()));
+    instructions->setStyleSheet(QString("color:#563a26; font:%1px '%2';").arg(qRound(20*scale)).arg(GameUi::fontFamily()));
     next->setStyleSheet(GameUi::styleSheet()+QString("QPushButton{font-size:%1px;}").arg(qRound(18*scale)));
 }

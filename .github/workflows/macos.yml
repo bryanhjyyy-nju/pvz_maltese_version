@@ -31,7 +31,9 @@ jobs:
           name: macOS-test-reports
           path: |
             build-macos/tests/test-results.txt
+            build-macos/tests/native-test-results.txt
             build-macos/tests/screenshots/
+            build-macos/tests/native-screenshots/
           if-no-files-found: ignore
       - name: Upload Mac download
         uses: actions/upload-artifact@v4
