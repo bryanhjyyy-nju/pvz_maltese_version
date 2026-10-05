@@ -70,7 +70,12 @@ void Card::paintEvent(QPaintEvent*) {
         painter.fillRect(QRectF(0,0,width(),edge),QColor(0,0,0,130));
         painter.setPen(QPen(QColor(255,237,173,180),2));
         painter.drawLine(QPointF(0,edge),QPointF(width(),edge));
-    } else if(!memHeartIsEnough) painter.fillRect(rect(),QColor(0,0,0,85));
+    } else if(!memHeartIsEnough || selected) painter.fillRect(rect(),QColor(0,0,0,85));
+}
+void Card::setSelected(bool value) {
+    if(selected==value) return;
+    selected=value;
+    update();
 }
 void Card::mousePressEvent(QMouseEvent *event) {
     if(cardGameState==GameState::Normal) QPushButton::mousePressEvent(event);

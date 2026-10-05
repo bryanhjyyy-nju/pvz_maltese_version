@@ -111,6 +111,7 @@ PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening,bool endless,
         Card::setCurRestHeart(myGameScene->getRestHeart());
         myCards[myGameScene->getChosenNum()]->startCooldown();
         if(openingActive) myCards[myGameScene->getChosenNum()]->gamePaused();
+        refreshCardSelection();
         emit signalToCard();
     });
 
@@ -126,6 +127,7 @@ PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening,bool endless,
     });
     connect(myGameScene, &MyGameScene::banTracking, this, [=](){
         myGraphicsView->setMouseTracking(false);
+        refreshCardSelection();
     });
 
     connect(myGameScene, &MyGameScene::mouseMovedTo, this, [=](QPointF mousePos){
@@ -226,6 +228,13 @@ void PlayScene::handleCardSelected(Card *card){
     // 进入预放置状态
     Card::setGameState(GameState::PrePlace);
     Card::setSelectedWhite(card->whiteType);
+    refreshCardSelection();
+}
+
+void PlayScene::refreshCardSelection() {
+    const auto state=paused ? interactionBeforePause : Card::currentState();
+    for(auto *card : myCards)
+        card->setSelected(!finished && state==GameState::PrePlace && card->whiteType==Card::selectedWhite());
 }
 
 void PlayScene::startShow(int num){
@@ -249,6 +258,7 @@ void PlayScene::gamePaused() {
     previewBeforePause = preImageLabel->isVisible();
     paused = true;
     Card::setGameState(GameState::Paused);
+    refreshCardSelection();
     stopShow();
     pausedActivity.pause(this);
     pauseButton->setText("继续 [空格]");
@@ -262,6 +272,7 @@ void PlayScene::gameContinued() {
     if(pauseMenu) pauseMenu->hide();
     if(pauseShortcut) pauseShortcut->setEnabled(true);
     Card::setGameState(interactionBeforePause);
+    refreshCardSelection();
     myGraphicsView->setMouseTracking(interactionBeforePause==GameState::PrePlace || interactionBeforePause==GameState::Shoveling);
     fitBattlefield();
     preImageLabel->setVisible(previewBeforePause);
@@ -276,6 +287,7 @@ void PlayScene::finishGame() {
     gamePaused();
     finished = true;
     Card::setGameState(GameState::GameOver);
+    refreshCardSelection();
     pauseButton->setEnabled(false);
     speedButton->setEnabled(false);
 }
@@ -442,6 +454,7 @@ void PlayScene::beginGameplay() {
     myGraphicsView->setSceneRect(0,0,1650,900); fitBattlefield();
     setBattleHudVisible(true); pauseShortcut->setEnabled(true);
     Card::setGameState(GameState::Normal);
+    refreshCardSelection();
     for(int i=0;i<myCards.size();++i) {
         if(myCards[i]->isCooling()) myCards[i]->gameContinued();
         else if(i!=1) myCards[i]->startCooldown();
@@ -460,6 +473,7 @@ void PlayScene::finishOpening() {
     connect(tutorial,&LevelTutorial::stepChanged,this,[this](LevelTutorial::Step step) {
         for(auto *card : myCards) card->setEnabled(false);
         Card::setGameState(GameState::Normal);
+        refreshCardSelection();
         const bool controls=step==LevelTutorial::Step::Controls;
         pauseButton->setEnabled(controls); pauseShortcut->setEnabled(controls);
         myGameScene->setInputMode(step==LevelTutorial::Step::Plant ? MyGameScene::InputMode::PlantPractice

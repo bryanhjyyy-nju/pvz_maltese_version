@@ -40,6 +40,8 @@ public:
     static void setSelectedWhite(const QString& sWhite){ cardSelectedWhite = sWhite; }
     static QString selectedWhite(){ return cardSelectedWhite; }
 
+    void setSelected(bool selected);
+
     // 设置当前剩余爱心
     static void setCurRestHeart(int r){ curRestHeart = r; }
 
@@ -59,6 +61,7 @@ private:
     const int cardIndex;    // 记录第几章卡牌
     bool coolingState = false; //记录是否正在冷却
     bool memHeartIsEnough = true; //判断爱心是否足够
+    bool selected = false;
     float memCoolProgress = 0.0f; // 冷却进度 (0.0-1.0)
     GameTimer *memCoolTimer = nullptr; //冷却计时器
     CardState cardState = CardState::Normal;

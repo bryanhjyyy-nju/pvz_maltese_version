@@ -63,6 +63,7 @@ private:
     void finishGame();
     void fitBattlefield();
     QVector<Card *> myCards;
+    void refreshCardSelection();
 
     void buildPauseBtn();
     void setLevelText();
