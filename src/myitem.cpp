@@ -1,4 +1,5 @@
 #include "myitem.h"
+#include "gameui.h"
 #include <QDebug>
 #include <QGraphicsSimpleTextItem>
 #include <QBitmap>
@@ -22,7 +23,7 @@ QRect visibleSpriteBounds(const QPixmap& sprite) {
 class HealthLabel : public QObject, public QGraphicsSimpleTextItem {
 public:
     explicit HealthLabel(QObject *owner) : QObject(owner) {
-        setFont(QFont("Microsoft YaHei",11,QFont::Bold));
+        setFont(QFont(GameUi::fontFamily(),11,QFont::Bold));
         setBrush(QColor("#443326"));
         setAcceptedMouseButtons(Qt::NoButton);
         setZValue(100);

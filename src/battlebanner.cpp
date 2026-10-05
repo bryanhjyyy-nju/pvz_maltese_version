@@ -1,5 +1,6 @@
 #include "battlebanner.h"
 #include "audiomanager.h"
+#include "gameui.h"
 #include <QPainter>
 #include <QPainterPath>
 #include <QtMath>
@@ -32,7 +33,7 @@ void BattleBanner::paintEvent(QPaintEvent*) {
     }
     const qreal impact=progress<.2 ? 1+.35*qPow(1-progress/.2,2) : 1;
     p.translate(progress<.2 ? qSin(progress*180)*6 : 0,0); p.scale(impact,impact);
-    QFont font("华文琥珀"); font.setPixelSize(68); font.setWeight(QFont::Black);
+    QFont font(GameUi::fontFamily("华文琥珀")); font.setPixelSize(68); font.setWeight(QFont::Black);
     QPainterPath letters; letters.addText(0,0,font,message);
     const QRectF bounds=letters.boundingRect();
     const qreal fit=qMin(1.0,1420.0/(bounds.width()+20)); p.scale(fit,fit);

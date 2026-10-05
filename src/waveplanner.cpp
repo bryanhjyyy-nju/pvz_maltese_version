@@ -75,7 +75,7 @@ WavePlanner::Plan WavePlanner::create(int number, QRandomGenerator& random) {
             const int guitarWeight=GameCatalog::enemies()[1].weight;
             guitars=level.maxEnemyType>=1 ? qBound(0,level.late.minGuitars,remaining/guitarWeight) : 0;
             int largestEarlier=0;
-            for(const auto& earlier : plan) largestEarlier=qMax(largestEarlier,earlier.size());
+            for(const auto& earlier : plan) largestEarlier=qMax(largestEarlier,int(earlier.size()));
             // Reserve enough ordinary dogs for increasing wave counts. This
             // applies to every expensive type, including level 7's dash dogs.
             minimumCount=largestEarlier+1;

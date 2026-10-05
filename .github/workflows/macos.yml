@@ -1,0 +1,63 @@
+name: macOS application
+
+on:
+  push:
+    branches: [codex/macos-build]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build universal app and test on Apple Silicon
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          arch: clang_64
+          modules: qtmultimedia
+          cache: true
+      - name: Compile, test, deploy, and verify startup
+        run: bash tools/build-macos.sh --test
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-test-reports
+          path: |
+            build-macos/tests/test-results.txt
+            build-macos/tests/screenshots/
+          if-no-files-found: ignore
+      - name: Upload Mac download
+        uses: actions/upload-artifact@v4
+        with:
+          name: PvZ_demo-macOS-universal
+          path: |
+            build-macos/dist/PvZ_demo-macOS-universal.zip
+            build-macos/dist/SHA256SUMS.txt
+            build-macos/dist/使用说明.txt
+          if-no-files-found: error
+
+  intel-startup:
+    name: Verify the same bundle on Intel
+    needs: build
+    runs-on: macos-15-intel
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: PvZ_demo-macOS-universal
+          path: build-macos/dist
+      - name: Verify checksum, dependencies, signature, and startup
+        run: |
+          cd build-macos/dist
+          shasum -a 256 -c SHA256SUMS.txt
+          ditto -x -k PvZ_demo-macOS-universal.zip .
+          codesign --verify --deep --strict PvZ_demo.app
+          python3 ../../tools/check-macos-bundle.py PvZ_demo.app

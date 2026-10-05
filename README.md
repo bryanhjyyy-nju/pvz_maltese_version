@@ -28,7 +28,7 @@
 
 无尽模式的手套位于铲子旁边。选中小白后，半透明的静止幻影随手套和指针移动；原小白在原格继续战斗，点击可用空草格才搬到新位置。搬动保留生命值和活动进度，也不会消耗爱心或触发卡片冷却。暂停或存档续玩会保留待搬动状态；冲锋小白不能用手套移动或用铲子移除。
 
-存档通常位于 Windows 的 `%APPDATA%/DogGarden/PvZ_demo/progress.json`。主菜单的“存档管理”可清空进度或开放全部关卡。
+存档通常位于 Windows 的 `%APPDATA%/DogGarden/PvZ_demo/progress.json`，或 macOS 的 `~/Library/Application Support/DogGarden/PvZ_demo/progress.json`。主菜单的“存档管理”可清空进度或开放全部关卡。
 
 ## 代码介绍
 
@@ -91,6 +91,29 @@ Set-Location pvz_maltese_version
 ```
 
 以下命令均在项目根目录运行。
+
+### macOS 下载与运行
+
+macOS 构建位于 `codex/macos-build` 分支，使用 Qt 6.8.3，最低系统为 macOS 12。同一个通用应用支持 Apple 芯片（M 系列）和 Intel Mac。
+
+在仓库的 [macOS 构建页面](https://github.com/bryanhjyyy-nju/pvz_maltese_version/actions/workflows/macos.yml) 打开成功的运行记录，下载 **Artifacts → PvZ_demo-macOS-universal**。解压下载文件，再解压其中的 `PvZ_demo-macOS-universal.zip`，将 `PvZ_demo.app` 拖入“应用程序”并打开。图片、声音和 Qt 运行库均已包含，无需安装 Qt。
+
+此包采用临时签名，未经过 Apple 开发者签名与公证。若首次启动被 macOS 阻止，可在“系统设置 → 隐私与安全性”中选择“仍要打开”。触控板双指点按可取消选择；部分 Mac 使用 `Fn + F11` 全屏，也可以点击游戏内的全屏按钮。
+
+### 在 Mac 上自行编译
+
+安装 Xcode 命令行工具，以及 Qt 官方 macOS 版 **Qt 6.8.3**（包含 Multimedia）。Qt 安装包需要同时包含 `arm64` 和 `x86_64` 运行库。
+
+```bash
+git switch codex/macos-build
+export QT_ROOT_DIR="$HOME/Qt/6.8.3/macos"
+bash tools/build-macos.sh --test
+open build-macos/dist/PvZ_demo.app
+```
+
+Qt 安装在其他位置时，修改 `QT_ROOT_DIR`。去掉 `--test` 可只编译和打包游戏。输出目录为 `build-macos/dist/`，包含 `.app`、通用 ZIP 包、校验码和使用说明。重新打包前请移走该目录中的旧 `.app`。
+
+GitHub Actions 会在 macOS 上编译两种架构、运行测试、检查运行库与签名，再分别在 Apple 芯片和 Intel 环境中启动打包后的应用。macOS 构建说明依据 [Qt 的 macOS 支持文档](https://doc.qt.io/qt-6.8/macos.html) 和 [应用部署文档](https://doc.qt.io/qt-6.8/macos-deployment.html)。
 
 ### 用构建脚本编译
 

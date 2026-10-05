@@ -2,6 +2,12 @@ QT += core gui multimedia
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 CONFIG += c++17
 
+macx {
+    QMAKE_MACOSX_DEPLOYMENT_TARGET = 12.0
+    QMAKE_TARGET_BUNDLE_PREFIX = io.github.bryanhjyyy-nju
+    QMAKE_INFO_PLIST = $$PWD/packaging/macos/Info.plist
+}
+
 INCLUDEPATH += $$PWD/include
 
 SOURCES += \

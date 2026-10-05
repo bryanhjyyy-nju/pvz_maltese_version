@@ -180,7 +180,7 @@ void MyGameScene::spawnNextInWave() {
         if(occupancy<smallest) { smallest=occupancy; rows.clear(); }
         if(occupancy==smallest) rows.append(row);
     }
-    int row=rows[QRandomGenerator::global()->bounded(rows.size())];
+    int row=rows[QRandomGenerator::global()->bounded(int(rows.size()))];
     ++waveRowCounts[row];
     setAYellowDog(row,pendingWave[pendingIndex++]);
     if(pendingIndex >= pendingWave.size()) {

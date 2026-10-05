@@ -9,7 +9,7 @@
 
 namespace {
 void cartoonText(QPainter& painter,const QString& text,qreal y,int size,const QColor& fill) {
-    QFont font("华文琥珀"); font.setPixelSize(size); font.setBold(true);
+    QFont font(GameUi::fontFamily("华文琥珀")); font.setPixelSize(size); font.setBold(true);
     QFontMetricsF metrics(font);
     QPainterPath path; path.addText(QPointF(825-metrics.horizontalAdvance(text)/2,y),font,text);
     painter.setPen(QPen(QColor("#281919"),7,Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));

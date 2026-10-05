@@ -1,4 +1,5 @@
 #include "gameartwork.h"
+#include "gameui.h"
 #include <QPainter>
 #include <QPainterPath>
 #include <QFontDatabase>
@@ -43,12 +44,7 @@ QPixmap speakerIcon() {
 void drawTitle(QPainter& p, const QRectF& area, const QString& text) {
     p.save();
     p.setRenderHint(QPainter::Antialiasing);
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-    const auto families=QFontDatabase().families();
-#else
-    const auto families=QFontDatabase::families();
-#endif
-    QFont font(families.contains("华文琥珀") ? "华文琥珀" : "Microsoft YaHei");
+    QFont font(GameUi::fontFamily("华文琥珀"));
     font.setPixelSize(100); font.setWeight(QFont::Black);
     const QFontMetricsF metrics(font);
     const qreal spacing=8;

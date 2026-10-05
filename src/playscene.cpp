@@ -91,7 +91,7 @@ PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening,bool endless,
 
     //设置字体颜色和大小
     QFont font;
-    font.setFamily("华文新魏");
+    font.setFamily(GameUi::fontFamily("华文新魏"));
     font.setPointSize(18);
     restHeartLabel->setFont(font);
 
@@ -160,7 +160,7 @@ PlayScene::PlayScene(int levelNum,QWidget *parent,bool withOpening,bool endless,
 void PlayScene::setLevelText(){
     //定义字体
     QFont font;
-    font.setFamily("华文新魏");
+    font.setFamily(GameUi::fontFamily("华文新魏"));
     font.setBold(true);
     font.setPointSize(20);
     QString levStr = endlessMode ? "无尽模式" : QString("第 %1 关").arg(levelIndex);
